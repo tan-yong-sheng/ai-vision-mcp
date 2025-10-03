@@ -7,7 +7,7 @@ import type {
   Config,
   GeminiConfig,
   VertexAIConfig,
-  S3Config,
+  GCSConfig,
   ApiConfig,
   FileProcessingConfig,
   LoggingConfig,
@@ -63,13 +63,11 @@ export class ConfigService {
           process.env.VERTEX_ENDPOINT ||
           'https://aiplatform.googleapis.com',
 
-        // S3-compatible storage configuration
-        S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
-        S3_SECRET_KEY: process.env.S3_SECRET_KEY,
-        S3_REGION: process.env.S3_REGION || 'us-east-1',
-        S3_BUCKET: process.env.S3_BUCKET,
-        S3_ENDPOINT: process.env.S3_ENDPOINT || 'https://s3.amazonaws.com',
-        S3_CDN_URL: process.env.S3_CDN_URL,
+        // Google Cloud Storage configuration
+        GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
+        GCS_PROJECT_ID: process.env.GCS_PROJECT_ID,
+        GCS_KEY_FILE_PATH: process.env.GCS_KEY_FILE_PATH,
+        GCS_PUBLIC_URL_BASE: process.env.GCS_PUBLIC_URL_BASE,
 
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
@@ -116,7 +114,6 @@ export class ConfigService {
           : 3600,
 
         // File upload configuration
-        USE_PROVIDER_FILES_API: process.env.USE_PROVIDER_FILES_API !== 'false',
         GEMINI_FILES_API_THRESHOLD: process.env.GEMINI_FILES_API_THRESHOLD
           ? parseInt(process.env.GEMINI_FILES_API_THRESHOLD, 10)
           : 10 * 1024 * 1024,
@@ -177,10 +174,10 @@ export class ConfigService {
           'GOOGLE_APPLICATION_CREDENTIALS'
         );
       }
-      // S3 storage is required for Vertex AI
-      if (!config.S3_ACCESS_KEY || !config.S3_SECRET_KEY || !config.S3_BUCKET) {
+      // GCS storage is required for Vertex AI
+      if (!config.GCS_BUCKET_NAME) {
         throw new ConfigurationError(
-          'S3_ACCESS_KEY, S3_SECRET_KEY, and S3_BUCKET are required when using Vertex AI provider'
+          'GCS_BUCKET_NAME is required when using Vertex AI provider'
         );
       }
     }
@@ -224,22 +221,16 @@ export class ConfigService {
     };
   }
 
-  public getS3Config(): S3Config {
-    if (
-      !this.config.S3_ACCESS_KEY ||
-      !this.config.S3_SECRET_KEY ||
-      !this.config.S3_BUCKET
-    ) {
-      throw new ConfigurationError('S3 configuration is missing');
+  public getGCSConfig(): GCSConfig {
+    if (!this.config.GCS_BUCKET_NAME) {
+      throw new ConfigurationError('GCS configuration is missing');
     }
 
     return {
-      accessKey: this.config.S3_ACCESS_KEY,
-      secretKey: this.config.S3_SECRET_KEY,
-      region: this.config.S3_REGION!,
-      bucket: this.config.S3_BUCKET,
-      endpoint: this.config.S3_ENDPOINT!,
-      cdnUrl: this.config.S3_CDN_URL,
+      bucketName: this.config.GCS_BUCKET_NAME,
+      projectId: this.config.GCS_PROJECT_ID || this.config.VERTEX_PROJECT_ID,
+      keyFilePath: this.config.GCS_KEY_FILE_PATH,
+      publicUrlBase: this.config.GCS_PUBLIC_URL_BASE,
     };
   }
 
@@ -304,10 +295,6 @@ export class ConfigService {
 
   public shouldUseVertexAIForVideos(): boolean {
     return this.config.VIDEO_PROVIDER === 'vertex_ai';
-  }
-
-  public shouldUseProviderFilesAPI(): boolean {
-    return this.config.USE_PROVIDER_FILES_API!;
   }
 
   public getGeminiFilesApiThreshold(): number {

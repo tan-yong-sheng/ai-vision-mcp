@@ -37,7 +37,7 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
       );
     }
 
-    // For Vertex AI, we need to convert the S3/GCS URL to a GCS URI
+    // For Vertex AI, we need to convert the GCS URL to a GCS URI
     const publicUrl = await this.storageProvider.getPublicUrl(uploadedFile.id);
     const gcsUri = this.convertToGcsUri(publicUrl);
 
@@ -58,9 +58,8 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
   }
 
   private convertToGcsUri(url: string): string {
-    // Convert various URL formats to GCS URI
+    // Convert Google Cloud Storage URL to GCS URI
     // Example: https://storage.googleapis.com/bucket-name/path/to/file -> gs://bucket-name/path/to/file
-    // Example: https://bucket-name.s3.amazonaws.com/path/to/file -> gs://bucket-name/path/to/file
 
     if (url.startsWith('gs://')) {
       return url; // Already a GCS URI
@@ -75,11 +74,6 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
         if (pathMatch) {
           return `gs://${pathMatch[1]}/${pathMatch[2]}`;
         }
-      } else if (url.includes('.amazonaws.com')) {
-        // Extract bucket and path from S3 URL
-        const bucket = urlObj.hostname.split('.')[0];
-        const path = urlObj.pathname.substring(1); // Remove leading slash
-        return `gs://${bucket}/${path}`;
       }
     } catch (error) {
       throw new FileUploadError(

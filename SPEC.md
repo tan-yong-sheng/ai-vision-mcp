@@ -2,12 +2,12 @@
 
 ## 1. Overview
 
-Vision MCP server that provides AI-powered image and video analysis using Google Gemini with S3-compatible storage integration.
+Vision MCP server that provides AI-powered image and video analysis using Google Gemini with Google Cloud storage integration.
 
 ### 1.1 Current Implementation
 
 - **Provider**: Google Gemini for both image and video analysis
-- **Storage**: S3-compatible storage abstraction
+- **Storage**: Google Cloud storage
 - **Architecture**: Modular design for future provider expansion
 - **Protocol**: Stateless MCP implementation
 
@@ -43,14 +43,12 @@ VERTEX_LOCATION=us-central1
 VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
 #===============================================
-# S3-COMPATIBLE STORAGE CONFIGURATION (Required for Vertex AI)
+# GOOGLE CLOUD STORAGE CONFIGURATION (Required for Vertex AI)
 #===============================================
-S3_ACCESS_KEY=your_access_key
-S3_SECRET_KEY=your_secret_key
-S3_REGION=us-east-1
-S3_BUCKET=your-vision-files-bucket
-S3_ENDPOINT=https://s3.amazonaws.com
-S3_CDN_URL=https://your-cdn-domain.com  # Optional
+GCS_BUCKET_NAME=your-vision-files-bucket
+GCS_PROJECT_ID=your-gcp-project-id  # Can reuse VERTEX_PROJECT_ID
+GCS_KEY_FILE_PATH=path/to/service-account.json  # Optional if using GOOGLE_APPLICATION_CREDENTIALS
+GCS_PUBLIC_URL_BASE=https://storage.googleapis.com/your-bucket  # Optional CDN URL
 ```
 
 ### 2.2 Optional Configuration
@@ -76,12 +74,13 @@ MAX_VIDEO_DURATION=3600  # seconds (1 hour)
 #===============================================
 # FILE UPLOAD CONFIGURATION
 #===============================================
-# Use provider's native file upload when available
-USE_PROVIDER_FILES_API=true
-
-# File upload thresholds (files larger than this will use alternative upload method)
+# File upload thresholds (files larger than this will use Google Cloud Storage)
 GEMINI_FILES_API_THRESHOLD=10MB
-VERTEX_AI_FILES_API_THRESHOLD=0  # Vertex AI requires external storage for all files
+VERTEX_FILES_API_THRESHOLD=0  # Vertex AI requires Google Cloud Storage for all files
+
+# NOTE: File upload strategy is automatically determined by provider:
+# - Google AI Studio: Uses inlineData for images, Files API for large files/videos
+# - Vertex AI: Uses Google Cloud Storage with gs:// URIs for all files
 
 #===============================================
 # LOGGING CONFIGURATION
@@ -214,59 +213,55 @@ interface StorageProvider {
   listFiles(prefix?: string): Promise<StorageFile[]>;
 }
 
-// S3-compatible storage implementation
-class S3CompatibleStorageProvider implements StorageProvider {
-  private s3Client: S3Client;
+// Google Cloud Storage implementation
+class GCSStorageProvider implements StorageProvider {
+  private storage: Storage;
   private bucket: string;
-  private cdnUrl?: string;
+  private publicUrlBase?: string;
 
   constructor(config: {
-    accessKey: string;
-    secretKey: string;
-    region: string;
-    bucket: string;
-    endpoint: string;
-    cdnUrl?: string;
+    bucketName: string;
+    projectId?: string;
+    keyFilePath?: string;
+    publicUrlBase?: string;
   }) {
-    this.s3Client = new S3Client({
-      region: config.region,
-      credentials: {
-        accessKeyId: config.accessKey,
-        secretAccessKey: config.secretKey,
-      },
-      endpoint: config.endpoint,
-      forcePathStyle: true,
-    });
-    this.bucket = config.bucket;
-    this.cdnUrl = config.cdnUrl;
+    const options: any = {};
+    if (config.projectId) {
+      options.projectId = config.projectId;
+    }
+    if (config.keyFilePath) {
+      options.keyFilename = config.keyFilePath;
+    }
+
+    this.storage = new Storage(options);
+    this.bucket = this.storage.bucket(config.bucketName);
+    this.publicUrlBase = config.publicUrlBase;
   }
 
   async uploadFile(buffer: Buffer, filename: string, mimeType: string): Promise<StorageFile> {
-    const key = filename;
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: mimeType,
+    const file = this.bucket.file(filename);
+
+    await file.save(buffer, {
+      metadata: {
+        contentType: mimeType,
+      },
     });
 
-    await this.s3Client.send(command);
-
     return {
-      id: key,
+      id: filename,
       filename,
       mimeType,
       size: buffer.length,
-      url: await this.getPublicUrl(key),
+      url: await this.getPublicUrl(filename),
     };
   }
 
   async getPublicUrl(fileId: string): Promise<string> {
-    if (this.cdnUrl) {
-      return `${this.cdnUrl}/${fileId}`;
+    if (this.publicUrlBase) {
+      return `${this.publicUrlBase}/${fileId}`;
     }
-    // Generate S3 URL or signed URL as needed
-    return `https://${this.bucket}.s3.amazonaws.com/${fileId}`;
+    // Generate GCS URL
+    return `https://storage.googleapis.com/${this.bucket.name}/${fileId}`;
   }
 }
 ```
@@ -315,7 +310,7 @@ class VertexAIStorageStrategy implements FileUploadStrategy {
   constructor(private storageProvider: StorageProvider) {}
 
   async uploadFile(buffer: Buffer, filename: string, mimeType: string): Promise<UploadedFile> {
-    // Upload to S3/GCS storage
+    // Upload to Google Cloud Storage
     return await this.storageProvider.uploadFile(buffer, filename, mimeType);
   }
 
@@ -366,8 +361,8 @@ src/
 ├── storage/
 │   ├── base/
 │   │   └── StorageProvider.ts
-│   ├── s3/
-│   │   └── S3CompatibleStorage.ts
+│   ├── gcs/
+│   │   └── GCSStorage.ts
 │   └── factory/
 │       └── StorageFactory.ts
 ├── file-upload/
@@ -599,46 +594,37 @@ export class RetryHandler {
 }
 ```
 
-## 5. S3-Compatible Storage Setup
+## 5. Google Cloud Storage Setup
 
-### 5.1 AWS S3
+### 5.1 Google Cloud Storage (Recommended for Vertex AI)
 
 ```bash
-S3_ENDPOINT=https://s3.amazonaws.com
-S3_ACCESS_KEY=AKIA...
-S3_SECRET_KEY=...
-S3_REGION=us-east-1
-S3_BUCKET=your-aws-bucket
+GCS_BUCKET_NAME=your-gcs-bucket
+GCS_PROJECT_ID=your-gcp-project-id
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 ```
 
-### 5.2 Azure Blob Storage
+### 5.2 Using Service Account Key File
 
 ```bash
-S3_ENDPOINT=https://yourstorageaccount.blob.core.windows.net
-S3_ACCESS_KEY=your-storage-account-name
-S3_SECRET_KEY=your-storage-account-key
-S3_REGION=eastus
-S3_BUCKET=your-container-name
+GCS_BUCKET_NAME=your-gcs-bucket
+GCS_PROJECT_ID=your-gcp-project-id
+GCS_KEY_FILE_PATH=path/to/service-account.json
 ```
 
-### 5.3 Google Cloud Storage
+### 5.3 Using Application Default Credentials
 
 ```bash
-S3_ENDPOINT=https://storage.googleapis.com
-S3_ACCESS_KEY=your-gcs-access-key
-S3_SECRET_KEY=your-gcs-secret-key
-S3_REGION=us-central1
-S3_BUCKET=your-gcs-bucket
+GCS_BUCKET_NAME=your-gcs-bucket
+GCS_PROJECT_ID=your-gcp-project-id
+# GCS will use Application Default Credentials
 ```
 
-### 5.4 DigitalOcean Spaces
+### 5.4 With Custom CDN Base URL
 
 ```bash
-S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
-S3_ACCESS_KEY=your-do-access-key
-S3_SECRET_KEY=your-do-secret-key
-S3_REGION=nyc3
-S3_BUCKET=your-spaces-bucket
+GCS_BUCKET_NAME=your-gcs-bucket
+GCS_PUBLIC_URL_BASE=https://cdn.your-domain.com/bucket-name
 ```
 
 ## 6. Provider Configuration Examples
@@ -654,12 +640,10 @@ VIDEO_PROVIDER=google
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
-# Optional: External storage for large files
-S3_ACCESS_KEY=your_access_key
-S3_SECRET_KEY=your_secret_key
-S3_REGION=us-east-1
-S3_BUCKET=your-gemini-files
-S3_ENDPOINT=https://s3.amazonaws.com
+# Optional: Google Cloud Storage for large files (uses inlineData for smaller files)
+GCS_BUCKET_NAME=your-gemini-files
+GCS_PROJECT_ID=your-gcp-project-id
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 ```
 
 ### 6.2 Vertex AI - Production Setup
@@ -675,13 +659,10 @@ VERTEX_PROJECT_ID=your-gcp-project-id
 VERTEX_LOCATION=us-central1
 VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
-# Required: External storage for all files
-S3_ACCESS_KEY=your_access_key
-S3_SECRET_KEY=your_secret_key
-S3_REGION=us-central1
-S3_BUCKET=your-vertex-files
-S3_ENDPOINT=https://storage.googleapis.com
-S3_CDN_URL=https://your-cdn-domain.com
+# Required: Google Cloud Storage for all files
+GCS_BUCKET_NAME=your-vertex-files
+GCS_PROJECT_ID=your-gcp-project-id
+GCS_PUBLIC_URL_BASE=https://your-cdn-domain.com
 ```
 
 ### 6.3 Mixed Setup - Development with Vertex AI for Production
@@ -698,12 +679,9 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 VERTEX_PROJECT_ID=your-gcp-project-id
 VERTEX_LOCATION=us-central1
 
-# Storage required for Vertex AI video processing
-S3_ACCESS_KEY=your_access_key
-S3_SECRET_KEY=your_secret_key
-S3_REGION=us-central1
-S3_BUCKET=your-mixed-provider-files
-S3_ENDPOINT=https://storage.googleapis.com
+# Google Cloud Storage for Vertex AI video processing
+GCS_BUCKET_NAME=your-mixed-provider-files
+GCS_PROJECT_ID=your-gcp-project-id
 ```
 
 ## 7. Security Considerations
@@ -776,7 +754,7 @@ export class RateLimiter {
 ### 9.2 Integration Tests
 
 - Test integration with Gemini API
-- Test S3-compatible storage functionality
+- Test Cloud storage functionality
 - Test end-to-end workflows from upload to analysis
 - Test with actual file formats and sizes
 

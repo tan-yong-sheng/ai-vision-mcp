@@ -1,5 +1,5 @@
 /**
- * Storage types for S3-compatible storage providers
+ * Storage types for cloud storage providers
  */
 
 export interface StorageProvider {

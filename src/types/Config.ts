@@ -21,13 +21,11 @@ export interface Config {
   IMAGE_MODEL?: string;
   VIDEO_MODEL?: string;
 
-  // S3-compatible storage configuration
-  S3_ACCESS_KEY?: string;
-  S3_SECRET_KEY?: string;
-  S3_REGION?: string;
-  S3_BUCKET?: string;
-  S3_ENDPOINT?: string;
-  S3_CDN_URL?: string;
+  // Google Cloud Storage configuration
+  GCS_BUCKET_NAME?: string;
+  GCS_PROJECT_ID?: string;
+  GCS_KEY_FILE_PATH?: string;
+  GCS_PUBLIC_URL_BASE?: string;
 
   // Universal API parameters
   TEMPERATURE?: number;
@@ -43,7 +41,6 @@ export interface Config {
   MAX_VIDEO_DURATION?: number;
 
   // File upload configuration
-  USE_PROVIDER_FILES_API?: boolean;
   GEMINI_FILES_API_THRESHOLD?: number;
   VERTEX_AI_FILES_API_THRESHOLD?: number;
 
@@ -70,13 +67,12 @@ export interface VertexAIConfig {
   videoModel: string;
 }
 
-export interface S3Config {
-  accessKey: string;
-  secretKey: string;
-  region: string;
-  bucket: string;
-  endpoint: string;
-  cdnUrl?: string;
+
+export interface GCSConfig {
+  bucketName: string;
+  projectId?: string;
+  keyFilePath?: string;
+  publicUrlBase?: string;
 }
 
 export interface FileUploadConfig {

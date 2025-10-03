@@ -7,7 +7,6 @@ export type {
   Config,
   GeminiConfig as GeminiProviderConfig,
   VertexAIConfig as VertexAIProviderConfig,
-  S3Config,
   FileUploadConfig,
   ApiConfig,
   FileProcessingConfig,

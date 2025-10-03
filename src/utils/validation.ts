@@ -60,13 +60,11 @@ export const ConfigSchema = z.object({
     .optional()
     .default('https://aiplatform.googleapis.com'),
 
-  // S3-compatible storage configuration
-  S3_ACCESS_KEY: z.string().min(1).optional(),
-  S3_SECRET_KEY: z.string().min(1).optional(),
-  S3_REGION: z.string().min(1).optional().default('us-east-1'),
-  S3_BUCKET: z.string().min(1).optional(),
-  S3_ENDPOINT: z.string().url().optional().default('https://s3.amazonaws.com'),
-  S3_CDN_URL: z.string().url().optional(),
+  // Google Cloud Storage configuration
+  GCS_BUCKET_NAME: z.string().min(1).optional(),
+  GCS_PROJECT_ID: z.string().min(1).optional(),
+  GCS_KEY_FILE_PATH: z.string().min(1).optional(),
+  GCS_PUBLIC_URL_BASE: z.string().url().optional(),
 
   // Universal API parameters
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
@@ -103,7 +101,6 @@ export const ConfigSchema = z.object({
     .default(3600), // 1 hour
 
   // File upload configuration
-  USE_PROVIDER_FILES_API: z.coerce.boolean().optional().default(true),
   GEMINI_FILES_API_THRESHOLD: z.coerce
     .number()
     .int()

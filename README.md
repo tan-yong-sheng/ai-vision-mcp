@@ -7,7 +7,7 @@ A powerful Model Context Protocol (MCP) server that provides AI-powered image an
 - **Dual Provider Support**: Choose between Google Gemini API and Vertex AI
 - **Multimodal Analysis**: Support for both image and video content analysis
 - **Flexible File Handling**: Upload via multiple methods (URLs, local files, base64)
-- **Storage Integration**: Built-in S3-compatible storage support
+- **Storage Integration**: Built-in Google Cloud Storage support
 - **Comprehensive Validation**: Zod-based data validation throughout
 - **Error Handling**: Robust error handling with retry logic and circuit breakers
 - **TypeScript**: Full TypeScript support with strict type checking
@@ -44,9 +44,8 @@ npx ai-vision-mcp
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
 export VERTEX_PROJECT_ID="your-gcp-project-id"
 export VERTEX_LOCATION="us-central1"
-export S3_ACCESS_KEY="your-s3-access-key"
-export S3_SECRET_KEY="your-s3-secret-key"
-export S3_BUCKET="your-s3-bucket"
+export GCS_BUCKET_NAME="your-gcs-bucket"
+export GCS_PROJECT_ID="your-gcp-project-id"
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
 ```
@@ -120,13 +119,11 @@ Analyzes a video using AI and returns a detailed description.
 | `VERTEX_LOCATION` | Vertex AI region | `us-central1` |
 | `VERTEX_ENDPOINT` | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials JSON | Required for Vertex AI |
-| **S3 Storage (Vertex AI)** |
-| `S3_ACCESS_KEY` | S3 access key | Required for Vertex AI |
-| `S3_SECRET_KEY` | S3 secret key | Required for Vertex AI |
-| `S3_BUCKET` | S3 bucket name | Required for Vertex AI |
-| `S3_REGION` | S3 region | `us-east-1` |
-| `S3_ENDPOINT` | S3 endpoint URL | `https://s3.amazonaws.com` |
-| `S3_CDN_URL` | Optional CDN URL for S3 assets | Optional |
+| **Google Cloud Storage (Vertex AI)** |
+| `GCS_BUCKET_NAME` | GCS bucket name | Required for Vertex AI |
+| `GCS_PROJECT_ID` | GCP project ID | Can reuse VERTEX_PROJECT_ID |
+| `GCS_KEY_FILE_PATH` | Path to service account key | Optional |
+| `GCS_PUBLIC_URL_BASE` | Optional CDN URL for GCS assets | Optional |
 | **API Configuration** |
 | `TEMPERATURE` | AI response temperature (0.0-2.0) | `0.8` |
 | `TOP_P` | Top-p sampling parameter (0.0-1.0) | `0.6` |
@@ -141,8 +138,8 @@ Analyzes a video using AI and returns a detailed description.
 | **Development** |
 | `LOG_LEVEL` | Logging level | `info` |
 | `NODE_ENV` | Environment mode | `development` |
-| `USE_PROVIDER_FILES_API` | Use provider's file upload API | `true` |
 | `GEMINI_FILES_API_THRESHOLD` | Size threshold for Gemini Files API (bytes) | `10485760` (10MB) |
+| `VERTEX_FILES_API_THRESHOLD` | Size threshold to upload to Vertex AI (bytes) | 0 |
 
 ### Supported Formats
 
