@@ -45,10 +45,15 @@ export class GeminiProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      const { result: imageData, duration } = await this.measureAsync(
-        async () => {
-          if (imageSource.startsWith('http')) {
-            // Handle URL
+      let content: any;
+      let mimeType: string;
+      let fileSize: number | undefined;
+      let downloadDuration = 0;
+
+      if (imageSource.startsWith('http')) {
+        // For public URLs (non-GCS), download and use inlineData
+        const { result: imageData, duration } = await this.measureAsync(
+          async () => {
             const response = await fetch(imageSource);
             if (!response.ok) {
               throw new NetworkError(
@@ -57,35 +62,54 @@ export class GeminiProvider extends BaseVisionProvider {
             }
             const arrayBuffer = await response.arrayBuffer();
             return Buffer.from(arrayBuffer);
-          } else if (imageSource.startsWith('data:image/')) {
-            // Handle base64
-            const base64Data = imageSource.split(',')[1];
-            return Buffer.from(base64Data, 'base64');
-          } else if (imageSource.startsWith('files/')) {
-            // Handle file reference
-            return await this.downloadFile(imageSource);
-          } else {
-            throw new Error('Invalid image source format');
           }
-        }
-      );
-
-      // Determine MIME type
-      const mimeType = this.getImageMimeType(imageSource, imageData);
+        );
+        downloadDuration = duration;
+        mimeType = this.getImageMimeType(imageSource, imageData);
+        content = {
+          inlineData: {
+            mimeType,
+            data: imageData.toString('base64'),
+          },
+        };
+        fileSize = imageData.length;
+      } else if (imageSource.startsWith('gs://')) {
+        // GCS URIs can be passed directly using file_data
+        content = {
+          fileData: {
+            fileUri: imageSource,
+            mimeType: 'image/jpeg',
+          },
+        };
+      } else if (imageSource.startsWith('data:image/')) {
+        // Handle base64 data with inlineData
+        const base64Data = imageSource.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        mimeType = this.getImageMimeType(imageSource, buffer);
+        content = {
+          inlineData: {
+            mimeType,
+            data: base64Data,
+          },
+        };
+        fileSize = buffer.length;
+      } else if (imageSource.startsWith('files/')) {
+        // Handle file reference using file_data
+        content = {
+          fileData: {
+            fileUri: imageSource,
+            mimeType: 'image/jpeg',
+          },
+        };
+      } else {
+        throw new Error('Invalid image source format');
+      }
 
       const model = this.client.getGenerativeModel({ model: this.imageModel });
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
-          return await model.generateContent([
-            {
-              inlineData: {
-                mimeType,
-                data: imageData.toString('base64'),
-              },
-            },
-            { text: prompt },
-          ]);
+          return await model.generateContent([content, { text: prompt }]);
         });
 
       const text = response.response.text();
@@ -101,9 +125,9 @@ export class GeminiProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        duration + analysisDuration,
-        mimeType,
-        imageData.length
+        downloadDuration + analysisDuration,
+        content.fileData?.mimeType || content.inlineData?.mimeType,
+        fileSize
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
@@ -116,32 +140,76 @@ export class GeminiProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      let fileReference: string;
+      let content: any;
+      let uploadDuration = 0;
 
-      if (videoSource.startsWith('http') || videoSource.startsWith('gs://')) {
-        // For external URLs, we need to upload to Gemini Files API first
-        const uploadedFile = await this.uploadVideoFromUrl(videoSource);
-        fileReference = uploadedFile.uri!;
+      if (videoSource.startsWith('http')) {
+        // Check if it's a YouTube URL
+        if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+          // YouTube URLs can be passed directly
+          content = {
+            fileData: {
+              fileUri: videoSource,
+              mimeType: 'video/mp4',
+            },
+          };
+        } else {
+          // For other video URLs, download and upload to Files API
+          const { result: videoData, duration: downloadDuration } = await this.measureAsync(
+            async () => {
+              const response = await fetch(videoSource);
+              if (!response.ok) {
+                throw new NetworkError(
+                  `Failed to fetch video from URL: ${videoSource}`
+                );
+              }
+              const arrayBuffer = await response.arrayBuffer();
+              return Buffer.from(arrayBuffer);
+            }
+          );
+
+          const filename = videoSource.split('/').pop() || 'video.mp4';
+          const mimeType = this.getVideoMimeType(videoSource, videoData);
+
+          const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
+            async () => {
+              return await this.uploadFile(videoData, filename, mimeType);
+            }
+          );
+
+          uploadDuration = downloadDuration + uploadFileDuration;
+          content = {
+            fileData: {
+              fileUri: uploadedFile.uri!,
+              mimeType,
+            },
+          };
+        }
+      } else if (videoSource.startsWith('gs://')) {
+        // GCS URIs can be passed directly
+        content = {
+          fileData: {
+            fileUri: videoSource,
+            mimeType: 'video/mp4',
+          },
+        };
       } else if (videoSource.startsWith('files/')) {
         // Use existing file reference
-        fileReference = videoSource;
+        content = {
+          fileData: {
+            fileUri: videoSource,
+            mimeType: 'video/mp4',
+          },
+        };
       } else {
         throw new Error('Invalid video source format');
       }
 
       const model = this.client.getGenerativeModel({ model: this.videoModel });
 
-      const { result: response, duration } = await this.measureAsync(
+      const { result: response, duration: analysisDuration } = await this.measureAsync(
         async () => {
-          return await model.generateContent([
-            {
-              fileData: {
-                mimeType: 'video/mp4',
-                fileUri: fileReference,
-              },
-            },
-            { text: prompt },
-          ]);
+          return await model.generateContent([content, { text: prompt }]);
         }
       );
 
@@ -158,8 +226,8 @@ export class GeminiProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        duration,
-        'video/mp4'
+        uploadDuration + analysisDuration,
+        content.fileData?.mimeType
       );
     } catch (error) {
       throw this.handleError(error, 'video analysis');
@@ -359,19 +427,7 @@ export class GeminiProvider extends BaseVisionProvider {
     return result.file;
   }
 
-  private async uploadVideoFromUrl(url: string): Promise<UploadedFile> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new NetworkError(`Failed to fetch video from URL: ${url}`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const filename = url.split('/').pop() || 'video.mp4';
-    const mimeType = response.headers.get('content-type') || 'video/mp4';
-
-    return await this.uploadFile(buffer, filename, mimeType);
-  }
-
+  
   private async getFileMetadata(fileId: string): Promise<GeminiFileMetadata> {
     const response = await fetch(
       `${this.baseUrl}/v1beta/${fileId}?key=${this.config.apiKey}`
@@ -387,7 +443,7 @@ export class GeminiProvider extends BaseVisionProvider {
     return (await response.json()) as GeminiFileMetadata;
   }
 
-  private getImageMimeType(source: string, buffer: Buffer): string {
+  private getImageMimeType(source: string, buffer?: Buffer): string {
     if (source.startsWith('data:image/')) {
       return source.split(':')[1].split(';')[0];
     }
@@ -400,13 +456,81 @@ export class GeminiProvider extends BaseVisionProvider {
       'image/webp': 'RIFF',
     };
 
+    if (buffer) {
+      for (const [mimeType, signature] of Object.entries(signatures)) {
+        if (buffer.slice(0, signature.length).toString() === signature) {
+          return mimeType;
+        }
+      }
+    }
+
+    return 'image/jpeg'; // Default fallback
+  }
+
+  private getImageMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      bmp: 'image/bmp',
+      tiff: 'image/tiff',
+    };
+    return mimeTypes[extension || ''] || 'image/jpeg';
+  }
+
+  private getVideoMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      avi: 'video/x-msvideo',
+      mkv: 'video/x-matroska',
+      webm: 'video/webm',
+      flv: 'video/x-flv',
+      wmv: 'video/x-ms-wmv',
+      '3gp': 'video/3gpp',
+      m4v: 'video/mp4',
+    };
+    return mimeTypes[extension || ''] || 'video/mp4';
+  }
+
+  private getVideoMimeType(source: string, buffer: Buffer): string {
+    // Try to detect from file extension
+    const extension = source.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'webm': 'video/webm',
+      'flv': 'video/x-flv',
+      'wmv': 'video/x-ms-wmv',
+      '3gp': 'video/3gpp',
+      'm4v': 'video/mp4',
+    };
+
+    if (extension && mimeTypes[extension]) {
+      return mimeTypes[extension];
+    }
+
+    // Simple detection based on file signature
+    const signatures: Record<string, string> = {
+      'video/mp4': '\x00\x00\x00\x18ftypmp42',
+      'video/webm': '\x1a\x45\xdf\xa3',
+      'video/avi': 'RIFF',
+      'video/mov': '\x00\x00\x00\x14ftyp',
+    };
+
     for (const [mimeType, signature] of Object.entries(signatures)) {
       if (buffer.slice(0, signature.length).toString() === signature) {
         return mimeType;
       }
     }
 
-    return 'image/jpeg'; // Default fallback
+    return 'video/mp4'; // Default fallback
   }
 
   private handleError(error: unknown, operation: string): Error {

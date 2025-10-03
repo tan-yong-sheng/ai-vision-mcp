@@ -176,6 +176,7 @@ export class FileService {
     return uri.startsWith('gs://');
   }
 
+  
   private isSupportedFileType(mimeType: string): boolean {
     const allowedImageTypes = this.config.ALLOWED_IMAGE_FORMATS || [];
     const allowedVideoTypes = this.config.ALLOWED_VIDEO_FORMATS || [];
