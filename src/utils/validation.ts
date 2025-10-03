@@ -69,7 +69,8 @@ export const ConfigSchema = z.object({
   // Universal API parameters
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.6),
-  MAX_TOKENS: z.coerce.number().int().positive().optional().default(16384),
+  MAX_TOKENS_FOR_IMAGE: z.coerce.number().int().positive().optional().default(500),
+  MAX_TOKENS_FOR_VIDEO: z.coerce.number().int().positive().optional().default(2000),
   STREAM_RESPONSES: z.coerce.boolean().optional().default(false),
 
   // File processing configuration

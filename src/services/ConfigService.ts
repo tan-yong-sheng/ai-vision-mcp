@@ -74,9 +74,12 @@ export class ConfigService {
           ? parseFloat(process.env.TEMPERATURE)
           : 0.8,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.6,
-        MAX_TOKENS: process.env.MAX_TOKENS
-          ? parseInt(process.env.MAX_TOKENS, 10)
-          : 16384,
+        MAX_TOKENS_FOR_IMAGE: process.env.MAX_TOKENS_FOR_IMAGE
+          ? parseInt(process.env.MAX_TOKENS_FOR_IMAGE, 10)
+          : 500,
+        MAX_TOKENS_FOR_VIDEO: process.env.MAX_TOKENS_FOR_VIDEO
+          ? parseInt(process.env.MAX_TOKENS_FOR_VIDEO, 10)
+          : 2000,
         STREAM_RESPONSES: process.env.STREAM_RESPONSES === 'true',
 
         // File processing configuration
@@ -238,7 +241,8 @@ export class ConfigService {
     return {
       temperature: this.config.TEMPERATURE!,
       topP: this.config.TOP_P!,
-      maxTokens: this.config.MAX_TOKENS!,
+      maxTokensForImage: this.config.MAX_TOKENS_FOR_IMAGE!,
+      maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
       streamResponses: this.config.STREAM_RESPONSES!,
     };
   }

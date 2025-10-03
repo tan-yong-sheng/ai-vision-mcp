@@ -60,7 +60,6 @@ GCS_PUBLIC_URL_BASE=https://storage.googleapis.com/your-bucket  # Optional CDN U
 TEMPERATURE=0.8
 TOP_P=0.6
 MAX_TOKENS=16384
-STREAM_RESPONSES=false
 
 #===============================================
 # FILE PROCESSING CONFIGURATION

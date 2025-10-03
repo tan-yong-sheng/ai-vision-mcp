@@ -158,7 +158,8 @@ export abstract class BaseVisionProvider implements VisionProvider {
       imageAnalysis: true,
       videoAnalysis: this.supportsVideo(),
       streaming: false,
-      maxTokens: 8192,
+      maxTokensForImage: 500, // Default, will be overridden by specific providers
+      maxTokensForVideo: 2000, // Default, will be overridden by specific providers
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(
         this.supportsVideo()
           ? this.getSupportedFormats().supportedVideoFormats

@@ -5,7 +5,9 @@
 export interface AnalysisOptions {
   temperature?: number | undefined;
   topP?: number | undefined;
-  maxTokens?: number | undefined;
+  maxTokens?: number | undefined; // Keep for backward compatibility
+  maxTokensForImage?: number | undefined;
+  maxTokensForVideo?: number | undefined;
   stream?: boolean | undefined;
   stopSequences?: string[] | undefined;
 }
@@ -85,7 +87,8 @@ export interface ModelCapabilities {
   imageAnalysis: boolean;
   videoAnalysis: boolean;
   streaming: boolean;
-  maxTokens: number;
+  maxTokensForImage: number;
+  maxTokensForVideo: number;
   supportedFormats: string[];
 }
 

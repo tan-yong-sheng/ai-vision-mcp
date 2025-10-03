@@ -128,7 +128,6 @@ Analyzes a video using AI and returns a detailed description.
 | `TEMPERATURE` | AI response temperature (0.0-2.0) | `0.8` |
 | `TOP_P` | Top-p sampling parameter (0.0-1.0) | `0.6` |
 | `MAX_TOKENS` | Maximum response tokens | `16384` |
-| `STREAM_RESPONSES` | Enable streaming responses | `false` |
 | **File Processing** |
 | `MAX_IMAGE_SIZE` | Maximum image size in bytes | `20971520` (20MB) |
 | `MAX_VIDEO_SIZE` | Maximum video size in bytes | `2147483648` (2GB) |

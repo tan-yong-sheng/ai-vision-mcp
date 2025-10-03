@@ -346,7 +346,8 @@ export class GeminiProvider extends BaseVisionProvider {
       imageAnalysis: true,
       videoAnalysis: true,
       streaming: false,
-      maxTokens: 8192,
+      maxTokensForImage: 500, // Default from config
+      maxTokensForVideo: 2000, // Default from config
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(
         this.getSupportedFormats().supportedVideoFormats
       ),

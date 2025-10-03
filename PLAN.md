@@ -1,0 +1,9 @@
+
+- should we split MAX_TOKENS environment variable into MAX_TOKENS_FOR_IMAGE and MAX_TOKENS_FOR_VIDEO? Justify and don't write the code first.
+- remove MAX_VIDEO_DURATION environment variable...
+- warn user that MAX_TOKENS_FOR_* is smaller than llm-assigned value for both image and video, if happens...
+- haven't tested with google ai studio's gemini to upload image/video file from local filesystem...
+- haven't tested with vertex ai's gemini
+- Make it array for imageSource, videoSource params for analyze_image and analyze_video. But, will it be very slow?
+
+- remove STREAM_RESPONSES=false?

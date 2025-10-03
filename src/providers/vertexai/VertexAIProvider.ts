@@ -78,7 +78,7 @@ export class VertexAIProvider extends BaseVisionProvider {
             ],
             generationConfig: {
               temperature: options?.temperature ?? 0.4,
-              maxOutputTokens: options?.maxTokens ?? 1024,
+              maxOutputTokens: options?.maxTokensForImage ?? 500,
               candidateCount: 1,
             },
           });
@@ -159,7 +159,7 @@ export class VertexAIProvider extends BaseVisionProvider {
             ],
             generationConfig: {
               temperature: options?.temperature ?? 0.4,
-              maxOutputTokens: options?.maxTokens ?? 1024,
+              maxOutputTokens: options?.maxTokensForVideo ?? 2000,
               candidateCount: 1,
             },
           });
@@ -260,7 +260,8 @@ export class VertexAIProvider extends BaseVisionProvider {
       imageAnalysis: true,
       videoAnalysis: true,
       streaming: true,
-      maxTokens: 8192,
+      maxTokensForImage: 500, // Default from config
+      maxTokensForVideo: 2000, // Default from config
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(
         this.getSupportedFormats().supportedVideoFormats
       ),

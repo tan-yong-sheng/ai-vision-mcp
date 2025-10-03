@@ -37,7 +37,7 @@ export async function analyze_image(
     const options: AnalysisOptions = {
       temperature: config.TEMPERATURE,
       topP: config.TOP_P,
-      maxTokens: config.MAX_TOKENS,
+      maxTokens: config.MAX_TOKENS_FOR_IMAGE,
       ...args.options,
     };
 
