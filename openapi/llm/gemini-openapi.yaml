@@ -1,0 +1,410 @@
+openapi: 3.0.2
+info:
+  title: Gemini vision API
+  version: 1.0.0
+  description: >
+    API specification for interacting with Google's Gemini models for vision understanding
+    using Google AI Studio (Generative Language API).
+
+servers:
+  - url: https://generativelanguage.googleapis.com
+    description: Google Generative Language API base URL
+
+tags:
+  - name: Google AI Studio
+    description: Endpoints for the Google AI Studio (Generative Language) API, which uses API Keys for authentication.
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # --- Files API Endpoints ---
+
+  /upload/v1beta/files:
+    post:
+      tags:
+        - Google AI Studio
+      summary: Upload a file (Google AI Studio)
+      operationId: uploadFile
+      parameters:
+        - in: header
+          name: X-Goog-Upload-Protocol
+          schema:
+            type: string
+            enum: [resumable]
+          required: true
+          description: Upload protocol type
+        - in: header
+          name: X-Goog-Upload-Command
+          schema:
+            type: string
+            enum: [start]
+          required: true
+          description: Upload command
+        - in: header
+          name: X-Goog-Upload-Header-Content-Length
+          schema:
+            type: integer
+          required: true
+          description: Size of the file in bytes
+        - in: header
+          name: X-Goog-Upload-Header-Content-Type
+          schema:
+            type: string
+          required: true
+          description: MIME type of the file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadFileRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UploadFileSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /v1beta/files:
+    get:
+      tags:
+        - Google AI Studio
+      summary: List uploaded files (Google AI Studio)
+      operationId: listFiles
+      parameters:
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of files to return
+        - in: query
+          name: pageToken
+          schema:
+            type: string
+          description: Page token for pagination
+      responses:
+        '200':
+          $ref: '#/components/responses/ListFilesSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /v1beta/files/{fileId}:
+    get:
+      tags:
+        - Google AI Studio
+      summary: Get file metadata (Google AI Studio)
+      operationId: getFile
+      parameters:
+        - in: path
+          name: fileId
+          schema:
+            type: string
+          required: true
+          description: The ID of the file to retrieve
+      responses:
+        '200':
+          $ref: '#/components/responses/GetFileSuccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Google AI Studio
+      summary: Delete a file (Google AI Studio)
+      operationId: deleteFile
+      parameters:
+        - in: path
+          name: fileId
+          schema:
+            type: string
+          required: true
+          description: The ID of the file to delete
+      responses:
+        '200':
+          description: File successfully deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # --- Google AI Studio Endpoints ---
+
+  /v1beta/models/{modelId}:generateContent:
+    post:
+      tags:
+        - Google AI Studio
+      summary: Generate content from video URL (Google AI Studio)
+      operationId: generateContentGoogleAIStudio
+      parameters:
+        - in: path
+          name: modelId
+          schema:
+            type: string
+            default: gemini-2.5-flash
+          required: true
+          description: The ID of the Gemini model to use (e.g., gemini-2.5-flash).
+      requestBody:
+        $ref: '#/components/requestBodies/GenerateContentBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/GenerateContentSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-goog-api-key
+      description: API key for authenticating with the Google AI Studio (Generative Language) API.
+
+  requestBodies:
+    UploadFileRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadFileRequest'
+          example:
+            file:
+              display_name: "my_file.jpg"
+
+    GenerateContentBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GenerateContentRequest'
+          example:
+            contents:
+              - role: "user"
+                parts:
+                  - text: "Please summarize this video: "
+                  - file_data:
+                      file_uri: "https://www.youtube.com/watch?v=9hE5-98ZeCg"
+                      mime_type: "video/mp4"
+            generationConfig:
+              temperature: 0.3
+              maxOutputTokens: 10000
+              stopSequences:
+                - "string"
+
+  responses:
+    UploadFileSuccess:
+      description: File successfully uploaded and metadata returned.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/FileMetadata'
+
+    ListFilesSuccess:
+      description: List of uploaded files.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ListFilesResponse'
+
+    GetFileSuccess:
+      description: File metadata retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/FileMetadata'
+
+    NotFound:
+      description: File not found.
+
+    GenerateContentSuccess:
+      description: Successful response with generated text content.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GenerateContentResponse'
+    BadRequest:
+      description: Invalid request payload or parameters.
+    Unauthorized:
+      description: Unauthorized due to missing or invalid API key or token.
+    InternalServerError:
+      description: Internal server error.
+
+  schemas:
+    Part:
+      type: object
+      description: A part of a multi-part content message.
+      oneOf:
+        - properties:
+            text:
+              type: string
+              description: Text content of the part.
+          required: [text]
+        - properties:
+            file_data:
+              $ref: '#/components/schemas/FileData'
+          required: [file_data]
+      example:
+        - text: "Please summarize this video."
+        - file_data:
+            file_uri: "https://www.youtube.com/watch?v=9hE5-98ZeCg"
+            mime_type: "video/mp4"
+
+    FileData:
+      type: object
+      description: Data stored in a video, referenced by public URL.
+      properties:
+        file_uri:
+          type: string
+          description: The public URL of the video (e.g., YouTube URL).
+        mime_type:
+          type: string
+          description: The IANA MIME type of the video (e.g., `video/mp4`).
+      required:
+        - file_uri
+        - mime_type
+
+    Content:
+      type: object
+      description: Structured data type containing multi-part content.
+      properties:
+        role:
+          type: string
+          description: The identity of the entity that creates the message.
+          enum: [user, model]
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Part'
+      required:
+        - parts
+
+    GenerateContentRequest:
+      type: object
+      description: Request body for the generateContent endpoint.
+      properties:
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Content'
+          minItems: 1
+        generationConfig:
+          type: object
+          properties:
+            temperature:
+              type: number
+              format: float
+              minimum: 0.0
+              maximum: 2.0
+            maxOutputTokens:
+              type: integer
+            stopSequences:
+              type: array
+              items:
+                type: string
+      required:
+        - contents
+
+    GenerateContentResponse:
+      type: object
+      description: Response body from the generateContent endpoint.
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                $ref: '#/components/schemas/Content'
+              finishReason:
+                type: string
+                enum: [FINISH_REASON_UNSPECIFIED, STOP, MAX_TOKENS, SAFETY, RECITATION, OTHER]
+        usageMetadata:
+          type: object
+          properties:
+            promptTokenCount:
+              type: integer
+            candidatesTokenCount:
+              type: integer
+            totalTokenCount:
+              type: integer
+
+    UploadFileRequest:
+      type: object
+      description: Request body for file upload.
+      properties:
+        file:
+          type: object
+          properties:
+            display_name:
+              type: string
+              description: The display name of the file.
+          required:
+            - display_name
+      required:
+        - file
+
+    FileMetadata:
+      type: object
+      description: Metadata for an uploaded file.
+      properties:
+        name:
+          type: string
+          description: The resource name of the file.
+        displayName:
+          type: string
+          description: The display name of the file.
+        mimeType:
+          type: string
+          description: The MIME type of the file.
+        sizeBytes:
+          type: string
+          description: The size of the file in bytes.
+        createTime:
+          type: string
+          format: date-time
+          description: The creation time of the file.
+        updateTime:
+          type: string
+          format: date-time
+          description: The last update time of the file.
+        expirationTime:
+          type: string
+          format: date-time
+          description: The expiration time of the file.
+        sha256Hash:
+          type: string
+          description: The SHA-256 hash of the file.
+        uri:
+          type: string
+          description: The URI of the file.
+        state:
+          type: string
+          enum: [PROCESSING, ACTIVE, FAILED]
+          description: The state of the file processing.
+
+    ListFilesResponse:
+      type: object
+      description: Response body for listing files.
+      properties:
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMetadata'
+        nextPageToken:
+          type: string
+          description: Token for retrieving the next page of results.

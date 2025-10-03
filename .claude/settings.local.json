@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run test)",
+      "Bash(npm test)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run prepublishOnly:*)",
+      "Bash(npx:*)",
+      "Bash(mcp-inspector:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

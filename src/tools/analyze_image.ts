@@ -1,0 +1,66 @@
+/**
+ * MCP Tool: analyze_image
+ * Analyzes an image using AI vision models. Supports URLs, base64 data, and local file paths.
+ */
+
+import type { AnalysisOptions, AnalysisResult } from '../types/Providers.js';
+import type { VisionProvider } from '../types/Providers.js';
+import { FileService } from '../services/FileService.js';
+import type { Config } from '../types/Config.js';
+import { VisionError } from '../types/Errors.js';
+
+export interface AnalyzeImageArgs {
+  imageSource: string; // Can be URL, base64 data, or local file path
+  prompt: string;
+  options?: AnalysisOptions;
+}
+
+export async function analyze_image(
+  args: AnalyzeImageArgs,
+  config: Config,
+  imageProvider: VisionProvider,
+  imageFileService: FileService
+): Promise<AnalysisResult> {
+  try {
+    // Validate arguments
+    if (!args.imageSource) {
+      throw new VisionError('imageSource is required', 'MISSING_ARGUMENT');
+    }
+    if (!args.prompt) {
+      throw new VisionError('prompt is required', 'MISSING_ARGUMENT');
+    }
+
+    // Handle image source (URL vs local file vs base64)
+    const processedImageSource = await imageFileService.handleImageSource(args.imageSource);
+
+    // Merge default options with provided options
+    const options: AnalysisOptions = {
+      temperature: config.TEMPERATURE,
+      topP: config.TOP_P,
+      maxTokens: config.MAX_TOKENS,
+      ...args.options,
+    };
+
+    // Analyze the image
+    const result = await imageProvider.analyzeImage(
+      processedImageSource,
+      args.prompt,
+      options
+    );
+
+    return result;
+  } catch (error) {
+    console.error('Error in analyze_image tool:', error);
+
+    if (error instanceof VisionError) {
+      throw error;
+    }
+
+    throw new VisionError(
+      `Failed to analyze image: ${error instanceof Error ? error.message : String(error)}`,
+      'ANALYSIS_ERROR',
+      'gemini',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
