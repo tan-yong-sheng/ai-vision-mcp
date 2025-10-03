@@ -21,9 +21,7 @@ import {
   FileUploadError,
   FileNotFoundError,
   NetworkError,
-  TimeoutError,
 } from '../../types/Errors.js';
-import { TimeoutHandler } from '../../utils/retry.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: VertexAI;
@@ -32,6 +30,10 @@ export class VertexAIProvider extends BaseVisionProvider {
   constructor(config: VertexAIConfig) {
     super('vertex_ai', config.imageModel, config.videoModel);
     this.config = config;
+
+    // Validate endpoint format
+    this.validateEndpoint(config.endpoint);
+
     this.client = new VertexAI({
       project: config.projectId,
       location: config.location,
@@ -39,6 +41,9 @@ export class VertexAIProvider extends BaseVisionProvider {
         keyFilename: config.credentials,
       },
     });
+
+    // Log debug information
+    this.logDebugInfo();
   }
 
   async analyzeImage(
@@ -56,32 +61,27 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await TimeoutHandler.withTimeout(
-            () =>
-              model.generateContent({
-                contents: [
+          return await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [
                   {
-                    role: 'user',
-                    parts: [
-                      {
-                        inlineData: {
-                          mimeType,
-                          data: imageData.toString('base64'),
-                        },
-                      },
-                      { text: prompt },
-                    ],
+                    inlineData: {
+                      mimeType,
+                      data: imageData.toString('base64'),
+                    },
                   },
+                  { text: prompt },
                 ],
-                generationConfig: {
-                  temperature: options?.temperature ?? 0.4,
-                  maxOutputTokens: options?.maxTokens ?? 1024,
-                  candidateCount: 1,
-                },
-              }),
-            this.config.timeout || 60000,
-            `Vertex AI image analysis timed out`
-          );
+              },
+            ],
+            generationConfig: {
+              temperature: options?.temperature ?? 0.4,
+              maxOutputTokens: options?.maxTokens ?? 1024,
+              candidateCount: 1,
+            },
+          });
         }
       );
 
@@ -142,32 +142,27 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await TimeoutHandler.withTimeout(
-            () =>
-              model.generateContent({
-                contents: [
+          return await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [
                   {
-                    role: 'user',
-                    parts: [
-                      {
-                        fileData: {
-                          mimeType: 'video/mp4',
-                          fileUri,
-                        },
-                      },
-                      { text: prompt },
-                    ],
+                    fileData: {
+                      mimeType: 'video/mp4',
+                      fileUri,
+                    },
                   },
+                  { text: prompt },
                 ],
-                generationConfig: {
-                  temperature: options?.temperature ?? 0.4,
-                  maxOutputTokens: options?.maxTokens ?? 1024,
-                  candidateCount: 1,
-                },
-              }),
-            this.config.timeout || 120000,
-            `Vertex AI video analysis timed out`
-          );
+              },
+            ],
+            generationConfig: {
+              temperature: options?.temperature ?? 0.4,
+              maxOutputTokens: options?.maxTokens ?? 1024,
+              candidateCount: 1,
+            },
+          });
         }
       );
 
@@ -374,9 +369,6 @@ export class VertexAIProvider extends BaseVisionProvider {
 
   private handleError(error: unknown, operation: string): Error {
     if (error instanceof Error) {
-      if (error.message.includes('timed out')) {
-        return new TimeoutError(error.message);
-      }
       if (
         error.message.includes('network') ||
         error.message.includes('fetch')
@@ -435,5 +427,28 @@ export class VertexAIProvider extends BaseVisionProvider {
       return error.message;
     }
     return String(error);
+  }
+
+  private validateEndpoint(endpoint: string): void {
+    if (!endpoint.startsWith('https://aiplatform.googleapis.com')) {
+      throw new ProviderError(
+        `Invalid Vertex AI endpoint: ${endpoint}. Expected endpoint to start with 'https://aiplatform.googleapis.com'`,
+        'vertex_ai',
+        undefined,
+        400
+      );
+    }
+  }
+
+  private logDebugInfo(): void {
+    const imageModelUrl = `${this.config.endpoint}/v1/projects/${this.config.projectId}/locations/${this.config.location}/publishers/google/models/${this.imageModel}:generateContent`;
+    const videoModelUrl = `${this.config.endpoint}/v1/projects/${this.config.projectId}/locations/${this.config.location}/publishers/google/models/${this.videoModel}:generateContent`;
+
+    console.log(`[VertexAI Provider] Configuration:`);
+    console.log(`  - Project ID: ${this.config.projectId}`);
+    console.log(`  - Location: ${this.config.location}`);
+    console.log(`  - Endpoint: ${this.config.endpoint}`);
+    console.log(`  - Image Model URL: ${imageModelUrl}`);
+    console.log(`  - Video Model URL: ${videoModelUrl}`);
   }
 }

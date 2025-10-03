@@ -115,14 +115,10 @@ Analyzes a video using AI and returns a detailed description.
 | **Google Gemini API** |
 | `GEMINI_API_KEY` | Google Gemini API key | Required for Gemini |
 | `GEMINI_BASE_URL` | Gemini API base URL | `https://generativelanguage.googleapis.com` |
-| `GEMINI_TIMEOUT` | General timeout for Gemini requests (ms) | No timeout |
-| `GEMINI_IMAGE_TIMEOUT` | Image analysis timeout (ms) | No timeout |
-| `GEMINI_VIDEO_TIMEOUT` | Video analysis timeout (ms) | No timeout |
-| `GEMINI_FILES_API_TIMEOUT` | File upload timeout (ms) | `300000` (5 minutes) |
 | **Vertex AI** |
 | `VERTEX_PROJECT_ID` | Google Cloud project ID | Required for Vertex AI |
 | `VERTEX_LOCATION` | Vertex AI region | `us-central1` |
-| `VERTEX_ENDPOINT` | Vertex AI endpoint URL | `https://us-central1-aiplatform.googleapis.com` |
+| `VERTEX_ENDPOINT` | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials JSON | Required for Vertex AI |
 | **S3 Storage (Vertex AI)** |
 | `S3_ACCESS_KEY` | S3 access key | Required for Vertex AI |
@@ -147,28 +143,6 @@ Analyzes a video using AI and returns a detailed description.
 | `NODE_ENV` | Environment mode | `development` |
 | `USE_PROVIDER_FILES_API` | Use provider's file upload API | `true` |
 | `GEMINI_FILES_API_THRESHOLD` | Size threshold for Gemini Files API (bytes) | `10485760` (10MB) |
-
-### Timeout Configuration
-
-The server provides flexible timeout configuration for Gemini API requests:
-
-```bash
-# Set separate timeouts for image and video analysis
-export GEMINI_IMAGE_TIMEOUT=120000  # 2 minutes for images
-export GEMINI_VIDEO_TIMEOUT=300000  # 5 minutes for videos
-
-# Or use a general timeout for both operations
-export GEMINI_TIMEOUT=180000        # 3 minutes for both
-
-# File upload timeout (if needed)
-export GEMINI_FILES_API_TIMEOUT=600000  # 10 minutes for file uploads
-```
-
-**Timeout Behavior:**
-- **No timeouts by default** - requests run as long as needed
-- **Image analysis** uses `GEMINI_IMAGE_TIMEOUT` → `GEMINI_TIMEOUT` → no timeout
-- **Video analysis** uses `GEMINI_VIDEO_TIMEOUT` → `GEMINI_TIMEOUT` → no timeout
-- **File uploads** use `GEMINI_FILES_API_TIMEOUT` if set, otherwise no timeout
 
 ### Supported Formats
 
@@ -237,7 +211,6 @@ The server includes comprehensive error handling:
 
 - **Validation Errors**: Input validation using Zod schemas
 - **Network Errors**: Automatic retries with exponential backoff
-- **Timeout Errors**: Configurable timeouts for all operations
 - **Authentication Errors**: Clear error messages for API key issues
 - **File Errors**: Handling for file size limits and format restrictions
 

@@ -33,8 +33,6 @@ VIDEO_PROVIDER=google|vertex_ai
 #===============================================
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com
-GEMINI_TIMEOUT=60000
-GEMINI_FILES_API_TIMEOUT=300000  # 5 minutes for file uploads
 
 #===============================================
 # VERTEX AI CONFIGURATION
@@ -42,7 +40,7 @@ GEMINI_FILES_API_TIMEOUT=300000  # 5 minutes for file uploads
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 VERTEX_PROJECT_ID=your-gcp-project-id
 VERTEX_LOCATION=us-central1
-VERTEX_ENDPOINT=https://us-central1-aiplatform.googleapis.com
+VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
 #===============================================
 # S3-COMPATIBLE STORAGE CONFIGURATION (Required for Vertex AI)
@@ -134,8 +132,8 @@ NODE_ENV=development|production
 │  │   HTTP Client   │  │   Error Handler │  │ Rate    │  │
 │  │                 │  │                 │  │ Limiting│  │
 │  │ • Retry Logic   │  │ • Error Types   │  │         │  │
-│  │ • Timeouts      │  │ • Context       │  │ • Per   │  │
-│  │ • Rate Limiting │  │ • Recovery      │  │ Provider│  │
+│  │ • Rate Limiting │  │ • Context       │  │ • Per   │  │
+│  │                 │  │ • Recovery      │  │ Provider│  │
 │  └─────────────────┘  └─────────────────┘  └─────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -655,8 +653,6 @@ VIDEO_PROVIDER=google
 # Gemini API configuration
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com
-GEMINI_TIMEOUT=60000
-GEMINI_FILES_API_TIMEOUT=300000
 
 # Optional: External storage for large files
 S3_ACCESS_KEY=your_access_key
@@ -677,7 +673,7 @@ VIDEO_PROVIDER=vertex_ai
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 VERTEX_PROJECT_ID=your-gcp-project-id
 VERTEX_LOCATION=us-central1
-VERTEX_ENDPOINT=https://us-central1-aiplatform.googleapis.com
+VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
 # Required: External storage for all files
 S3_ACCESS_KEY=your_access_key
@@ -730,7 +726,7 @@ S3_ENDPOINT=https://storage.googleapis.com
 
 - All API communications over HTTPS
 - Proper SSL/TLS certificate validation
-- Request timeouts and retry limits
+- Request retry limits
 - Configurable IP whitelisting
 
 ## 8. Performance Optimization

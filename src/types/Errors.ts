@@ -129,15 +129,6 @@ export class NetworkError extends VisionError {
   }
 }
 
-export class TimeoutError extends VisionError {
-  constructor(message: string, timeout?: number) {
-    super(message, 'TIMEOUT_ERROR', undefined, undefined, 408);
-    this.name = 'TimeoutError';
-    this.timeout = timeout;
-  }
-
-  public timeout?: number;
-}
 
 export class ValidationError extends VisionError {
   constructor(message: string, field?: string) {
@@ -172,7 +163,6 @@ export type ErrorType =
   | 'AUTHENTICATION_ERROR'
   | 'AUTHORIZATION_ERROR'
   | 'NETWORK_ERROR'
-  | 'TIMEOUT_ERROR'
   | 'VALIDATION_ERROR'
   | 'STORAGE_ERROR';
 

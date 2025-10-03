@@ -5,7 +5,6 @@
 import {
   RateLimitExceededError,
   NetworkError,
-  TimeoutError,
 } from '../types/Errors.js';
 
 export interface RetryOptions {
@@ -33,7 +32,6 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
   retryableErrors: [
     'RATE_LIMIT_EXCEEDED',
     'NETWORK_ERROR',
-    'TIMEOUT_ERROR',
     'ECONNRESET',
     'ECONNREFUSED',
     'ETIMEDOUT',
@@ -128,8 +126,8 @@ export class RetryHandler {
       return true;
     }
 
-    // Check if it's a NetworkError or TimeoutError
-    if (error instanceof NetworkError || error instanceof TimeoutError) {
+    // Check if it's a NetworkError
+    if (error instanceof NetworkError) {
       return true;
     }
 
@@ -138,11 +136,8 @@ export class RetryHandler {
     const networkErrorPatterns = [
       'network error',
       'connection refused',
-      'timeout',
       'connection reset',
       'name resolution failed',
-      'socket timeout',
-      'read timeout',
     ];
 
     return networkErrorPatterns.some(pattern => message.includes(pattern));
@@ -170,8 +165,8 @@ export class RetryHandler {
   /**
    * Sleep for the specified number of milliseconds
    */
-  private static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  private static async sleep(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -193,7 +188,7 @@ export class RetryHandler {
  */
 export interface CircuitBreakerOptions {
   failureThreshold?: number;
-  recoveryTimeout?: number;
+  recoveryDelay?: number;
   monitoringPeriod?: number;
   onStateChange?: (state: 'CLOSED' | 'OPEN' | 'HALF_OPEN') => void;
 }
@@ -209,13 +204,13 @@ export class CircuitBreaker {
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     const opts = {
       failureThreshold: 5,
-      recoveryTimeout: 60000,
+      recoveryDelay: 60000,
       monitoringPeriod: 10000,
       ...this.options,
     };
 
     if (this.state === 'OPEN') {
-      if (Date.now() - this.lastFailureTime > opts.recoveryTimeout) {
+      if (Date.now() - this.lastFailureTime > opts.recoveryDelay) {
         this.setState('HALF_OPEN');
       } else {
         throw new Error('Circuit breaker is OPEN');
@@ -274,45 +269,6 @@ export class CircuitBreaker {
   }
 }
 
-/**
- * Timeout utility for operations
- */
-export class TimeoutHandler {
-  /**
-   * Execute an operation with a timeout
-   */
-  static async withTimeout<T>(
-    operation: () => Promise<T>,
-    timeoutMs: number,
-    timeoutMessage?: string
-  ): Promise<T> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(
-          new TimeoutError(
-            timeoutMessage || `Operation timed out after ${timeoutMs}ms`,
-            timeoutMs
-          )
-        );
-      }, timeoutMs);
-    });
-
-    return Promise.race([operation(), timeoutPromise]);
-  }
-
-  /**
-   * Create a timeout wrapper for a function
-   */
-  static wrap<T extends (...args: any[]) => Promise<any>>(
-    fn: T,
-    timeoutMs: number,
-    timeoutMessage?: string
-  ): T {
-    return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-      return this.withTimeout(() => fn(...args), timeoutMs, timeoutMessage);
-    }) as T;
-  }
-}
 
 /**
  * Bulkhead pattern for limiting concurrent operations

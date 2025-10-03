@@ -11,5 +11,4 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
-  testTimeout: 30000,
 };

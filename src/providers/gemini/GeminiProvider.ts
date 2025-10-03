@@ -24,9 +24,8 @@ import {
   FileUploadError,
   FileNotFoundError,
   NetworkError,
-  TimeoutError,
 } from '../../types/Errors.js';
-import { RetryHandler, TimeoutHandler } from '../../utils/retry.js';
+import { RetryHandler } from '../../utils/retry.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenerativeAI;
@@ -78,34 +77,15 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
-          const imageTimeout = this.config.imageTimeout ?? this.config.timeout;
-          if (imageTimeout) {
-            return await TimeoutHandler.withTimeout(
-              () =>
-                model.generateContent([
-                  {
-                    inlineData: {
-                      mimeType,
-                      data: imageData.toString('base64'),
-                    },
-                  },
-                  { text: prompt },
-                ]),
-              imageTimeout,
-              `Image analysis timed out after ${imageTimeout}ms`
-            );
-          } else {
-            // No timeout - let the request run as long as needed
-            return await model.generateContent([
-              {
-                inlineData: {
-                  mimeType,
-                  data: imageData.toString('base64'),
-                },
+          return await model.generateContent([
+            {
+              inlineData: {
+                mimeType,
+                data: imageData.toString('base64'),
               },
-              { text: prompt },
-            ]);
-          }
+            },
+            { text: prompt },
+          ]);
         });
 
       const text = response.response.text();
@@ -153,34 +133,15 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          const videoTimeout = this.config.videoTimeout ?? this.config.timeout;
-          if (videoTimeout) {
-            return await TimeoutHandler.withTimeout(
-              () =>
-                model.generateContent([
-                  {
-                    fileData: {
-                      mimeType: 'video/mp4',
-                      fileUri: fileReference,
-                    },
-                  },
-                  { text: prompt },
-                ]),
-              videoTimeout,
-              `Video analysis timed out after ${videoTimeout}ms`
-            );
-          } else {
-            // No timeout - let the request run as long as needed
-            return await model.generateContent([
-              {
-                fileData: {
-                  mimeType: 'video/mp4',
-                  fileUri: fileReference,
-                },
+          return await model.generateContent([
+            {
+              fileData: {
+                mimeType: 'video/mp4',
+                fileUri: fileReference,
               },
-              { text: prompt },
-            ]);
-          }
+            },
+            { text: prompt },
+          ]);
         }
       );
 
@@ -213,16 +174,7 @@ export class GeminiProvider extends BaseVisionProvider {
     try {
       const { result: fileMetadata, duration } = await this.measureAsync(
         async () => {
-          if (this.config.filesApiTimeout) {
-            return await TimeoutHandler.withTimeout(
-              () => this.uploadToGeminiFiles(buffer, filename, mimeType),
-              this.config.filesApiTimeout,
-              `File upload timed out after ${this.config.filesApiTimeout}ms`
-            );
-          } else {
-            // No timeout - let the upload run as long as needed
-            return await this.uploadToGeminiFiles(buffer, filename, mimeType);
-          }
+          return await this.uploadToGeminiFiles(buffer, filename, mimeType);
         }
       );
 
@@ -459,9 +411,6 @@ export class GeminiProvider extends BaseVisionProvider {
 
   private handleError(error: unknown, operation: string): Error {
     if (error instanceof Error) {
-      if (error.message.includes('timed out')) {
-        return new TimeoutError(error.message);
-      }
       if (
         error.message.includes('network') ||
         error.message.includes('fetch')

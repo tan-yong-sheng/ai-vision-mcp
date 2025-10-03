@@ -49,16 +49,6 @@ export const ConfigSchema = z.object({
     .url()
     .optional()
     .default('https://generativelanguage.googleapis.com'),
-  GEMINI_TIMEOUT: z.coerce.number().int().positive().optional(),
-  GEMINI_FILES_API_TIMEOUT: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(300000),
-  // Image and Video analysis timeouts (optional - defaults to no timeout)
-  GEMINI_IMAGE_TIMEOUT: z.coerce.number().int().positive().optional(),
-  GEMINI_VIDEO_TIMEOUT: z.coerce.number().int().positive().optional(),
 
   // Vertex AI configuration
   GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1).optional(),
@@ -68,7 +58,7 @@ export const ConfigSchema = z.object({
     .string()
     .url()
     .optional()
-    .default('https://us-central1-aiplatform.googleapis.com'),
+    .default('https://aiplatform.googleapis.com'),
 
   // S3-compatible storage configuration
   S3_ACCESS_KEY: z.string().min(1).optional(),

@@ -39,7 +39,6 @@ export type {
   AuthenticationError,
   AuthorizationError,
   NetworkError,
-  TimeoutError,
   ValidationError,
   StorageError,
   ErrorType,

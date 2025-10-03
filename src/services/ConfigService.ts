@@ -53,18 +53,6 @@ export class ConfigService {
         GEMINI_BASE_URL:
           process.env.GEMINI_BASE_URL ||
           'https://generativelanguage.googleapis.com',
-        GEMINI_TIMEOUT: process.env.GEMINI_TIMEOUT
-          ? parseInt(process.env.GEMINI_TIMEOUT, 10)
-          : undefined, // Disabled by default
-        GEMINI_FILES_API_TIMEOUT: process.env.GEMINI_FILES_API_TIMEOUT
-          ? parseInt(process.env.GEMINI_FILES_API_TIMEOUT, 10)
-          : 300000,
-        GEMINI_IMAGE_TIMEOUT: process.env.GEMINI_IMAGE_TIMEOUT
-          ? parseInt(process.env.GEMINI_IMAGE_TIMEOUT, 10)
-          : undefined, // Disabled by default
-        GEMINI_VIDEO_TIMEOUT: process.env.GEMINI_VIDEO_TIMEOUT
-          ? parseInt(process.env.GEMINI_VIDEO_TIMEOUT, 10)
-          : undefined, // Disabled by default
 
         // Vertex AI configuration
         GOOGLE_APPLICATION_CREDENTIALS:
@@ -73,7 +61,7 @@ export class ConfigService {
         VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
         VERTEX_ENDPOINT:
           process.env.VERTEX_ENDPOINT ||
-          'https://us-central1-aiplatform.googleapis.com',
+          'https://aiplatform.googleapis.com',
 
         // S3-compatible storage configuration
         S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
@@ -213,10 +201,6 @@ export class ConfigService {
     return {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
-      timeout: this.config.GEMINI_TIMEOUT, // Can be undefined (no timeout)
-      filesApiTimeout: this.config.GEMINI_FILES_API_TIMEOUT, // Can be undefined (no timeout)
-      imageTimeout: this.config.GEMINI_IMAGE_TIMEOUT, // Can be undefined (no timeout)
-      videoTimeout: this.config.GEMINI_VIDEO_TIMEOUT, // Can be undefined (no timeout)
       imageModel: 'gemini-2.5-flash-lite',
       videoModel: 'gemini-2.5-flash',
     } as GeminiConfig;

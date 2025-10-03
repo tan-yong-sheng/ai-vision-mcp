@@ -18,5 +18,4 @@ export default {
   coverageReporters: ['text', 'lcov'],
   modulePathIgnorePatterns: ['<rootDir>/dist/'],
   // setupFilesAfterEnv: ['<rootDir>/src/__tests__/integration-setup.ts'],
-  testTimeout: 120000,
 };

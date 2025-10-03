@@ -10,10 +10,6 @@ export interface Config {
   // Gemini API configuration
   GEMINI_API_KEY?: string | undefined;
   GEMINI_BASE_URL?: string | undefined;
-  GEMINI_TIMEOUT?: number | undefined;
-  GEMINI_FILES_API_TIMEOUT?: number | undefined;
-  GEMINI_IMAGE_TIMEOUT?: number | undefined;
-  GEMINI_VIDEO_TIMEOUT?: number | undefined;
 
   // Vertex AI configuration
   GOOGLE_APPLICATION_CREDENTIALS?: string;
@@ -61,8 +57,6 @@ export interface Config {
 export interface GeminiConfig {
   apiKey: string;
   baseUrl: string;
-  timeout: number;
-  filesApiTimeout: number;
   imageModel: string;
   videoModel: string;
 }

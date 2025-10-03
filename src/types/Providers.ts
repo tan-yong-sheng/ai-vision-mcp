@@ -95,10 +95,6 @@ export interface ProviderFactory {
 export interface GeminiConfig {
   apiKey: string;
   baseUrl: string;
-  timeout?: number; // General timeout (optional, undefined = no timeout)
-  filesApiTimeout?: number; // Files API timeout (optional, undefined = no timeout)
-  imageTimeout?: number; // Image analysis timeout (optional, undefined = no timeout)
-  videoTimeout?: number; // Video analysis timeout (optional, undefined = no timeout)
   imageModel: string;
   videoModel: string;
 }
@@ -176,7 +172,6 @@ export interface VertexAIConfig {
   credentials?: string;
   imageModel: string;
   videoModel: string;
-  timeout?: number;
 }
 
 export interface VertexAIGenerateContentRequest {
