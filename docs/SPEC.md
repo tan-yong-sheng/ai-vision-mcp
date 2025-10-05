@@ -390,18 +390,21 @@ src/
 
 ```typescript
 export class GeminiProvider implements VisionProvider {
-  private client: GoogleGenerativeAI;
+  private client: GoogleGenAI;
   private imageModel: string;
   private videoModel: string;
 
   constructor(config: GeminiConfig) {
-    this.client = new GoogleGenerativeAI(config.apiKey);
+    this.client = new GoogleGenAI({ apiKey: config.apiKey });
     this.imageModel = config.imageModel;
     this.videoModel = config.videoModel;
   }
 
   async analyzeImage(imageSource: string, prompt: string, options?: AnalysisOptions): Promise<AnalysisResult> {
-    const model = this.client.getGenerativeModel({ model: this.imageModel });
+    await this.client.models.generateContent({
+      model: this.imageModel,
+      contents: [{ text: prompt }],
+    });
 
     const imageData = await this.fetchImageData(imageSource);
     const result = await model.generateContent([

@@ -2,7 +2,7 @@
  * Gemini API provider implementation
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
 import type {
@@ -25,14 +25,14 @@ import {
 } from '../../types/Errors.js';
 
 export class GeminiProvider extends BaseVisionProvider {
-  private client: GoogleGenerativeAI;
+  private client: GoogleGenAI;
   private config: GeminiConfig;
   private baseUrl: string;
 
   constructor(config: GeminiConfig) {
     super('gemini', config.imageModel, config.videoModel);
     this.config = config;
-    this.client = new GoogleGenerativeAI(config.apiKey);
+    this.client = new GoogleGenAI({ apiKey: config.apiKey });
     this.baseUrl = config.baseUrl;
   }
 
@@ -136,24 +136,27 @@ export class GeminiProvider extends BaseVisionProvider {
         throw new Error(`Invalid image source format: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''} (starts with http: ${imageSource.startsWith('http')}, starts with data:image: ${imageSource.startsWith('data:image/')}, starts with files/: ${imageSource.startsWith('files/')})`);
       }
 
-      const model = this.client.getGenerativeModel({ model: this.imageModel });
+      const model = this.imageModel;
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
-          return await model.generateContent([content, { text: prompt }]);
+          return await this.client.models.generateContent({
+            model,
+            contents: [content, { text: prompt }],
+          });
         });
 
-      const text = response.response.text();
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
         this.imageModel,
         usage
           ? {
-              promptTokenCount: usage.promptTokenCount,
-              candidatesTokenCount: usage.candidatesTokenCount,
-              totalTokenCount: usage.totalTokenCount,
+              promptTokenCount: usage.promptTokenCount || 0,
+              candidatesTokenCount: usage.candidatesTokenCount || 0,
+              totalTokenCount: usage.totalTokenCount || 0,
             }
           : undefined,
         processingDuration + analysisDuration,
@@ -241,25 +244,28 @@ export class GeminiProvider extends BaseVisionProvider {
         throw new Error('Invalid video source format');
       }
 
-      const model = this.client.getGenerativeModel({ model: this.videoModel });
+      const model = this.videoModel;
 
       const { result: response, duration: analysisDuration } = await this.measureAsync(
         async () => {
-          return await model.generateContent([content, { text: prompt }]);
+          return await this.client.models.generateContent({
+            model,
+            contents: [content, { text: prompt }],
+          });
         }
       );
 
-      const text = response.response.text();
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
         this.videoModel,
         usage
           ? {
-              promptTokenCount: usage.promptTokenCount,
-              candidatesTokenCount: usage.candidatesTokenCount,
-              totalTokenCount: usage.totalTokenCount,
+              promptTokenCount: usage.promptTokenCount || 0,
+              candidatesTokenCount: usage.candidatesTokenCount || 0,
+              totalTokenCount: usage.totalTokenCount || 0,
             }
           : undefined,
         uploadDuration + analysisDuration,
@@ -328,18 +334,12 @@ export class GeminiProvider extends BaseVisionProvider {
 
   async deleteFile(fileId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/v1beta/${fileId}`, {
-        method: 'DELETE',
-        headers: {
-          'x-goog-api-key': this.config.apiKey,
-        },
-      });
-
-      if (!response.ok && response.status !== 404) {
-        throw new Error(`Failed to delete file: ${response.statusText}`);
-      }
+      await this.client.files.delete({ name: fileId });
     } catch (error) {
-      throw this.handleError(error, 'file deletion');
+      // Ignore 404 errors (file already deleted)
+      if (!(error instanceof Error && error.message.includes('404'))) {
+        throw this.handleError(error, 'file deletion');
+      }
     }
   }
 
@@ -404,11 +404,11 @@ export class GeminiProvider extends BaseVisionProvider {
   async healthCheck(): Promise<HealthStatus> {
     try {
       const { duration } = await this.measureAsync(async () => {
-        const model = this.client.getGenerativeModel({
-          model: this.imageModel,
-        });
         // Simple test with minimal content
-        await model.generateContent([{ text: 'Hello' }]);
+        await this.client.models.generateContent({
+          model: this.imageModel,
+          contents: [{ text: 'Hello' }],
+        });
       });
 
       return this.createHealthStatus('healthy', duration);
@@ -428,43 +428,60 @@ export class GeminiProvider extends BaseVisionProvider {
     filename: string,
     mimeType: string
   ): Promise<GeminiFileMetadata> {
-    const formData = new FormData();
-    const blob = new Blob([buffer], { type: mimeType });
-    formData.append('file', blob, filename);
+    try {
+      // Use the new @google/genai SDK's file upload API
+      const blob = new Blob([buffer], { type: mimeType });
+      const file = await this.client.files.upload({
+        file: blob as any, // Cast to any since SDK expects Blob but type may not match exactly
+        config: {
+          mimeType,
+          displayName: filename,
+        },
+      });
 
-    const response = await fetch(
-      `${this.baseUrl}/upload/v1beta/files?key=${this.config.apiKey}`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
+      // Map the new SDK's File type to our GeminiFileMetadata type
+      return {
+        name: file.name || '',
+        displayName: file.displayName || filename,
+        mimeType: file.mimeType || mimeType,
+        sizeBytes: file.sizeBytes || String(buffer.length),
+        createTime: file.createTime || new Date().toISOString(),
+        updateTime: file.updateTime || new Date().toISOString(),
+        expirationTime: file.expirationTime || '',
+        sha256Hash: file.sha256Hash || '',
+        uri: file.uri || '',
+        state: (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
+      };
+    } catch (error) {
       throw new FileUploadError(
-        `Failed to upload file to Gemini: ${response.statusText} - ${errorText}`
+        `Failed to upload file to Gemini: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-
-    const result = (await response.json()) as { file: GeminiFileMetadata };
-    return result.file;
   }
 
-  
-  private async getFileMetadata(fileId: string): Promise<GeminiFileMetadata> {
-    const response = await fetch(
-      `${this.baseUrl}/v1beta/${fileId}?key=${this.config.apiKey}`
-    );
 
-    if (!response.ok) {
-      if (response.status === 404) {
+  private async getFileMetadata(fileId: string): Promise<GeminiFileMetadata> {
+    try {
+      const file = await this.client.files.get({ name: fileId });
+
+      return {
+        name: file.name || fileId,
+        displayName: file.displayName || '',
+        mimeType: file.mimeType || '',
+        sizeBytes: file.sizeBytes || '0',
+        createTime: file.createTime || '',
+        updateTime: file.updateTime || '',
+        expirationTime: file.expirationTime || '',
+        sha256Hash: file.sha256Hash || '',
+        uri: file.uri || '',
+        state: (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('404')) {
         throw new FileNotFoundError(fileId, 'gemini');
       }
-      throw new Error(`Failed to get file metadata: ${response.statusText}`);
+      throw new Error(`Failed to get file metadata: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return (await response.json()) as GeminiFileMetadata;
   }
 
   async waitForFileProcessing(fileId: string): Promise<void> {
