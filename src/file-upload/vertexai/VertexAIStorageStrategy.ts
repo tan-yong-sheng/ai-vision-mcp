@@ -37,9 +37,8 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
       );
     }
 
-    // For Vertex AI, we need to convert the GCS URL to a GCS URI
-    const publicUrl = await this.storageProvider.getPublicUrl(uploadedFile.id);
-    const gcsUri = this.convertToGcsUri(publicUrl);
+    // For Vertex AI with native GCS, the URL is already in gs:// format
+    const gcsUri = await this.storageProvider.getPublicUrl(uploadedFile.id);
 
     return {
       type: 'file_uri',
@@ -55,46 +54,5 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
       // Log error but don't throw - cleanup failures shouldn't block the main flow
       console.warn(`Failed to cleanup storage file ${fileId}:`, error);
     }
-  }
-
-  private convertToGcsUri(url: string): string {
-    // Convert S3-compatible GCS URL to GCS URI
-    // Examples:
-    // - https://storage.googleapis.com/bucket-name/path/to/file -> gs://bucket-name/path/to/file
-    // - https://endpoint/bucket-name/path/to/file -> gs://bucket-name/path/to/file (path style)
-
-    if (url.startsWith('gs://')) {
-      return url; // Already a GCS URI
-    }
-
-    try {
-      const urlObj = new URL(url);
-
-      // Handle path-style URLs (most common for GCS S3 compatibility)
-      // https://endpoint/bucket-name/path/to/file
-      const pathMatch = urlObj.pathname.match(/^\/([^\/]+)\/(.*)$/);
-      if (pathMatch) {
-        return `gs://${pathMatch[1]}/${pathMatch[2]}`;
-      }
-
-      // Handle virtual-host style URLs (less common for GCS)
-      // https://bucket-name.endpoint/path/to/file
-      const hostMatch = urlObj.hostname.match(/^([^.]+)\.(.*)$/);
-      if (hostMatch) {
-        const path = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
-        return `gs://${hostMatch[1]}/${path}`;
-      }
-    } catch (error) {
-      throw new FileUploadError(
-        `Failed to convert URL to GCS URI: ${url}`,
-        'vertex_ai',
-        error instanceof Error ? error : new Error(String(error))
-      );
-    }
-
-    throw new FileUploadError(
-      `Unable to convert URL to GCS URI format: ${url}`,
-      'vertex_ai'
-    );
   }
 }

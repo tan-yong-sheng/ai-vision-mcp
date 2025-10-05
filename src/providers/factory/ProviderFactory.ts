@@ -101,7 +101,7 @@ export class VisionProviderFactory {
 
       case 'vertex_ai':
         return [
-          'GOOGLE_APPLICATION_CREDENTIALS',
+          'VERTEX_CREDENTIALS',
           'VERTEX_PROJECT_ID',
           'VERTEX_LOCATION',
         ];
@@ -162,16 +162,14 @@ export class VisionProviderFactory {
   static initializeDefaultProviders(): void {
     // Register Gemini API provider
     this.registerProvider('google', () => {
-      // Create a basic provider instance - it will be configured properly when used
-      const provider = new GeminiProvider({} as any);
-      return provider;
+      const geminiConfig = ConfigService.getInstance().getGeminiConfig();
+      return new GeminiProvider(geminiConfig);
     });
 
     // Register Vertex AI provider
     this.registerProvider('vertex_ai', () => {
-      // Create a basic provider instance - it will be configured properly when used
-      const provider = new VertexAIProvider({} as any);
-      return provider;
+      const vertexConfig = ConfigService.getInstance().getVertexAIConfig();
+      return new VertexAIProvider(vertexConfig);
     });
   }
 
@@ -188,7 +186,7 @@ export class VisionProviderFactory {
     // Validate configuration before creating provider
     this.validateProviderConfig(config, providerName);
 
-    // Create the provider and properly configure it
+    // Create the provider through factory (which now properly initializes with config)
     const factory = this.providers.get(providerName);
     if (!factory) {
       throw new ConfigurationError(`Unsupported provider: ${providerName}`);
@@ -197,16 +195,12 @@ export class VisionProviderFactory {
     try {
       const provider = factory();
 
-      // Configure the provider with proper configuration
-      if (providerName === 'google') {
-        const geminiConfig = ConfigService.getInstance().getGeminiConfig();
-        // Create a new provider instance with proper config
-        return new GeminiProvider(geminiConfig);
-      } else if (providerName === 'vertex_ai') {
-        const vertexConfig = ConfigService.getInstance().getVertexAIConfig();
-        // Create a new provider instance with proper config
-        return new VertexAIProvider(vertexConfig);
-      }
+      // Set default models if not configured
+      const defaultModels = this.getDefaultModels(providerName);
+      provider.setModel(
+        config.IMAGE_MODEL || defaultModels.image,
+        config.VIDEO_MODEL || defaultModels.video
+      );
 
       return provider;
     } catch (error) {

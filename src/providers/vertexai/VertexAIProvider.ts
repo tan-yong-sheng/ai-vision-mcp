@@ -30,8 +30,11 @@ export class VertexAIProvider extends BaseVisionProvider {
     super('vertex_ai', config.imageModel, config.videoModel);
     this.config = config;
 
+    // Ensure endpoint is set, use default if not provided
+    const endpoint = config.endpoint || 'https://aiplatform.googleapis.com';
+
     // Validate endpoint format
-    this.validateEndpoint(config.endpoint);
+    this.validateEndpoint(endpoint);
 
     this.client = new VertexAI({
       project: config.projectId,
@@ -122,16 +125,21 @@ export class VertexAIProvider extends BaseVisionProvider {
         // Already a GCS URI
         fileUri = videoSource;
       } else if (videoSource.startsWith('http')) {
-        // Need to upload to GCS first (this would be handled by a storage service)
-        throw new Error(
-          'Direct URL processing not supported for Vertex AI. Please upload to GCS first.'
-        );
+        // Check if it's a YouTube URL - these can be passed directly
+        if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+          fileUri = videoSource;
+        } else {
+          // For other HTTP URLs, would need to upload to GCS first
+          throw new Error(
+            'Direct URL processing not supported for Vertex AI (except YouTube). Please upload to GCS first.'
+          );
+        }
       } else if (videoSource.startsWith('files/')) {
         // File reference - should be a GCS URI
         fileUri = videoSource;
       } else {
         throw new Error(
-          'Invalid video source format for Vertex AI. Expected GCS URI.'
+          'Invalid video source format for Vertex AI. Expected GCS URI or YouTube URL.'
         );
       }
 

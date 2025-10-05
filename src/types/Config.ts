@@ -12,7 +12,7 @@ export interface Config {
   GEMINI_BASE_URL?: string | undefined;
 
   // Vertex AI configuration
-  GOOGLE_APPLICATION_CREDENTIALS?: string;
+  VERTEX_CREDENTIALS?: string;
   VERTEX_PROJECT_ID?: string;
   VERTEX_LOCATION?: string;
   VERTEX_ENDPOINT?: string;
@@ -21,11 +21,11 @@ export interface Config {
   IMAGE_MODEL?: string;
   VIDEO_MODEL?: string;
 
-  // Google Cloud Storage configuration (S3-compatible)
+  // Google Cloud Storage configuration (for Vertex AI file storage)
   GCS_BUCKET_NAME?: string;
-  GCS_ENDPOINT?: string;
-  GCS_ACCESS_KEY?: string;
-  GCS_SECRET_KEY?: string;
+  GCS_PROJECT_ID?: string; // Auto-derived from VERTEX_CREDENTIALS if not provided
+  GCS_CREDENTIALS?: string; // Optional: defaults to VERTEX_CREDENTIALS
+  GCS_REGION?: string; // Optional: defaults to VERTEX_LOCATION
 
   // Universal API parameters
   TEMPERATURE?: number;
@@ -71,9 +71,8 @@ export interface VertexAIConfig {
 
 export interface GCSConfig {
   bucketName: string;
-  endpoint: string;
-  accessKey: string;
-  secretKey: string;
+  projectId: string;
+  credentials: string;
   region: string;
 }
 

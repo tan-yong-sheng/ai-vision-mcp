@@ -37,8 +37,8 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 #===============================================
 # VERTEX AI CONFIGURATION
 #===============================================
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-VERTEX_PROJECT_ID=your-gcp-project-id
+VERTEX_CREDENTIALS=path/to/service-account.json
+VERTEX_PROJECT_ID=your-gcp-project-id  # Optional: Auto-derived from credentials
 VERTEX_LOCATION=us-central1
 VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
@@ -46,9 +46,10 @@ VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 # GOOGLE CLOUD STORAGE CONFIGURATION (Required for Vertex AI)
 #===============================================
 GCS_BUCKET_NAME=your-vision-files-bucket
-GCS_PROJECT_ID=your-gcp-project-id  # Can reuse VERTEX_PROJECT_ID
-GCS_KEY_FILE_PATH=path/to/service-account.json  # Optional if using GOOGLE_APPLICATION_CREDENTIALS
-GCS_PUBLIC_URL_BASE=https://storage.googleapis.com/your-bucket  # Optional CDN URL
+# The following are optional and auto-derived from VERTEX_CREDENTIALS:
+# GCS_PROJECT_ID - Auto-derived from VERTEX_CREDENTIALS
+# GCS_CREDENTIALS - Defaults to VERTEX_CREDENTIALS
+# GCS_REGION - Defaults to VERTEX_LOCATION
 ```
 
 ### 2.2 Optional Configuration
@@ -73,13 +74,14 @@ MAX_VIDEO_DURATION=3600  # seconds (1 hour)
 #===============================================
 # FILE UPLOAD CONFIGURATION
 #===============================================
-# File upload thresholds (files larger than this will use Google Cloud Storage)
+# File upload thresholds (files larger than this will use storage)
 GEMINI_FILES_API_THRESHOLD=10MB
-VERTEX_FILES_API_THRESHOLD=0  # Vertex AI requires Google Cloud Storage for all files
+VERTEX_AI_FILES_API_THRESHOLD=0  # Vertex AI requires Google Cloud Storage for all files
 
 # NOTE: File upload strategy is automatically determined by provider:
 # - Google AI Studio: Uses inlineData for images, Files API for large files/videos
 # - Vertex AI: Uses Google Cloud Storage with gs:// URIs for all files
+# - Credentials are automatically shared between Vertex AI and GCS
 
 #===============================================
 # LOGGING CONFIGURATION
@@ -212,55 +214,55 @@ interface StorageProvider {
   listFiles(prefix?: string): Promise<StorageFile[]>;
 }
 
-// Google Cloud Storage implementation
+// Google Cloud Storage implementation using native SDK
 class GCSStorageProvider implements StorageProvider {
   private storage: Storage;
-  private bucket: string;
-  private publicUrlBase?: string;
+  private bucket: Bucket;
+  private config: GCSConfig;
 
   constructor(config: {
     bucketName: string;
-    projectId?: string;
-    keyFilePath?: string;
-    publicUrlBase?: string;
+    projectId: string;
+    credentials: string;
+    region?: string;
   }) {
-    const options: any = {};
-    if (config.projectId) {
-      options.projectId = config.projectId;
-    }
-    if (config.keyFilePath) {
-      options.keyFilename = config.keyFilePath;
-    }
+    this.config = config;
 
-    this.storage = new Storage(options);
+    // Initialize native GCS Storage client
+    this.storage = new Storage({
+      projectId: config.projectId,
+      keyFilename: config.credentials,
+    });
+
     this.bucket = this.storage.bucket(config.bucketName);
-    this.publicUrlBase = config.publicUrlBase;
   }
 
   async uploadFile(buffer: Buffer, filename: string, mimeType: string): Promise<StorageFile> {
     const file = this.bucket.file(filename);
 
     await file.save(buffer, {
+      contentType: mimeType,
       metadata: {
-        contentType: mimeType,
+        cacheControl: 'public, max-age=31536000',
       },
     });
+
+    const [metadata] = await file.getMetadata();
 
     return {
       id: filename,
       filename,
       mimeType,
       size: buffer.length,
-      url: await this.getPublicUrl(filename),
+      url: `gs://${this.config.bucketName}/${filename}`,
+      lastModified: metadata.updated || new Date().toISOString(),
+      etag: metadata.etag,
     };
   }
 
   async getPublicUrl(fileId: string): Promise<string> {
-    if (this.publicUrlBase) {
-      return `${this.publicUrlBase}/${fileId}`;
-    }
-    // Generate GCS URL
-    return `https://storage.googleapis.com/${this.bucket.name}/${fileId}`;
+    // Return GCS URI format (gs://bucket/path)
+    return `gs://${this.config.bucketName}/${fileId}`;
   }
 }
 ```
@@ -309,15 +311,16 @@ class VertexAIStorageStrategy implements FileUploadStrategy {
   constructor(private storageProvider: StorageProvider) {}
 
   async uploadFile(buffer: Buffer, filename: string, mimeType: string): Promise<UploadedFile> {
-    // Upload to Google Cloud Storage
+    // Upload to Google Cloud Storage using native SDK
     return await this.storageProvider.uploadFile(buffer, filename, mimeType);
   }
 
   async getFileForAnalysis(uploadedFile: UploadedFile): Promise<FileReference> {
-    const publicUrl = await this.storageProvider.getPublicUrl(uploadedFile.id);
+    // For Vertex AI with native GCS, the URL is already in gs:// format
+    const gcsUri = await this.storageProvider.getPublicUrl(uploadedFile.id);
     return {
-      type: 'public_url',
-      url: publicUrl,
+      type: 'file_uri',
+      uri: gcsUri,
       mimeType: uploadedFile.mimeType
     };
   }
@@ -595,36 +598,36 @@ export class RetryHandler {
 
 ## 5. Google Cloud Storage Setup
 
-### 5.1 Google Cloud Storage (Recommended for Vertex AI)
+### 5.1 Native Google Cloud Storage (for Vertex AI)
+
+Vertex AI now uses native Google Cloud Storage SDK with automatic credential sharing:
 
 ```bash
+# Required configuration
+VERTEX_CREDENTIALS=path/to/service-account.json
 GCS_BUCKET_NAME=your-gcs-bucket
-GCS_PROJECT_ID=your-gcp-project-id
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+
+# Optional (auto-derived from VERTEX_CREDENTIALS)
+# VERTEX_PROJECT_ID - extracted from service account JSON
+# GCS_PROJECT_ID - same as VERTEX_PROJECT_ID
+# GCS_CREDENTIALS - defaults to VERTEX_CREDENTIALS
+# GCS_REGION - defaults to VERTEX_LOCATION
 ```
 
-### 5.2 Using Service Account Key File
+**Key Benefits:**
+- Single credential file for both Vertex AI and GCS
+- Automatic project ID extraction from credentials
+- Native GCS SDK for better performance
+- Direct `gs://` URI support for Vertex AI
 
-```bash
-GCS_BUCKET_NAME=your-gcs-bucket
-GCS_PROJECT_ID=your-gcp-project-id
-GCS_KEY_FILE_PATH=path/to/service-account.json
-```
+### 5.2 Service Account Setup
 
-### 5.3 Using Application Default Credentials
-
-```bash
-GCS_BUCKET_NAME=your-gcs-bucket
-GCS_PROJECT_ID=your-gcp-project-id
-# GCS will use Application Default Credentials
-```
-
-### 5.4 With Custom CDN Base URL
-
-```bash
-GCS_BUCKET_NAME=your-gcs-bucket
-GCS_PUBLIC_URL_BASE=https://cdn.your-domain.com/bucket-name
-```
+1. Create a service account in Google Cloud Console
+2. Grant the following roles:
+   - `Vertex AI User` - for Vertex AI API access
+   - `Storage Object Admin` - for GCS bucket access
+3. Download the JSON key file
+4. Set `VERTEX_CREDENTIALS` to the key file path
 
 ## 6. Provider Configuration Examples
 
@@ -641,8 +644,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
 # Optional: Google Cloud Storage for large files (uses inlineData for smaller files)
 GCS_BUCKET_NAME=your-gemini-files
-GCS_PROJECT_ID=your-gcp-project-id
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+VERTEX_CREDENTIALS=path/to/service-account.json
 ```
 
 ### 6.2 Vertex AI - Production Setup
@@ -652,16 +654,18 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 IMAGE_PROVIDER=vertex_ai
 VIDEO_PROVIDER=vertex_ai
 
-# Vertex AI configuration
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-VERTEX_PROJECT_ID=your-gcp-project-id
+# Vertex AI configuration (simplified)
+VERTEX_CREDENTIALS=path/to/service-account.json
 VERTEX_LOCATION=us-central1
-VERTEX_ENDPOINT=https://aiplatform.googleapis.com
 
-# Required: Google Cloud Storage for all files
+# Required: Google Cloud Storage bucket
 GCS_BUCKET_NAME=your-vertex-files
-GCS_PROJECT_ID=your-gcp-project-id
-GCS_PUBLIC_URL_BASE=https://your-cdn-domain.com
+
+# All other fields auto-derived from VERTEX_CREDENTIALS:
+# - VERTEX_PROJECT_ID
+# - GCS_PROJECT_ID
+# - GCS_CREDENTIALS
+# - GCS_REGION
 ```
 
 ### 6.3 Mixed Setup - Development with Vertex AI for Production
@@ -674,13 +678,12 @@ VIDEO_PROVIDER=vertex_ai
 
 # Both providers configured
 GEMINI_API_KEY=your_gemini_api_key
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-VERTEX_PROJECT_ID=your-gcp-project-id
+VERTEX_CREDENTIALS=path/to/service-account.json
 VERTEX_LOCATION=us-central1
 
 # Google Cloud Storage for Vertex AI video processing
 GCS_BUCKET_NAME=your-mixed-provider-files
-GCS_PROJECT_ID=your-gcp-project-id
+# All GCS config auto-derived from VERTEX_CREDENTIALS
 ```
 
 ## 7. Security Considerations

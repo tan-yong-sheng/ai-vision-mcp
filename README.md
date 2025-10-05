@@ -41,14 +41,13 @@ npx ai-vision-mcp
 1. Set your environment variables:
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json"
-export VERTEX_PROJECT_ID="your-gcp-project-id"
-export VERTEX_LOCATION="us-central1"
-export GCS_BUCKET_NAME="your-gcs-bucket"
-export GCS_PROJECT_ID="your-gcp-project-id"
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
+export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
+
+Refer to [the guideline here](docs/vertex-ai-setup-guide.md)
 
 2. Start the MCP server:
 
@@ -136,19 +135,20 @@ Analyzes a video using AI and returns a detailed description.
 | `GEMINI_API_KEY` | Google Gemini API key | Required for Gemini |
 | `GEMINI_BASE_URL` | Gemini API base URL | `https://generativelanguage.googleapis.com` |
 | **Vertex AI** |
-| `VERTEX_PROJECT_ID` | Google Cloud project ID | Required for Vertex AI |
+| `VERTEX_CREDENTIALS` | Path to GCP service account JSON | Required for Vertex AI |
+| `VERTEX_PROJECT_ID` | Google Cloud project ID | Auto-derived from credentials |
 | `VERTEX_LOCATION` | Vertex AI region | `us-central1` |
 | `VERTEX_ENDPOINT` | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP credentials JSON | Required for Vertex AI |
 | **Google Cloud Storage (Vertex AI)** |
 | `GCS_BUCKET_NAME` | GCS bucket name | Required for Vertex AI |
-| `GCS_PROJECT_ID` | GCP project ID | Can reuse VERTEX_PROJECT_ID |
-| `GCS_KEY_FILE_PATH` | Path to service account key | Optional |
-| `GCS_PUBLIC_URL_BASE` | Optional CDN URL for GCS assets | Optional |
+| `GCS_PROJECT_ID` | GCS project ID | Auto-derived from VERTEX_CREDENTIALS |
+| `GCS_CREDENTIALS` | Path to GCS credentials | Defaults to VERTEX_CREDENTIALS |
+| `GCS_REGION` | GCS region | Defaults to VERTEX_LOCATION |
 | **API Configuration** |
 | `TEMPERATURE` | AI response temperature (0.0-2.0) | `0.8` |
 | `TOP_P` | Top-p sampling parameter (0.0-1.0) | `0.6` |
-| `MAX_TOKENS` | Maximum response tokens | `16384` |
+| `MAX_TOKENS_FOR_IMAGE` | Maximum tokens for image analysis | `500` |
+| `MAX_TOKENS_FOR_VIDEO` | Maximum tokens for video analysis | `2000` |
 | **File Processing** |
 | `MAX_IMAGE_SIZE` | Maximum image size in bytes | `20971520` (20MB) |
 | `MAX_VIDEO_SIZE` | Maximum video size in bytes | `2147483648` (2GB) |
@@ -159,7 +159,7 @@ Analyzes a video using AI and returns a detailed description.
 | `LOG_LEVEL` | Logging level | `info` |
 | `NODE_ENV` | Environment mode | `development` |
 | `GEMINI_FILES_API_THRESHOLD` | Size threshold for Gemini Files API (bytes) | `10485760` (10MB) |
-| `VERTEX_FILES_API_THRESHOLD` | Size threshold to upload to Vertex AI (bytes) | 0 |
+| `VERTEX_AI_FILES_API_THRESHOLD` | Size threshold for Vertex AI uploads (bytes) | `0` |
 
 ### Supported Formats
 

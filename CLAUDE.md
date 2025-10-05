@@ -76,7 +76,7 @@ This is a Model Context Protocol (MCP) server that provides AI-powered image and
 **Environment Variables**:
 - `IMAGE_PROVIDER`/`VIDEO_PROVIDER`: Set to `google` or `vertex_ai`
 - **Gemini**: `GEMINI_API_KEY`
-- **Vertex AI**: `VERTEX_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`, `GCS_BUCKET_NAME`
+- **Vertex AI**: `VERTEX_PROJECT_ID`, `VERTEX_CREDENTIALS`, `GCS_BUCKET_NAME`
 
 **File Limits**:
 - Images: 20MB max, formats: PNG, JPG, JPEG, WebP, GIF, BMP, TIFF
