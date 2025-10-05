@@ -60,7 +60,6 @@ export interface VisionProvider {
 
   // Health and status
   healthCheck(): Promise<HealthStatus>;
-  getRateLimitInfo(): RateLimitInfo;
   supportsVideo(): boolean;
 }
 

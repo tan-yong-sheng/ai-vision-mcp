@@ -283,7 +283,6 @@ export class VertexAIProvider extends BaseVisionProvider {
         'Google Vertex AI Gemini multimodal models for enterprise image and video analysis',
       capabilities: this.getSupportedFormats(),
       modelCapabilities: this.getModelCapabilities(),
-      rateLimit: this.getRateLimitInfo(),
     };
   }
 
@@ -312,18 +311,6 @@ export class VertexAIProvider extends BaseVisionProvider {
         this.getErrorMessage(error)
       );
     }
-  }
-
-  getRateLimitInfo(): RateLimitInfo {
-    // Vertex AI rate limits (these are typical values - actual limits vary by project)
-    return {
-      requestsPerMinute: 120,
-      requestsPerDay: 15000,
-      currentUsage: {
-        requestsPerMinute: 0, // This would require tracking usage over time
-        requestsPerDay: 0,
-      },
-    };
   }
 
   // Private helper methods

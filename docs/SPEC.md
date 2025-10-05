@@ -115,7 +115,7 @@ NODE_ENV=development|production
 │  │   Image Provider│  │  Video Provider │  │ Storage  │  │
 │  │                 │  │                 │  │ Provider │  │
 │  │ • Gemini        │  │ • Gemini        │  │         │  │
-│  └─────────────────┘  └─────────────────┘  │ • S3    │  │
+│  └─────────────────┘  └─────────────────┘  │ • Google Cloud    │  │
 │                                         └─────────┘  │
 ├─────────────────────────────────────────────────────────┤
 │                    Core Services                       │
@@ -132,7 +132,7 @@ NODE_ENV=development|production
 │  │   HTTP Client   │  │   Error Handler │  │ Rate    │  │
 │  │                 │  │                 │  │ Limiting│  │
 │  │ • Retry Logic   │  │ • Error Types   │  │         │  │
-│  │ • Rate Limiting │  │ • Context       │  │ • Per   │  │
+│  │                 │  │ • Context       │  │ • Per   │  │
 │  │                 │  │ • Recovery      │  │ Provider│  │
 │  └─────────────────┘  └─────────────────┘  └─────────┘  │
 └─────────────────────────────────────────────────────────┘
@@ -711,38 +711,19 @@ GCS_BUCKET_NAME=your-mixed-provider-files
 
 ## 8. Performance Optimization
 
-### 8.1 Rate Limiting
-
-```typescript
-export class RateLimiter {
-  private requests: Map<string, number[]> = new Map();
-
-  constructor(private maxRequests: number, private windowMs: number) {}
-
-  async checkLimit(key: string): Promise<boolean> {
-    const now = Date.now();
-    const windowStart = now - this.windowMs;
-
-    let requests = this.requests.get(key) || [];
-    requests = requests.filter(timestamp => timestamp > windowStart);
-
-    if (requests.length >= this.maxRequests) {
-      return false;
-    }
-
-    requests.push(now);
-    this.requests.set(key, requests);
-    return true;
-  }
-}
-```
-
-### 8.2 Concurrent Request Management
+### 8.1 Concurrent Request Management
 
 - Limit concurrent requests per provider
 - Queue file uploads to prevent rate limit exceeded
 - Dynamic resource allocation based on load
 - Request pooling and connection reuse
+
+
+Users should check their actual rate limits in:
+- **Gemini API**: [Google AI Studio](https://ai.google.dev/gemini-api/docs/rate-limits)
+- **Vertex AI**: Google Cloud Console → Quotas & System Limits
+
+The providers will return rate limit errors directly from the API with appropriate retry-after headers when limits are exceeded.
 
 ## 9. Testing Guidelines
 

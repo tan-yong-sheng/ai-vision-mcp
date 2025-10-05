@@ -98,5 +98,5 @@ export interface ProviderInfo {
   description: string;
   capabilities: ProviderCapabilities;
   modelCapabilities: ModelCapabilities;
-  rateLimit: RateLimitInfo;
+  rateLimit?: RateLimitInfo; // Optional - rate limits vary by user tier/project
 }

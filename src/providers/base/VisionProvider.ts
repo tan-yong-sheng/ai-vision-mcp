@@ -47,7 +47,6 @@ export abstract class BaseVisionProvider implements VisionProvider {
   abstract getModelCapabilities(): ModelCapabilities;
   abstract getProviderInfo(): ProviderInfo;
   abstract healthCheck(): Promise<HealthStatus>;
-  abstract getRateLimitInfo(): RateLimitInfo;
 
   // Concrete implementations for common functionality
   setModel(imageModel: string, videoModel: string): void {

@@ -398,7 +398,6 @@ export class GeminiProvider extends BaseVisionProvider {
         'Google Gemini multimodal AI model for image and video analysis',
       capabilities: this.getSupportedFormats(),
       modelCapabilities: this.getModelCapabilities(),
-      rateLimit: this.getRateLimitInfo(),
     };
   }
 
@@ -420,18 +419,6 @@ export class GeminiProvider extends BaseVisionProvider {
         this.getErrorMessage(error)
       );
     }
-  }
-
-  getRateLimitInfo(): RateLimitInfo {
-    // Gemini API rate limits (these are typical values - actual limits may vary)
-    return {
-      requestsPerMinute: 60,
-      requestsPerDay: 1500,
-      currentUsage: {
-        requestsPerMinute: 0, // This would require tracking usage over time
-        requestsPerDay: 0,
-      },
-    };
   }
 
   // Private helper methods
