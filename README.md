@@ -130,8 +130,10 @@ Analyzes a video using AI and returns a detailed description.
 | `IMAGE_PROVIDER` | Yes | Provider for image analysis | `google`,`vertex_ai` |
 | `VIDEO_PROVIDER` | Yes | Provider for video analysis | `google`,`vertex_ai` |
 | **Model Selection** ||||
-| `IMAGE_MODEL | No | Model for image analysis | `gemini-2.5-flash-lite` |
+| `IMAGE_MODEL` | No | Model for image analysis | `gemini-2.5-flash-lite` |
 | `VIDEO_MODEL` | No | Model for video analysis | `gemini-2.5-flash` |
+| `FALLBACK_IMAGE_MODEL` | No | Fallback Model for image analysis | `gemini-2.5-flash-lite` |
+| `FALLBACK_VIDEO_MODEL` | No | Fallback Model for video analysis | `gemini-2.5-flash` |
 | **Google Gemini API** ||||
 | `GEMINI_API_KEY` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `google` | Google Gemini API key | Required for Gemini |
 | `GEMINI_BASE_URL` | No | Gemini API base URL | `https://generativelanguage.googleapis.com` |

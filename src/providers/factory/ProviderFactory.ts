@@ -69,29 +69,6 @@ export class VisionProviderFactory {
   }
 
   /**
-   * Auto-detect provider from model name
-   */
-  static detectProviderFromModel(modelName: string): string {
-    if (modelName.startsWith('gemini-') || modelName.startsWith('aistudio-')) {
-      return 'google';
-    }
-    if (modelName.startsWith('vertex-') || modelName.startsWith('gcp-')) {
-      return 'vertex_ai';
-    }
-    if (
-      modelName.startsWith('gpt-') ||
-      modelName.startsWith('davinci-') ||
-      modelName.startsWith('claude-')
-    ) {
-      // Future support for OpenAI/Claude
-      return 'openai';
-    }
-
-    // Default to Gemini
-    return 'google';
-  }
-
-  /**
    * Get provider-specific configuration validation rules
    */
   static getProviderConfigRequirements(providerName: string): string[] {
@@ -135,25 +112,16 @@ export class VisionProviderFactory {
     image: string;
     video: string;
   } {
-    switch (providerName) {
-      case 'google':
-        return {
-          image: 'gemini-2.5-flash-lite',
-          video: 'gemini-2.5-flash',
-        };
+    const config = ConfigService.getInstance().getConfig();
 
-      case 'vertex_ai':
-        return {
-          image: 'gemini-2.5-flash-lite',
-          video: 'gemini-2.5-flash',
-        };
-
-      default:
-        return {
-          image: 'gemini-2.5-flash-lite',
-          video: 'gemini-2.5-flash',
-        };
-    }
+    // Fallback priority:
+    // 1. FALLBACK_IMAGE_MODEL/FALLBACK_VIDEO_MODEL (if set)
+    // 2. IMAGE_MODEL/VIDEO_MODEL (if set)
+    // 3. Hardcoded defaults
+    return {
+      image: config.FALLBACK_IMAGE_MODEL || config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      video: config.FALLBACK_VIDEO_MODEL || config.VIDEO_MODEL || 'gemini-2.5-flash',
+    };
   }
 
   /**

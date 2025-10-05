@@ -21,6 +21,10 @@ export interface Config {
   IMAGE_MODEL?: string;
   VIDEO_MODEL?: string;
 
+  // Fallback model configuration
+  FALLBACK_IMAGE_MODEL?: string;
+  FALLBACK_VIDEO_MODEL?: string;
+
   // Google Cloud Storage configuration (for Vertex AI file storage)
   GCS_BUCKET_NAME?: string;
   GCS_PROJECT_ID?: string; // Auto-derived from VERTEX_CREDENTIALS if not provided

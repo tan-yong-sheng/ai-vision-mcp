@@ -60,6 +60,14 @@ export class ConfigService {
           process.env.VERTEX_ENDPOINT ||
           'https://aiplatform.googleapis.com',
 
+        // Model configuration
+        IMAGE_MODEL: process.env.IMAGE_MODEL,
+        VIDEO_MODEL: process.env.VIDEO_MODEL,
+
+        // Fallback model configuration
+        FALLBACK_IMAGE_MODEL: process.env.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
+        FALLBACK_VIDEO_MODEL: process.env.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
+
         // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
         GCS_PROJECT_ID: process.env.GCS_PROJECT_ID,
@@ -224,8 +232,8 @@ export class ConfigService {
     return {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
-      imageModel: 'gemini-2.5-flash-lite',
-      videoModel: 'gemini-2.5-flash',
+      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
+      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
     } as GeminiConfig;
   }
 
@@ -242,8 +250,8 @@ export class ConfigService {
       location: this.config.VERTEX_LOCATION || 'us-central1',
       endpoint: this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
       credentials: this.config.VERTEX_CREDENTIALS,
-      imageModel: 'gemini-2.5-flash-lite',
-      videoModel: 'gemini-2.5-flash',
+      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
+      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
     };
   }
 

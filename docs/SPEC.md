@@ -191,14 +191,6 @@ class ProviderFactory {
     provider.setModel(config.IMAGE_MODEL, config.VIDEO_MODEL);
     return provider;
   }
-
-  // Future expansion: Auto-detect provider from model name
-  private static detectProviderFromModel(modelName: string): string {
-    if (modelName.startsWith('gpt-')) return 'openai';
-    if (modelName.startsWith('claude-')) return 'claude';
-    if (modelName.startsWith('gemini-')) return 'google';
-    throw new Error(`Cannot detect provider from model: ${modelName}`);
-  }
 ```
 
 ### 3.4 Storage Provider
