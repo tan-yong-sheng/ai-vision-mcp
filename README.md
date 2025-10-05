@@ -69,38 +69,59 @@ Analyzes an image using AI and returns a detailed description.
 - `prompt` (string): Question or instruction for the AI
 - `options` (object, optional): Analysis options including temperature and max tokens
 
-**Example:**
+**Examples:**
+
+1. **Analyze image from URL:**
 ```json
 {
-  "imageSource": "https://example.com/image.jpg",
-  "prompt": "Describe what you see in this image",
-  "options": {
-    "temperature": 0.7,
-    "maxTokens": 1000
-  }
+  "imageSource": "https://plus.unsplash.com/premium_photo-1710965560034-778eedc929ff",
+  "prompt": "What is this image about? Describe what you see in detail."
 }
 ```
+
+2. **Analyze local image file:**
+```json
+{
+  "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
+  "prompt": "What is this image about? Describe what you see in detail."
+}
+```
+
 
 ### `analyze_video`
 
 Analyzes a video using AI and returns a detailed description.
 
 **Parameters:**
-- `videoSource` (string): URL, GCS URI, or file path to the video
+- `videoSource` (string): YouTube URL, GCS URI, or local file path to the video
 - `prompt` (string): Question or instruction for the AI
 - `options` (object, optional): Analysis options including temperature and max tokens
 
-**Example:**
+**Supported video sources:**
+- YouTube URLs (e.g., `https://www.youtube.com/watch?v=...`)
+- Local file paths (e.g., `C:\Users\username\Downloads\video.mp4`)
+- GCS URIs (e.g., `gs://bucket-name/video.mp4`)
+
+**Examples:**
+
+1. **Analyze video from YouTube URL:**
 ```json
 {
-  "videoSource": "https://example.com/video.mp4",
-  "prompt": "Summarize the key events in this video",
-  "options": {
-    "temperature": 0.5,
-    "maxTokens": 1500
-  }
+  "videoSource": "https://www.youtube.com/watch?v=9hE5-98ZeCg",
+  "prompt": "What is this video about? Describe what you see in detail."
 }
 ```
+
+2. **Analyze local video file:**
+```json
+{
+  "videoSource": "C:\\Users\\username\\Downloads\\video.mp4",
+  "prompt": "What is this video about? Describe what you see in detail."
+}
+```
+
+
+**Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
 
 ## Configuration
 
@@ -221,12 +242,6 @@ The server includes comprehensive error handling:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- 📧 Email: your.email@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/tan-yong-sheng/ai-vision-mcp/issues)
-- 📖 Documentation: [GitHub Wiki](https://github.com/tan-yong-sheng/ai-vision-mcp/wiki)
 
 ## Acknowledgments
 

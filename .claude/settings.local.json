@@ -13,7 +13,11 @@
       "Bash(npm run format:*)",
       "Bash(npm run prepublishOnly:*)",
       "Bash(npx:*)",
-      "Bash(mcp-inspector:*)"
+      "Bash(mcp-inspector:*)",
+      "Bash(node:*)",
+      "mcp__ai-vision-mcp__analyze_image",
+      "Bash(cat .env)",
+      "mcp__ai-vision-mcp__analyze_video"
     ],
     "deny": [],
     "ask": []

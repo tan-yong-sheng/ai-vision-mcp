@@ -42,14 +42,47 @@ export class GeminiProvider extends BaseVisionProvider {
     _options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
+      console.log(`[GeminiProvider] Received imageSource: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+      console.log(`[GeminiProvider] ImageSource starts with data:image: ${imageSource.startsWith('data:image/')}`);
+      console.log(`[GeminiProvider] ImageSource starts with http: ${imageSource.startsWith('http')}`);
+      console.log(`[GeminiProvider] ImageSource starts with gs: ${imageSource.startsWith('gs://')}`);
+      console.log(`[GeminiProvider] ImageSource starts with files/: ${imageSource.startsWith('files/')}`);
+      console.log(`[GeminiProvider] ImageSource contains generativelanguage: ${imageSource.includes('generativelanguage.googleapis.com')}`);
+
       let content: any;
       let mimeType: string;
       let fileSize: number | undefined;
-      let downloadDuration = 0;
+      let processingDuration = 0;
 
-      if (imageSource.startsWith('http')) {
-        // For public URLs (non-GCS), download and use inlineData
-        const { result: imageData, duration } = await this.measureAsync(
+      if (imageSource.startsWith('data:image/')) {
+        // Handle base64 data with inlineData
+        const matches = imageSource.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) {
+          throw new Error('Invalid data URL format');
+        }
+
+        mimeType = matches[1];
+        const base64Data = matches[2];
+        fileSize = Buffer.from(base64Data, 'base64').length;
+
+        content = {
+          inlineData: {
+            mimeType,
+            data: base64Data,
+          },
+        };
+      } else if (imageSource.startsWith('gs://')) {
+        // GCS URIs can be passed directly using file_data
+        mimeType = 'image/jpeg'; // Default, will be detected if needed
+        content = {
+          fileData: {
+            fileUri: imageSource,
+            mimeType,
+          },
+        };
+      } else if (imageSource.startsWith('http')) {
+        // Download image from URL and upload to Files API
+        const { result: imageData, duration: downloadDuration } = await this.measureAsync(
           async () => {
             const response = await fetch(imageSource);
             if (!response.ok) {
@@ -61,84 +94,46 @@ export class GeminiProvider extends BaseVisionProvider {
             return Buffer.from(arrayBuffer);
           }
         );
-        downloadDuration = duration;
-        mimeType = this.getImageMimeType(imageSource, imageData);
-        content = {
-          inlineData: {
-            mimeType,
-            data: imageData.toString('base64'),
-          },
-        };
+
+        const filename = imageSource.split('/').pop() || 'image.jpg';
+        mimeType = this.getImageMimeTypeFromUrl(imageSource);
         fileSize = imageData.length;
-      } else if (imageSource.startsWith('gs://')) {
-        // GCS URIs can be passed directly using file_data
-        content = {
-          fileData: {
-            fileUri: imageSource,
-            mimeType: 'image/jpeg',
-          },
-        };
-      } else if (imageSource.startsWith('data:image/')) {
-        // Handle base64 data with inlineData
-        const base64Data = imageSource.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-        mimeType = this.getImageMimeType(imageSource, buffer);
-        content = {
-          inlineData: {
-            mimeType,
-            data: base64Data,
-          },
-        };
-        fileSize = buffer.length;
-      } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
-        // For the old @google/generative-ai SDK, we need to download the file content
-        // and use it as inline data instead of using file references
 
-        // Extract file ID from either "files/3lahndmttgdq" or full URL
-        let fileId: string;
-        if (imageSource.startsWith('files/')) {
-          fileId = imageSource.replace('files/', '');
-        } else {
-          // Extract file ID from URL like "https://generativelanguage.googleapis.com/v1beta/files/3lahndmttgdq"
-          const parts = imageSource.split('/');
-          fileId = parts[parts.length - 1];
-        }
-
-        // Wait for file to be processed and get its metadata
-        await this.waitForFileProcessing(fileId);
-
-        // Download the file content to use as inline data
-        const { result: imageData } = await this.measureAsync(
+        const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
           async () => {
-            // Try to download the file from the Files API
-            const response = await fetch(
-              `${this.baseUrl}/v1beta/files/${fileId}:download?key=${this.config.apiKey}`
-            );
-
-            if (!response.ok) {
-              throw new NetworkError(
-                `Failed to download file from Gemini Files API: ${response.statusText}`
-              );
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            return Buffer.from(arrayBuffer);
+            return await this.uploadFile(imageData, filename, mimeType);
           }
         );
 
-        // Detect MIME type from the file metadata or use a default
-        const mimeType = this.getImageMimeType(imageSource, imageData);
-
+        processingDuration = downloadDuration + uploadFileDuration;
         content = {
-          inlineData: {
+          fileData: {
+            fileUri: uploadedFile.uri!,
             mimeType,
-            data: imageData.toString('base64'),
           },
         };
+      } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+        // Handle Files API references - for newer SDK, we can use file references directly
+        let fileUri: string;
+        if (imageSource.startsWith('files/')) {
+          fileUri = `https://generativelanguage.googleapis.com/v1beta/files/${imageSource.replace('files/', '')}`;
+        } else {
+          fileUri = imageSource;
+        }
 
-        fileSize = imageData.length;
+        // Wait for file to be processed if needed
+        const fileId = fileUri.split('/').pop()!;
+        await this.waitForFileProcessing(fileId);
+
+        mimeType = 'image/jpeg'; // Default, will be detected if needed
+        content = {
+          fileData: {
+            fileUri,
+            mimeType,
+          },
+        };
       } else {
-        throw new Error('Invalid image source format');
+        throw new Error(`Invalid image source format: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''} (starts with http: ${imageSource.startsWith('http')}, starts with data:image: ${imageSource.startsWith('data:image/')}, starts with files/: ${imageSource.startsWith('files/')})`);
       }
 
       const model = this.client.getGenerativeModel({ model: this.imageModel });
@@ -161,7 +156,7 @@ export class GeminiProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        downloadDuration + analysisDuration,
+        processingDuration + analysisDuration,
         content.fileData?.mimeType || content.inlineData?.mimeType,
         fileSize
       );
@@ -179,7 +174,20 @@ export class GeminiProvider extends BaseVisionProvider {
       let content: any;
       let uploadDuration = 0;
 
-      if (videoSource.startsWith('http')) {
+      if (videoSource.startsWith('files/') || videoSource.includes('generativelanguage.googleapis.com')) {
+        // Use existing file reference - check this FIRST before other http checks
+        // videoSource could be either "files/3lahndmttgdq" or full Google API URL
+        const fileUri = videoSource.startsWith('files/') ?
+          `https://generativelanguage.googleapis.com/v1beta/${videoSource}` :
+          videoSource;
+
+        content = {
+          fileData: {
+            fileUri: fileUri,
+            mimeType: 'video/mp4',
+          },
+        };
+      } else if (videoSource.startsWith('http')) {
         // Check if it's a YouTube URL
         if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
           // YouTube URLs can be passed directly
@@ -226,19 +234,6 @@ export class GeminiProvider extends BaseVisionProvider {
         content = {
           fileData: {
             fileUri: videoSource,
-            mimeType: 'video/mp4',
-          },
-        };
-      } else if (videoSource.startsWith('files/') || videoSource.includes('generativelanguage.googleapis.com')) {
-        // Use existing file reference
-        // videoSource could be either "files/3lahndmttgdq" or full Google API URL
-        const fileUri = videoSource.startsWith('files/') ?
-          `https://generativelanguage.googleapis.com/v1beta/${videoSource}` :
-          videoSource;
-
-        content = {
-          fileData: {
-            fileUri: fileUri,
             mimeType: 'video/mp4',
           },
         };

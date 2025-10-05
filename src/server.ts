@@ -21,7 +21,8 @@ const server = new McpServer({
 function getServices() {
   try {
     // Initialize configuration
-    const config = ConfigService.load();
+    const configService = ConfigService.getInstance();
+    const config = configService.getConfig();
 
     // Create providers using factory
     const imageProvider = VisionProviderFactory.createProviderWithValidation(
@@ -34,10 +35,10 @@ function getServices() {
     );
 
     // Create file services for handling file uploads
-    const imageFileService = new FileService(config, 'image', imageProvider as any);
-    const videoFileService = new FileService(config, 'video', videoProvider as any);
+    const imageFileService = new FileService(configService, 'image', imageProvider as any);
+    const videoFileService = new FileService(configService, 'video', videoProvider as any);
 
-    return { config, imageProvider, videoProvider, imageFileService, videoFileService };
+    return { config, configService, imageProvider, videoProvider, imageFileService, videoFileService };
   } catch (error) {
     console.error('Failed to initialize services:', error);
     throw error;

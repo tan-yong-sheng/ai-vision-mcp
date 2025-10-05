@@ -305,6 +305,23 @@ export class ConfigService {
     return this.config.VERTEX_AI_FILES_API_THRESHOLD!;
   }
 
+  // Individual getter methods for file processing config
+  public getMaxImageSize(): number {
+    return this.config.MAX_IMAGE_SIZE || 20 * 1024 * 1024; // 20MB default
+  }
+
+  public getMaxVideoSize(): number {
+    return this.config.MAX_VIDEO_SIZE || 2 * 1024 * 1024 * 1024; // 2GB default
+  }
+
+  public getAllowedImageFormats(): string[] {
+    return this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  }
+
+  public getAllowedVideoFormats(): string[] {
+    return this.config.ALLOWED_VIDEO_FORMATS || ['mp4', 'mov', 'avi', 'webm'];
+  }
+
   // Utility method to reload configuration (useful for testing)
   public reloadConfig(): void {
     this.config = this.loadConfig();
