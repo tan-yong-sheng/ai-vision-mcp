@@ -1,40 +1,32 @@
 /**
- * Google Cloud Storage provider implementation
+ * Google Cloud Storage provider implementation using S3-compatible API
  */
 
-import { Storage, Bucket } from '@google-cloud/storage';
+import { S3StorageProvider } from '../base/S3StorageProvider.js';
 import {
   StorageProvider,
   StorageFile,
 } from '../../types/Storage.js';
 import { StorageError } from '../../types/Errors.js';
-
-export interface GCSConfig {
-  bucketName: string;
-  projectId?: string;
-  keyFilePath?: string;
-  publicUrlBase?: string;
-}
+import type { GCSConfig } from '../../types/Config.js';
 
 export class GCSStorageProvider implements StorageProvider {
-  private storage: Storage;
-  private bucket: Bucket;
+  private s3Provider: S3StorageProvider;
   private config: GCSConfig;
 
   constructor(config: GCSConfig) {
     this.config = config;
 
-    // Initialize Google Cloud Storage client
-    const storageOptions: any = {};
-    if (config.projectId) {
-      storageOptions.projectId = config.projectId;
-    }
-    if (config.keyFilePath) {
-      storageOptions.keyFilename = config.keyFilePath;
-    }
-
-    this.storage = new Storage(storageOptions);
-    this.bucket = this.storage.bucket(config.bucketName);
+    // Initialize S3-compatible provider for GCS
+    // GCS S3 Interoperability requires forcePathStyle: true
+    this.s3Provider = new S3StorageProvider({
+      bucket: config.bucketName,
+      accessKey: config.accessKey,
+      secretKey: config.secretKey,
+      region: config.region,
+      endpoint: config.endpoint,
+      forcePathStyle: true, // Required for GCS S3 compatibility
+    });
   }
 
   async uploadFile(
@@ -43,27 +35,7 @@ export class GCSStorageProvider implements StorageProvider {
     mimeType: string
   ): Promise<StorageFile> {
     try {
-      const key = this.generateKey(filename);
-      const file = this.bucket.file(key);
-
-      await file.save(buffer, {
-        metadata: {
-          contentType: mimeType,
-          cacheControl: 'public, max-age=31536000', // 1 year
-        },
-      });
-
-      const url = await this.getPublicUrl(key);
-
-      return {
-        id: key,
-        filename,
-        mimeType,
-        size: buffer.length,
-        url,
-        lastModified: new Date().toISOString(),
-        etag: this.generateETag(buffer),
-      };
+      return await this.s3Provider.uploadFile(buffer, filename, mimeType);
     } catch (error) {
       throw new StorageError(
         `Failed to upload file to GCS: ${error instanceof Error ? error.message : String(error)}`,
@@ -75,9 +47,7 @@ export class GCSStorageProvider implements StorageProvider {
 
   async downloadFile(fileId: string): Promise<Buffer> {
     try {
-      const file = this.bucket.file(fileId);
-      const [buffer] = await file.download();
-      return buffer;
+      return await this.s3Provider.downloadFile(fileId);
     } catch (error) {
       throw new StorageError(
         `Failed to download file from GCS: ${error instanceof Error ? error.message : String(error)}`,
@@ -89,13 +59,8 @@ export class GCSStorageProvider implements StorageProvider {
 
   async deleteFile(fileId: string): Promise<void> {
     try {
-      const file = this.bucket.file(fileId);
-      await file.delete();
+      await this.s3Provider.deleteFile(fileId);
     } catch (error) {
-      // Don't throw error if file doesn't exist (404)
-      if (error instanceof Error && error.message.includes('No such object')) {
-        return;
-      }
       throw new StorageError(
         `Failed to delete file from GCS: ${error instanceof Error ? error.message : String(error)}`,
         'gcs',
@@ -105,25 +70,20 @@ export class GCSStorageProvider implements StorageProvider {
   }
 
   async getPublicUrl(fileId: string): Promise<string> {
-    if (this.config.publicUrlBase) {
-      return `${this.config.publicUrlBase}/${fileId}`;
+    try {
+      return await this.s3Provider.getPublicUrl(fileId);
+    } catch (error) {
+      throw new StorageError(
+        `Failed to get public URL from GCS: ${error instanceof Error ? error.message : String(error)}`,
+        'gcs',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
-
-    // Generate standard GCS URL
-    return `https://storage.googleapis.com/${this.config.bucketName}/${fileId}`;
   }
 
   async getSignedUrl(fileId: string, expiresIn: number): Promise<string> {
     try {
-      const file = this.bucket.file(fileId);
-
-      const [signedUrl] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + expiresIn * 1000, // Convert to milliseconds
-      });
-
-      return signedUrl;
+      return await this.s3Provider.getSignedUrl(fileId, expiresIn);
     } catch (error) {
       throw new StorageError(
         `Failed to generate signed URL: ${error instanceof Error ? error.message : String(error)}`,
@@ -135,30 +95,7 @@ export class GCSStorageProvider implements StorageProvider {
 
   async listFiles(prefix?: string): Promise<StorageFile[]> {
     try {
-      const options: any = {};
-      if (prefix) {
-        options.prefix = prefix;
-      }
-
-      const [files] = await this.bucket.getFiles(options);
-      const storageFiles: StorageFile[] = [];
-
-      for (const file of files) {
-        const [metadata] = await file.getMetadata();
-        const url = await this.getPublicUrl(file.name);
-
-        storageFiles.push({
-          id: file.name,
-          filename: file.name.split('/').pop() || file.name,
-          mimeType: metadata.contentType || 'application/octet-stream',
-          size: parseInt(String(metadata.size)) || 0,
-          url,
-          lastModified: metadata.updated || new Date().toISOString(),
-          etag: metadata.etag,
-        });
-      }
-
-      return storageFiles;
+      return await this.s3Provider.listFiles(prefix);
     } catch (error) {
       throw new StorageError(
         `Failed to list files from GCS: ${error instanceof Error ? error.message : String(error)}`,
@@ -168,70 +105,17 @@ export class GCSStorageProvider implements StorageProvider {
     }
   }
 
-  // Private helper methods
-
-  private generateKey(filename: string): string {
-    // Generate a unique key with timestamp and random UUID
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const randomId = Math.random().toString(36).substring(2, 15);
-    const extension = filename.includes('.')
-      ? `.${filename.split('.').pop()}`
-      : '';
-
-    // Organize files by date and type
-    const type = this.getFileType(filename);
-    return `${type}/${timestamp}/${randomId}${extension}`;
-  }
-
-  private getFileType(filename: string): string {
-    const extension = filename.split('.').pop()?.toLowerCase();
-
-    if (
-      [
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-        'bmp',
-        'webp',
-        'tiff',
-        'heic',
-        'heif',
-      ].includes(extension || '')
-    ) {
-      return 'images';
-    } else if (
-      ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', '3gp', 'm4v'].includes(
-        extension || ''
-      )
-    ) {
-      return 'videos';
-    } else {
-      return 'files';
-    }
-  }
-
-  private generateETag(buffer: Buffer): string {
-    // Simple hash generation - in production, you might want to use a proper hash function
-    const hash = Buffer.from(buffer).toString('base64').substring(0, 32);
-    return `"${hash}"`;
-  }
-
   // Configuration methods
 
   public getBucket(): string {
     return this.config.bucketName;
   }
 
-  public getProjectId(): string | undefined {
-    return this.config.projectId;
+  public getEndpoint(): string {
+    return this.config.endpoint;
   }
 
-  public getPublicUrlBase(): string | undefined {
-    return this.config.publicUrlBase;
-  }
-
-  public isUsingCustomUrlBase(): boolean {
-    return !!this.config.publicUrlBase;
+  public getRegion(): string {
+    return this.config.region;
   }
 }

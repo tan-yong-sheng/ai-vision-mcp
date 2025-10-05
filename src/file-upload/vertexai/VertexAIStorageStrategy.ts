@@ -58,8 +58,10 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
   }
 
   private convertToGcsUri(url: string): string {
-    // Convert Google Cloud Storage URL to GCS URI
-    // Example: https://storage.googleapis.com/bucket-name/path/to/file -> gs://bucket-name/path/to/file
+    // Convert S3-compatible GCS URL to GCS URI
+    // Examples:
+    // - https://storage.googleapis.com/bucket-name/path/to/file -> gs://bucket-name/path/to/file
+    // - https://endpoint/bucket-name/path/to/file -> gs://bucket-name/path/to/file (path style)
 
     if (url.startsWith('gs://')) {
       return url; // Already a GCS URI
@@ -68,12 +70,19 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
     try {
       const urlObj = new URL(url);
 
-      if (url.includes('storage.googleapis.com')) {
-        // Extract bucket and path from Google Cloud Storage URL
-        const pathMatch = urlObj.pathname.match(/^\/([^\/]+)\/(.*)$/);
-        if (pathMatch) {
-          return `gs://${pathMatch[1]}/${pathMatch[2]}`;
-        }
+      // Handle path-style URLs (most common for GCS S3 compatibility)
+      // https://endpoint/bucket-name/path/to/file
+      const pathMatch = urlObj.pathname.match(/^\/([^\/]+)\/(.*)$/);
+      if (pathMatch) {
+        return `gs://${pathMatch[1]}/${pathMatch[2]}`;
+      }
+
+      // Handle virtual-host style URLs (less common for GCS)
+      // https://bucket-name.endpoint/path/to/file
+      const hostMatch = urlObj.hostname.match(/^([^.]+)\.(.*)$/);
+      if (hostMatch) {
+        const path = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        return `gs://${hostMatch[1]}/${path}`;
       }
     } catch (error) {
       throw new FileUploadError(

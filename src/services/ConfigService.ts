@@ -59,11 +59,11 @@ export class ConfigService {
           process.env.VERTEX_ENDPOINT ||
           'https://aiplatform.googleapis.com',
 
-        // Google Cloud Storage configuration
+        // Google Cloud Storage configuration (S3-compatible)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
-        GCS_PROJECT_ID: process.env.GCS_PROJECT_ID,
-        GCS_KEY_FILE_PATH: process.env.GCS_KEY_FILE_PATH,
-        GCS_PUBLIC_URL_BASE: process.env.GCS_PUBLIC_URL_BASE,
+        GCS_ENDPOINT: process.env.GCS_ENDPOINT,
+        GCS_ACCESS_KEY: process.env.GCS_ACCESS_KEY,
+        GCS_SECRET_KEY: process.env.GCS_SECRET_KEY,
 
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
@@ -179,6 +179,21 @@ export class ConfigService {
           'GCS_BUCKET_NAME is required when using Vertex AI provider'
         );
       }
+      if (!config.GCS_ENDPOINT) {
+        throw new ConfigurationError(
+          'GCS_ENDPOINT is required when using Vertex AI provider'
+        );
+      }
+      if (!config.GCS_ACCESS_KEY) {
+        throw new ConfigurationError(
+          'GCS_ACCESS_KEY is required when using Vertex AI provider'
+        );
+      }
+      if (!config.GCS_SECRET_KEY) {
+        throw new ConfigurationError(
+          'GCS_SECRET_KEY is required when using Vertex AI provider'
+        );
+      }
     }
   }
 
@@ -227,9 +242,10 @@ export class ConfigService {
 
     return {
       bucketName: this.config.GCS_BUCKET_NAME,
-      projectId: this.config.GCS_PROJECT_ID || this.config.VERTEX_PROJECT_ID,
-      keyFilePath: this.config.GCS_KEY_FILE_PATH,
-      publicUrlBase: this.config.GCS_PUBLIC_URL_BASE,
+      endpoint: this.config.GCS_ENDPOINT!,
+      accessKey: this.config.GCS_ACCESS_KEY!,
+      secretKey: this.config.GCS_SECRET_KEY!,
+      region: 'auto', // GCS S3-compatible mode uses 'auto' region
     };
   }
 

@@ -21,11 +21,11 @@ export interface Config {
   IMAGE_MODEL?: string;
   VIDEO_MODEL?: string;
 
-  // Google Cloud Storage configuration
+  // Google Cloud Storage configuration (S3-compatible)
   GCS_BUCKET_NAME?: string;
-  GCS_PROJECT_ID?: string;
-  GCS_KEY_FILE_PATH?: string;
-  GCS_PUBLIC_URL_BASE?: string;
+  GCS_ENDPOINT?: string;
+  GCS_ACCESS_KEY?: string;
+  GCS_SECRET_KEY?: string;
 
   // Universal API parameters
   TEMPERATURE?: number;
@@ -71,9 +71,10 @@ export interface VertexAIConfig {
 
 export interface GCSConfig {
   bucketName: string;
-  projectId?: string;
-  keyFilePath?: string;
-  publicUrlBase?: string;
+  endpoint: string;
+  accessKey: string;
+  secretKey: string;
+  region: string;
 }
 
 export interface FileUploadConfig {

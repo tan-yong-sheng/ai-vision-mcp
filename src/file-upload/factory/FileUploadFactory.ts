@@ -24,18 +24,34 @@ export class FileUploadFactory {
         return new GeminiFilesAPI(visionProvider);
 
       case 'vertex_ai':
-        // For Vertex AI, we need Google Cloud Storage
+        // For Vertex AI, we need Google Cloud Storage with S3-compatible API
         if (!config.GCS_BUCKET_NAME) {
           throw new ConfigurationError(
             'GCS_BUCKET_NAME is required for Vertex AI provider. Please set GCS_BUCKET_NAME.'
           );
         }
+        if (!config.GCS_ENDPOINT) {
+          throw new ConfigurationError(
+            'GCS_ENDPOINT is required for Vertex AI provider. Please set GCS_ENDPOINT.'
+          );
+        }
+        if (!config.GCS_ACCESS_KEY) {
+          throw new ConfigurationError(
+            'GCS_ACCESS_KEY is required for Vertex AI provider. Please set GCS_ACCESS_KEY.'
+          );
+        }
+        if (!config.GCS_SECRET_KEY) {
+          throw new ConfigurationError(
+            'GCS_SECRET_KEY is required for Vertex AI provider. Please set GCS_SECRET_KEY.'
+          );
+        }
 
         const gcsConfig = {
           bucketName: config.GCS_BUCKET_NAME,
-          projectId: config.GCS_PROJECT_ID || config.VERTEX_PROJECT_ID,
-          keyFilePath: config.GCS_KEY_FILE_PATH,
-          publicUrlBase: config.GCS_PUBLIC_URL_BASE,
+          endpoint: config.GCS_ENDPOINT,
+          accessKey: config.GCS_ACCESS_KEY,
+          secretKey: config.GCS_SECRET_KEY,
+          region: 'auto', // GCS S3-compatible mode uses 'auto' region
         };
 
         const storageProvider = new GCSStorageProvider(gcsConfig);

@@ -60,11 +60,11 @@ export const ConfigSchema = z.object({
     .optional()
     .default('https://aiplatform.googleapis.com'),
 
-  // Google Cloud Storage configuration
+  // Google Cloud Storage configuration (S3-compatible)
   GCS_BUCKET_NAME: z.string().min(1).optional(),
-  GCS_PROJECT_ID: z.string().min(1).optional(),
-  GCS_KEY_FILE_PATH: z.string().min(1).optional(),
-  GCS_PUBLIC_URL_BASE: z.string().url().optional(),
+  GCS_ENDPOINT: z.string().url().optional(),
+  GCS_ACCESS_KEY: z.string().min(1).optional(),
+  GCS_SECRET_KEY: z.string().min(1).optional(),
 
   // Universal API parameters
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
