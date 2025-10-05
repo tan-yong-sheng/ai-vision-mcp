@@ -2,7 +2,7 @@
  * Gemini API provider implementation
  */
 
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
 import type {
@@ -15,8 +15,6 @@ import type {
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
-  GeminiGenerateContentRequest,
-  GeminiGenerateContentResponse,
   GeminiFileMetadata,
 } from '../../types/Providers.js';
 import {
@@ -25,7 +23,6 @@ import {
   FileNotFoundError,
   NetworkError,
 } from '../../types/Errors.js';
-import { RetryHandler } from '../../utils/retry.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenerativeAI;
@@ -42,7 +39,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async analyzeImage(
     imageSource: string,
     prompt: string,
-    options?: AnalysisOptions
+    _options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
       let content: any;
@@ -93,14 +90,53 @@ export class GeminiProvider extends BaseVisionProvider {
           },
         };
         fileSize = buffer.length;
-      } else if (imageSource.startsWith('files/')) {
-        // Handle file reference using file_data
+      } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+        // For the old @google/generative-ai SDK, we need to download the file content
+        // and use it as inline data instead of using file references
+
+        // Extract file ID from either "files/3lahndmttgdq" or full URL
+        let fileId: string;
+        if (imageSource.startsWith('files/')) {
+          fileId = imageSource.replace('files/', '');
+        } else {
+          // Extract file ID from URL like "https://generativelanguage.googleapis.com/v1beta/files/3lahndmttgdq"
+          const parts = imageSource.split('/');
+          fileId = parts[parts.length - 1];
+        }
+
+        // Wait for file to be processed and get its metadata
+        await this.waitForFileProcessing(fileId);
+
+        // Download the file content to use as inline data
+        const { result: imageData } = await this.measureAsync(
+          async () => {
+            // Try to download the file from the Files API
+            const response = await fetch(
+              `${this.baseUrl}/v1beta/files/${fileId}:download?key=${this.config.apiKey}`
+            );
+
+            if (!response.ok) {
+              throw new NetworkError(
+                `Failed to download file from Gemini Files API: ${response.statusText}`
+              );
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+          }
+        );
+
+        // Detect MIME type from the file metadata or use a default
+        const mimeType = this.getImageMimeType(imageSource, imageData);
+
         content = {
-          fileData: {
-            fileUri: imageSource,
-            mimeType: 'image/jpeg',
+          inlineData: {
+            mimeType,
+            data: imageData.toString('base64'),
           },
         };
+
+        fileSize = imageData.length;
       } else {
         throw new Error('Invalid image source format');
       }
@@ -137,7 +173,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async analyzeVideo(
     videoSource: string,
     prompt: string,
-    options?: AnalysisOptions
+    _options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
       let content: any;
@@ -193,11 +229,16 @@ export class GeminiProvider extends BaseVisionProvider {
             mimeType: 'video/mp4',
           },
         };
-      } else if (videoSource.startsWith('files/')) {
+      } else if (videoSource.startsWith('files/') || videoSource.includes('generativelanguage.googleapis.com')) {
         // Use existing file reference
+        // videoSource could be either "files/3lahndmttgdq" or full Google API URL
+        const fileUri = videoSource.startsWith('files/') ?
+          `https://generativelanguage.googleapis.com/v1beta/${videoSource}` :
+          videoSource;
+
         content = {
           fileData: {
-            fileUri: videoSource,
+            fileUri: fileUri,
             mimeType: 'video/mp4',
           },
         };
@@ -240,7 +281,7 @@ export class GeminiProvider extends BaseVisionProvider {
     mimeType: string
   ): Promise<UploadedFile> {
     try {
-      const { result: fileMetadata, duration } = await this.measureAsync(
+      const { result: fileMetadata } = await this.measureAsync(
         async () => {
           return await this.uploadToGeminiFiles(buffer, filename, mimeType);
         }
@@ -267,7 +308,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async downloadFile(fileId: string): Promise<Buffer> {
     try {
       // First get file metadata to get the download URL
-      const metadata = await this.getFileMetadata(fileId);
+      await this.getFileMetadata(fileId);
 
       // For Gemini Files API, we typically need to use the URI directly
       // This is a simplified implementation - in practice, you might need to use a different approach
@@ -368,7 +409,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
   async healthCheck(): Promise<HealthStatus> {
     try {
-      const { result: _, duration } = await this.measureAsync(async () => {
+      const { duration } = await this.measureAsync(async () => {
         const model = this.client.getGenerativeModel({
           model: this.imageModel,
         });
@@ -442,6 +483,53 @@ export class GeminiProvider extends BaseVisionProvider {
     }
 
     return (await response.json()) as GeminiFileMetadata;
+  }
+
+  async waitForFileProcessing(fileId: string): Promise<void> {
+    const maxAttempts = 30; // Maximum 30 attempts
+    const delay = 2000; // 2 seconds between attempts
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const fileMetadata = await this.getFileMetadata(fileId);
+
+        if (fileMetadata.state === 'ACTIVE') {
+          return; // File is ready for use
+        }
+
+        if (fileMetadata.state === 'FAILED') {
+          throw new FileUploadError(
+            `File processing failed: Unknown error`,
+            'gemini'
+          );
+        }
+      } catch (error) {
+        // If it's a network error, we'll retry
+        if (attempt === maxAttempts) {
+          throw new FileUploadError(
+            `Failed to check file status after ${maxAttempts} attempts: ${error instanceof Error ? error.message : String(error)}`,
+            'gemini'
+          );
+        }
+      }
+
+      // Wait before the next attempt
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    throw new FileUploadError(
+      `File processing timed out after ${maxAttempts * delay / 1000} seconds`,
+      'gemini'
+    );
+  }
+
+  // Public getters for file upload strategy
+  getApiBaseUrl(): string {
+    return this.baseUrl;
+  }
+
+  getApiKey(): string {
+    return this.config.apiKey;
   }
 
   private getImageMimeType(source: string, buffer?: Buffer): string {

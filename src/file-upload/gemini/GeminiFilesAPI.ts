@@ -37,11 +37,18 @@ export class GeminiFilesAPI implements FileUploadStrategy {
       );
     }
 
+    // Wait for the file to become ACTIVE before returning it for analysis
+    await this.waitForFileProcessing(uploadedFile.id);
+
     return {
       type: 'file_uri',
       uri: uploadedFile.uri,
       mimeType: uploadedFile.mimeType,
     };
+  }
+
+  private async waitForFileProcessing(fileId: string): Promise<void> {
+    await this.geminiProvider.waitForFileProcessing(fileId);
   }
 
   async cleanup(fileId: string): Promise<void> {

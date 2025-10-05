@@ -13,10 +13,6 @@ import type {
   LoggingConfig,
   DevelopmentConfig,
 } from '../types/Config.js';
-import type {
-  ProviderCapabilities,
-  ModelCapabilities,
-} from '../types/Providers.js';
 import { ConfigurationError } from '../types/Errors.js';
 import { validateConfig, formatZodError } from '../utils/validation.js';
 

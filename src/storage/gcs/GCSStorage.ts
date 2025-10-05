@@ -2,11 +2,10 @@
  * Google Cloud Storage provider implementation
  */
 
-import { Storage, File, Bucket } from '@google-cloud/storage';
+import { Storage, Bucket } from '@google-cloud/storage';
 import {
   StorageProvider,
   StorageFile,
-  StorageConfig,
 } from '../../types/Storage.js';
 import { StorageError } from '../../types/Errors.js';
 

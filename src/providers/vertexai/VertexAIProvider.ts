@@ -19,7 +19,6 @@ import type {
 import {
   ProviderError,
   FileUploadError,
-  FileNotFoundError,
   NetworkError,
 } from '../../types/Errors.js';
 
@@ -192,9 +191,9 @@ export class VertexAIProvider extends BaseVisionProvider {
   }
 
   async uploadFile(
-    buffer: Buffer,
-    filename: string,
-    mimeType: string
+    _buffer: Buffer,
+    _filename: string,
+    _mimeType: string
   ): Promise<UploadedFile> {
     // Vertex AI requires external storage for all files
     // This method should integrate with a storage service
@@ -204,7 +203,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     );
   }
 
-  async downloadFile(fileId: string): Promise<Buffer> {
+  async downloadFile(_fileId: string): Promise<Buffer> {
     // For Vertex AI, files are stored in GCS
     // This would need to integrate with GCS client
     throw new Error(
@@ -212,7 +211,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     );
   }
 
-  async deleteFile(fileId: string): Promise<void> {
+  async deleteFile(_fileId: string): Promise<void> {
     // For Vertex AI, files are stored in GCS
     // This would need to integrate with GCS client
     throw new Error(
@@ -282,7 +281,7 @@ export class VertexAIProvider extends BaseVisionProvider {
 
   async healthCheck(): Promise<HealthStatus> {
     try {
-      const { result: _, duration } = await this.measureAsync(async () => {
+      const { duration } = await this.measureAsync(async () => {
         const model = this.client.getGenerativeModel({
           model: this.imageModel,
         });

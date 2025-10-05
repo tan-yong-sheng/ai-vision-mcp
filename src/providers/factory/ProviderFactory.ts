@@ -2,7 +2,7 @@
  * Provider factory for creating and managing vision providers
  */
 
-import type { VisionProvider, ProviderFactory } from '../../types/Providers.js';
+import type { VisionProvider } from '../../types/Providers.js';
 import type { Config } from '../../types/Config.js';
 import { GeminiProvider } from '../gemini/GeminiProvider.js';
 import { VertexAIProvider } from '../vertexai/VertexAIProvider.js';

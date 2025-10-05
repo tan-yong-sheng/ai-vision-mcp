@@ -9,7 +9,6 @@ import { ConfigService } from './services/ConfigService.js';
 import { FileService } from './services/FileService.js';
 import { VisionProviderFactory } from './providers/factory/ProviderFactory.js';
 import { analyze_image, analyze_video } from './tools/index.js';
-import type { VisionProvider } from './types/Providers.js';
 import { VisionError } from './types/Errors.js';
 
 // Create MCP server

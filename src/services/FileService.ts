@@ -4,7 +4,6 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
 import type { Config } from '../types/Config.js';
 import type { FileUploadStrategy } from '../types/Providers.js';
 import { FileUploadFactory } from '../file-upload/factory/FileUploadFactory.js';
@@ -44,11 +43,7 @@ export class FileService {
     }
 
     // If it's a local file path, upload to storage
-    if (
-      imageSource.startsWith('/') ||
-      imageSource.startsWith('./') ||
-      imageSource.startsWith('../')
-    ) {
+    if (this.isLocalFilePath(imageSource)) {
       return await this.handleLocalFile(imageSource, 'image');
     }
 
@@ -67,11 +62,7 @@ export class FileService {
     }
 
     // If it's a local file path, upload to storage
-    if (
-      videoSource.startsWith('/') ||
-      videoSource.startsWith('./') ||
-      videoSource.startsWith('../')
-    ) {
+    if (this.isLocalFilePath(videoSource)) {
       return await this.handleLocalFile(videoSource, 'video');
     }
 
@@ -144,15 +135,18 @@ export class FileService {
 
   private async handleLocalFile(
     filePath: string,
-    type: 'image' | 'video'
+    _type: 'image' | 'video'
   ): Promise<string> {
     try {
+      // Normalize file path for cross-platform compatibility
+      const normalizedPath = path.normalize(filePath);
+
       // Check if file exists
-      await fs.access(filePath);
+      await fs.access(normalizedPath);
 
       // Read file
-      const buffer = await fs.readFile(filePath);
-      const filename = path.basename(filePath);
+      const buffer = await fs.readFile(normalizedPath);
+      const filename = path.basename(normalizedPath);
 
       // Determine MIME type
       const mimeType = this.getMimeType(filename, buffer);
@@ -174,6 +168,31 @@ export class FileService {
 
   private isGcsUri(uri: string): boolean {
     return uri.startsWith('gs://');
+  }
+
+  private isLocalFilePath(filePath: string): boolean {
+    // Unix/Linux paths
+    if (filePath.startsWith('/') || filePath.startsWith('./') || filePath.startsWith('../')) {
+      return true;
+    }
+
+    // Windows paths
+    // Check for drive letter pattern (e.g., "C:\", "D:/", etc.)
+    if (/^[a-zA-Z]:[\\/]/.test(filePath)) {
+      return true;
+    }
+
+    // Check for UNC paths (e.g., "\\server\share")
+    if (filePath.startsWith('\\\\')) {
+      return true;
+    }
+
+    // Check for relative paths with backslashes (Windows-style)
+    if (filePath.includes('\\') && (filePath.startsWith('.\\') || filePath.startsWith('..\\'))) {
+      return true;
+    }
+
+    return false;
   }
 
   
