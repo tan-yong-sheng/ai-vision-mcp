@@ -53,7 +53,7 @@ server.registerTool(
     description: 'Analyze an image using AI vision models. Supports URLs, base64 data, and local file paths.',
     inputSchema: {
       imageSource: z.string().describe('Image source - can be a URL, base64 data (data:image/...), or local file path'),
-      prompt: z.string().describe('The prompt describing what you want to know about the image'),
+      prompt: z.string().describe('The prompt describing what you want to know about the image.'),
       options: z.object({
         temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
         maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),
@@ -123,7 +123,7 @@ server.registerTool(
     description: 'Analyze a video using AI vision models. Supports URLs and local file paths.',
     inputSchema: {
       videoSource: z.string().describe('Video source - can be a URL or local file path'),
-      prompt: z.string().describe('The prompt describing what you want to know about the video'),
+      prompt: z.string().describe('The prompt describing what you want to know about the video.'),
       options: z.object({
         temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
         maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),

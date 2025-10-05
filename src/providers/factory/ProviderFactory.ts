@@ -115,12 +115,12 @@ export class VisionProviderFactory {
     const config = ConfigService.getInstance().getConfig();
 
     // Fallback priority:
-    // 1. FALLBACK_IMAGE_MODEL/FALLBACK_VIDEO_MODEL (if set)
-    // 2. IMAGE_MODEL/VIDEO_MODEL (if set)
-    // 3. Hardcoded defaults
+    // 1. IMAGE_MODEL/VIDEO_MODEL (if set) - User's explicit choice
+    // 2. FALLBACK_IMAGE_MODEL/FALLBACK_VIDEO_MODEL (if set) - Environment fallback
+    // 3. Hardcoded defaults - Last resort
     return {
-      image: config.FALLBACK_IMAGE_MODEL || config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
-      video: config.FALLBACK_VIDEO_MODEL || config.VIDEO_MODEL || 'gemini-2.5-flash',
+      image: config.IMAGE_MODEL || config.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      video: config.VIDEO_MODEL || config.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
     };
   }
 
