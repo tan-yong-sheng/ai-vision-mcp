@@ -42,6 +42,12 @@ export const ConfigSchema = z.object({
   IMAGE_PROVIDER: ProviderSchema.optional().default('google'),
   VIDEO_PROVIDER: ProviderSchema.optional().default('google'),
 
+  // Model configuration
+  IMAGE_MODEL: z.string().min(1).optional(),
+  VIDEO_MODEL: z.string().min(1).optional(),
+  FALLBACK_IMAGE_MODEL: z.string().min(1).optional(),
+  FALLBACK_VIDEO_MODEL: z.string().min(1).optional(),
+
   // Gemini API configuration
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_BASE_URL: z
