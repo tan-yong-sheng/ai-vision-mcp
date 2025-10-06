@@ -8,7 +8,6 @@ import type {
   UploadedFile,
   FileReference,
   HealthStatus,
-  RateLimitInfo,
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
@@ -20,7 +19,6 @@ export type {
   UploadedFile,
   FileReference,
   HealthStatus,
-  RateLimitInfo,
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
@@ -35,6 +33,11 @@ export interface VisionProvider {
   ): Promise<AnalysisResult>;
   analyzeVideo(
     videoSource: string,
+    prompt: string,
+    options?: AnalysisOptions
+  ): Promise<AnalysisResult>;
+  compareImages(
+    imageSources: string[],
     prompt: string,
     options?: AnalysisOptions
   ): Promise<AnalysisResult>;

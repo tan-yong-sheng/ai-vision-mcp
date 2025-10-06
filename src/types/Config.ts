@@ -44,6 +44,7 @@ export interface Config {
   ALLOWED_IMAGE_FORMATS?: string[];
   ALLOWED_VIDEO_FORMATS?: string[];
   MAX_VIDEO_DURATION?: number;
+  MAX_IMAGES_FOR_COMPARISON?: number;
 
   // File upload configuration
   GEMINI_FILES_API_THRESHOLD?: number;
@@ -100,6 +101,7 @@ export interface FileProcessingConfig {
   allowedImageFormats: string[];
   allowedVideoFormats: string[];
   maxVideoDuration: number;
+  maxImagesForComparison: number;
 }
 
 export interface LoggingConfig {

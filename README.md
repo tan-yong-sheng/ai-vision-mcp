@@ -57,7 +57,7 @@ npx ai-vision-mcp
 
 ## MCP Tools
 
-The server provides two main MCP tools:
+The server provides three main MCP tools:
 
 ### `analyze_image`
 
@@ -83,6 +83,41 @@ Analyzes an image using AI and returns a detailed description.
 {
   "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
   "prompt": "What is this image about? Describe what you see in detail."
+}
+```
+
+
+### `compare_images`
+
+Compares multiple images using AI and returns a detailed comparison analysis.
+
+**Parameters:**
+- `imageSources` (array): Array of image sources (URLs, base64 data, or file paths) - minimum 2, maximum 4 images
+- `prompt` (string): Question or instruction for comparing the images
+- `options` (object, optional): Analysis options including temperature and max tokens
+
+**Examples:**
+
+1. **Compare images from URLs:**
+```json
+{
+  "imageSources": [
+    "https://example.com/image1.jpg",
+    "https://example.com/image2.jpg"
+  ],
+  "prompt": "Compare these two images and tell me the differences"
+}
+```
+
+2. **Compare mixed sources:**
+```json
+{
+  "imageSources": [
+    "https://example.com/image1.jpg",
+    "C:\\\\Users\\\\username\\\\Downloads\\\\image2.jpg",
+    "data:image/jpeg;base64,/9j/4AAQSkZJRgAB..."
+  ],
+  "prompt": "Which image has the best lighting quality?"
 }
 ```
 
@@ -156,6 +191,7 @@ Analyzes a video using AI and returns a detailed description.
 | `MAX_IMAGE_SIZE` | No | Maximum image size in bytes | `20971520` (20 MB) |
 | `MAX_VIDEO_SIZE` | No | Maximum video size in bytes | `2147483648` (2 GB) |
 | `MAX_VIDEO_DURATION` | No | Maximum video duration (seconds) | `3600` (1 hour) |
+| `MAX_IMAGES_FOR_COMPARISON` | No | Maximum number of images for comparison, used by compare_images() mcp function | `4` |
 | `ALLOWED_IMAGE_FORMATS` | No | Comma-separated image formats | `png,jpg,jpeg,webp,gif,bmp,tiff` |
 | `ALLOWED_VIDEO_FORMATS` | No | Comma-separated video formats | `mp4,mov,avi,mkv,webm,flv,wmv,3gp` |
 | **Development** ||||
@@ -189,9 +225,6 @@ npm install
 # Build the project
 npm run build
 
-# Run tests
-npm test
-
 # Start development server
 npm run dev
 ```
@@ -200,7 +233,6 @@ npm run dev
 
 - `npm run build` - Build the TypeScript project
 - `npm run dev` - Start development server with watch mode
-- `npm test` - Run the test suite
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 - `npm start` - Start the built server

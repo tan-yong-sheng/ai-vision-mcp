@@ -11,7 +11,6 @@ import type {
   AnalysisResult,
   UploadedFile,
   HealthStatus,
-  RateLimitInfo,
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
@@ -165,6 +164,154 @@ export class GeminiProvider extends BaseVisionProvider {
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
+    }
+  }
+
+  async compareImages(
+    imageSources: string[],
+    prompt: string,
+    _options?: AnalysisOptions
+  ): Promise<AnalysisResult> {
+    try {
+      console.log(`[GeminiProvider] Comparing ${imageSources.length} images`);
+
+      // Process all images to create content parts
+      const contentParts: any[] = [];
+      let totalFileSize = 0;
+      let totalProcessingDuration = 0;
+
+      for (let i = 0; i < imageSources.length; i++) {
+        const imageSource = imageSources[i];
+        console.log(`[GeminiProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+
+        let content: any;
+        let mimeType: string;
+        let fileSize: number | undefined;
+        let processingDuration = 0;
+
+        if (imageSource.startsWith('data:image/')) {
+          // Handle base64 data with inlineData
+          const matches = imageSource.match(/^data:([^;]+);base64,(.+)$/);
+          if (!matches) {
+            throw new Error(`Invalid data URL format for image ${i + 1}`);
+          }
+
+          mimeType = matches[1];
+          const base64Data = matches[2];
+          fileSize = Buffer.from(base64Data, 'base64').length;
+
+          content = {
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          };
+        } else if (imageSource.startsWith('gs://')) {
+          // GCS URIs can be passed directly using file_data
+          mimeType = 'image/jpeg'; // Default, will be detected if needed
+          content = {
+            fileData: {
+              fileUri: imageSource,
+              mimeType,
+            },
+          };
+        } else if (imageSource.startsWith('http')) {
+          // Download image from URL and upload to Files API
+          const { result: imageData, duration: downloadDuration } = await this.measureAsync(
+            async () => {
+              const response = await fetch(imageSource);
+              if (!response.ok) {
+                throw new NetworkError(
+                  `Failed to fetch image ${i + 1} from URL: ${imageSource}`
+                );
+              }
+              const arrayBuffer = await response.arrayBuffer();
+              return Buffer.from(arrayBuffer);
+            }
+          );
+
+          const filename = imageSource.split('/').pop() || `image${i + 1}.jpg`;
+          mimeType = this.getImageMimeTypeFromUrl(imageSource);
+          fileSize = imageData.length;
+
+          const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
+            async () => {
+              return await this.uploadFile(imageData, filename, mimeType);
+            }
+          );
+
+          processingDuration = downloadDuration + uploadFileDuration;
+          content = {
+            fileData: {
+              fileUri: uploadedFile.uri!,
+              mimeType,
+            },
+          };
+        } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+          // Handle Files API references
+          let fileUri: string;
+          if (imageSource.startsWith('files/')) {
+            fileUri = `https://generativelanguage.googleapis.com/v1beta/files/${imageSource.replace('files/', '')}`;
+          } else {
+            fileUri = imageSource;
+          }
+
+          // Wait for file to be processed if needed
+          const fileId = fileUri.split('/').pop()!;
+          await this.waitForFileProcessing(fileId);
+
+          mimeType = 'image/jpeg'; // Default, will be detected if needed
+          content = {
+            fileData: {
+              fileUri,
+              mimeType,
+            },
+          };
+        } else {
+          throw new Error(`Invalid image source format for image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+        }
+
+        contentParts.push(content);
+        if (fileSize) {
+          totalFileSize += fileSize;
+        }
+        totalProcessingDuration += processingDuration;
+      }
+
+      // Add the prompt as the last content part
+      contentParts.push({ text: prompt });
+
+      console.log(`[GeminiProvider] All ${imageSources.length} images processed, sending to Gemini API`);
+
+      const model = this.imageModel;
+
+      const { result: response, duration: analysisDuration } =
+        await this.measureAsync(async () => {
+          return await this.client.models.generateContent({
+            model,
+            contents: contentParts,
+          });
+        });
+
+      const text = response.text || '';
+      const usage = response.usageMetadata;
+
+      return this.createAnalysisResult(
+        text,
+        this.imageModel,
+        usage
+          ? {
+              promptTokenCount: usage.promptTokenCount || 0,
+              candidatesTokenCount: usage.candidatesTokenCount || 0,
+              totalTokenCount: usage.totalTokenCount || 0,
+            }
+          : undefined,
+        totalProcessingDuration + analysisDuration,
+        'image/multiple',
+        totalFileSize
+      );
+    } catch (error) {
+      throw this.handleError(error, 'image comparison');
     }
   }
 

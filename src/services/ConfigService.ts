@@ -120,6 +120,9 @@ export class ConfigService {
         MAX_VIDEO_DURATION: process.env.MAX_VIDEO_DURATION
           ? parseInt(process.env.MAX_VIDEO_DURATION, 10)
           : 3600,
+        MAX_IMAGES_FOR_COMPARISON: process.env.MAX_IMAGES_FOR_COMPARISON
+          ? parseInt(process.env.MAX_IMAGES_FOR_COMPARISON, 10)
+          : 4,
 
         // File upload configuration
         GEMINI_FILES_API_THRESHOLD: process.env.GEMINI_FILES_API_THRESHOLD
@@ -293,6 +296,7 @@ export class ConfigService {
       allowedImageFormats: this.config.ALLOWED_IMAGE_FORMATS!,
       allowedVideoFormats: this.config.ALLOWED_VIDEO_FORMATS!,
       maxVideoDuration: this.config.MAX_VIDEO_DURATION!,
+      maxImagesForComparison: this.config.MAX_IMAGES_FOR_COMPARISON!,
     };
   }
 
@@ -363,6 +367,10 @@ export class ConfigService {
 
   public getAllowedVideoFormats(): string[] {
     return this.config.ALLOWED_VIDEO_FORMATS || ['mp4', 'mov', 'avi', 'webm'];
+  }
+
+  public getMaxImagesForComparison(): number {
+    return this.config.MAX_IMAGES_FOR_COMPARISON || 4;
   }
 
   // Utility method to reload configuration (useful for testing)

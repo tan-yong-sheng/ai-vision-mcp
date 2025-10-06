@@ -70,6 +70,7 @@ MAX_VIDEO_SIZE=2GB
 ALLOWED_IMAGE_FORMATS=png,jpg,jpeg,webp,gif,bmp,tiff
 ALLOWED_VIDEO_FORMATS=mp4,mov,avi,mkv,webm,flv,wmv,3gp
 MAX_VIDEO_DURATION=3600  # seconds (1 hour)
+MAX_IMAGES_FOR_COMPARISON=4  # maximum images per comparison
 
 #===============================================
 # FILE UPLOAD CONFIGURATION
@@ -106,8 +107,9 @@ NODE_ENV=development|production
 │  │   MCP Functions     │  │  MCP Resources  │  │ MCP    │  │
 │  │                 │  │                 │  │ Prompts │  │
 │  │ • analyze_image │  │ • file_storage  │  │         │  │
-│  │ • analyze_video │  │ • provider_info │  │ • vision│  │
-│  │                 │  │ • model_info    │  │ • code  │  │
+│  │ • compare_images │  │ • provider_info │  │ • vision│  │
+│  │ • analyze_video │  │ • model_info    │  │ • code  │  │
+│  │                 │  │                 │  │         │  │
 │  └─────────────────┘  └─────────────────┘  └─────────┘  │
 ├─────────────────────────────────────────────────────────┤
 │                 Provider Factory Layer                 │
@@ -146,6 +148,7 @@ interface VisionProvider {
   // Core capabilities
   analyzeImage(imageSource: string, prompt: string, options?: AnalysisOptions): Promise<AnalysisResult>;
   analyzeVideo(videoSource: string, prompt: string, options?: AnalysisOptions): Promise<AnalysisResult>;
+  compareImages(imageSources: string[], prompt: string, options?: AnalysisOptions): Promise<AnalysisResult>;
 
   // File operations
   uploadFile(buffer: Buffer, filename: string, mimeType: string): Promise<UploadedFile>;
@@ -374,6 +377,7 @@ src/
 │   └── LoggerService.ts
 ├── tools/
 │   ├── analyze_image.ts
+│   ├── compare_images.ts
 │   └── analyze_video.ts
 ├── types/
 │   ├── Config.ts
@@ -750,8 +754,6 @@ The providers will return rate limit errors directly from the API with appropria
 1. Install dependencies: `npm install`
 2. Set environment variables in `.env` file
 3. Run development server: `npm run dev`
-4. Run tests: `npm test`
-5. Run integration tests: `npm run test:integration`
 
 ### 10.2 Code Quality
 

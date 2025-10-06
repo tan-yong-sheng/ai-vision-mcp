@@ -7,9 +7,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Building and Testing
 - `npm run build` - Build TypeScript project to `dist/` directory
 - `npm run dev` - Start development server with watch mode
-- `npm test` - Run Jest test suite
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:integration` - Run integration tests with separate config
 - `npm start` - Start the built MCP server
 
 ### Code Quality

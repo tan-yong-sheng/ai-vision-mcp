@@ -8,7 +8,6 @@ import type {
   AnalysisResult,
   UploadedFile,
   HealthStatus,
-  RateLimitInfo,
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
@@ -33,6 +32,11 @@ export abstract class BaseVisionProvider implements VisionProvider {
   ): Promise<AnalysisResult>;
   abstract analyzeVideo(
     videoSource: string,
+    prompt: string,
+    options?: AnalysisOptions
+  ): Promise<AnalysisResult>;
+  abstract compareImages(
+    imageSources: string[],
     prompt: string,
     options?: AnalysisOptions
   ): Promise<AnalysisResult>;

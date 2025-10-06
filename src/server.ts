@@ -8,13 +8,13 @@ import { z } from 'zod';
 import { ConfigService } from './services/ConfigService.js';
 import { FileService } from './services/FileService.js';
 import { VisionProviderFactory } from './providers/factory/ProviderFactory.js';
-import { analyze_image, analyze_video } from './tools/index.js';
+import { analyze_image, compare_images, analyze_video } from './tools/index.js';
 import { VisionError } from './types/Errors.js';
 
 // Create MCP server
 const server = new McpServer({
   name: 'ai-vision-mcp',
-  version: '0.0.1',
+  version: '0.0.2',
 });
 
 // Helper function to initialize services (lazy loading)
@@ -103,6 +103,76 @@ server.registerTool(
                 error: true,
                 message: errorMessage,
                 tool: 'analyze_image',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Register compare_images tool
+server.registerTool(
+  'compare_images',
+  {
+    title: 'Compare Images',
+    description: 'Compare multiple images using AI vision models. Supports URLs, base64 data, and local file paths.',
+    inputSchema: {
+      imageSources: z.array(z.string()).min(2).max(4).describe('Array of image sources (URLs, base64 data, or file paths) - minimum 2, maximum 4 images'),
+      prompt: z.string().describe('The prompt describing how you want to compare the images.'),
+      options: z.object({
+        temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
+        maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),
+      }).optional(),
+    },
+  },
+  async ({ imageSources, prompt, options }) => {
+    try {
+      const validatedArgs = {
+        imageSources,
+        prompt,
+        options,
+      };
+
+      // Initialize services on-demand
+      const { config, imageProvider, imageFileService } = getServices();
+
+      const result = await compare_images(validatedArgs, config, imageProvider, imageFileService);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Error executing compare_images tool:', error);
+
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof VisionError) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.provider) {
+          errorMessage += ` (Provider: ${error.provider})`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'compare_images',
               },
               null,
               2

@@ -5,7 +5,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
-import type { Config } from '../types/Config.js';
 import type { FileUploadStrategy } from '../types/Providers.js';
 import { FileUploadFactory } from '../file-upload/factory/FileUploadFactory.js';
 import { GeminiProvider } from '../providers/gemini/GeminiProvider.js';

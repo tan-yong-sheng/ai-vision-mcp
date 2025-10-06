@@ -11,7 +11,6 @@ import type {
   AnalysisResult,
   UploadedFile,
   HealthStatus,
-  RateLimitInfo,
   ProviderCapabilities,
   ModelCapabilities,
   ProviderInfo,
@@ -110,6 +109,85 @@ export class VertexAIProvider extends BaseVisionProvider {
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
+    }
+  }
+
+  async compareImages(
+    imageSources: string[],
+    prompt: string,
+    options?: AnalysisOptions
+  ): Promise<AnalysisResult> {
+    try {
+      console.log(`[VertexAIProvider] Comparing ${imageSources.length} images`);
+
+      // Process all images to create parts
+      const imageParts: any[] = [];
+      let totalFileSize = 0;
+
+      for (let i = 0; i < imageSources.length; i++) {
+        const imageSource = imageSources[i];
+        console.log(`[VertexAIProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+
+        const imageData = await this.getImageData(imageSource);
+        const mimeType = this.getImageMimeType(imageSource, imageData);
+        totalFileSize += imageData.length;
+
+        imageParts.push({
+          inlineData: {
+            mimeType,
+            data: imageData.toString('base64'),
+          },
+        });
+      }
+
+      // Add the prompt as the last part
+      imageParts.push({ text: prompt });
+
+      const model = this.client.getGenerativeModel({
+        model: this.imageModel,
+      });
+
+      const { result: response, duration } = await this.measureAsync(
+        async () => {
+          return await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: imageParts,
+              },
+            ],
+            generationConfig: {
+              temperature: options?.temperature ?? 0.4,
+              maxOutputTokens: options?.maxTokens ?? 500,
+              candidateCount: 1,
+            },
+          });
+        }
+      );
+
+      const text =
+        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const usage = response.response.usageMetadata;
+
+      return this.createAnalysisResult(
+        text,
+        this.imageModel,
+        usage &&
+          usage.promptTokenCount &&
+          usage.candidatesTokenCount &&
+          usage.totalTokenCount
+          ? {
+              promptTokenCount: usage.promptTokenCount,
+              candidatesTokenCount: usage.candidatesTokenCount,
+              totalTokenCount: usage.totalTokenCount,
+            }
+          : undefined,
+        duration,
+        'image/multiple',
+        totalFileSize
+      );
+    } catch (error) {
+      throw this.handleError(error, 'image comparison');
     }
   }
 
