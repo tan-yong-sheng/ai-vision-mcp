@@ -12,17 +12,17 @@ A powerful Model Context Protocol (MCP) server that provides AI-powered image an
 - **Error Handling**: Robust error handling with retry logic and circuit breakers
 - **TypeScript**: Full TypeScript support with strict type checking
 
-## Installation
 
-```bash
-npm install ai-vision-mcp
-```
 
 ## Quick Start
 
-### Using Google Gemini API
+### Pre-requisites
 
-1. Set your environment variables:
+You could choose either to use [`google` provider](https://aistudio.google.com/welcome) or [`vertex_ai` provider](https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart). For simplicity, `google` provider is recommended.
+
+Below are the environment variables required to set, depending to the provider you have selected.
+
+(i) **Using Google AI Studio Provider**
 
 ```bash
 export IMAGE_PROVIDER="google" # or vertex_ai
@@ -30,15 +30,9 @@ export VIDEO_PROVIDER="google" # or vertex_ai
 export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
-2. Start the MCP server:
+Get your Google AI Studio's api key [here](https://aistudio.google.com/app/api-keys)
 
-```bash
-npx ai-vision-mcp
-```
-
-### Using Vertex AI
-
-1. Set your environment variables:
+(ii) **Using Vertex AI Provider**
 
 ```bash
 export IMAGE_PROVIDER="vertex_ai"
@@ -47,19 +41,139 @@ export VERTEX_CREDENTIALS="/path/to/service-account.json"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
 
-Refer to [the guideline here](docs/provider/vertex-ai-setup-guide.md)
+Refer to [the guideline here](docs/provider/vertex-ai-setup-guide.md) on how to set this up.
 
-2. Start the MCP server:
+
+### Installation
+
+Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, etc.
+
+<details>
+<summary>Claude Desktop</summary>
+
+Add to your Claude Desktop configuration:
+
+(i) Using Google AI Studio Provider
+```bash
+{
+  "mcpServers": {
+    "ai-vision-mcp": {
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "google",
+        "VIDEO_PROVIDER": "google",
+        "GEMINI_API_KEY": "your-gemini-api-key"
+      }
+    }
+  }
+}
+```
+
+(ii) Using Vertex AI Provider
+```bash
+{
+  "mcpServers": {
+    "ai-vision-mcp": {
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "vertex_ai",
+        "VIDEO_PROVIDER": "vertex_ai",
+        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Claude Code</summary>
+
+(i) Using Google AI Studio Provider
+```bash
+claude mcp add ai-vision-mcp \
+  -e IMAGE_PROVIDER=google \
+  -e VIDEO_PROVIDER=google \
+  -e GEMINI_API_KEY=your-gemini-api-key \
+  -- npx ai-vision-mcp
+```
+
+(ii) Using Vertex AI Provider
+```bash
+claude mcp add ai-vision-mcp \
+  -e IMAGE_PROVIDER=vertex_ai \
+  -e VIDEO_PROVIDER=vertex_ai \
+  -e VERTEX_CREDENTIALS=/path/to/service-account.json \
+  -e GCS_BUCKET_NAME=ai-vision-mcp-{VERTEX_PROJECT_ID} \
+  -- npx ai-vision-mcp
+```
+
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+Go to: Settings -> Cursor Settings -> MCP -> Add new global MCP server
+
+Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is the recommended approach. You may also install in a specific project by creating .cursor/mcp.json in your project folder. See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
+
+(i) Using Google AI Studio Provider
+```bash
+{
+  "mcpServers": {
+    "ai-vision-mcp": {
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "google",
+        "VIDEO_PROVIDER": "google",
+        "GEMINI_API_KEY": "your-gemini-api-key"
+      }
+    }
+  }
+}
+```
+
+(ii) Using Vertex AI Provider
+```bash
+{
+  "mcpServers": {
+    "ai-vision-mcp": {
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "vertex_ai",
+        "VIDEO_PROVIDER": "vertex_ai",
+        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
+      }
+    }
+  }
+}
+```
+</details>
+
+
+<details>
+<summary>Other MCP clients</summary>
+
+The server uses stdio transport and follows the standard MCP protocol. It can be integrated with any MCP-compatible client by running:
 
 ```bash
 npx ai-vision-mcp
 ```
+</details>
+
 
 ## MCP Tools
 
 The server provides three main MCP tools:
 
-### `analyze_image`
+### 1) `analyze_image`
 
 Analyzes an image using AI and returns a detailed description.
 
@@ -87,7 +201,7 @@ Analyzes an image using AI and returns a detailed description.
 ```
 
 
-### `compare_images`
+### 2) `compare_images`
 
 Compares multiple images using AI and returns a detailed comparison analysis.
 
@@ -122,7 +236,7 @@ Compares multiple images using AI and returns a detailed comparison analysis.
 ```
 
 
-### `analyze_video`
+### 3) `analyze_video`
 
 Analyzes a video using AI and returns a detailed description.
 
@@ -199,11 +313,6 @@ Analyzes a video using AI and returns a detailed description.
 | `NODE_ENV` | No | Environment mode | `development` |
 | `GEMINI_FILES_API_THRESHOLD` | No | Size threshold for Gemini Files API (bytes) | `10485760` (10 MB) |
 | `VERTEX_AI_FILES_API_THRESHOLD` | No | Size threshold for Vertex AI uploads (bytes) | `0` |
-
-### Supported Formats
-
-**Images:** PNG, JPG, JPEG, WebP, GIF, BMP, TIFF, HEIC, HEIF
-**Videos:** MP4, MOV, AVI, MKV, WebM, FLV, WMV, 3GP, M4V
 
 ## Development
 
