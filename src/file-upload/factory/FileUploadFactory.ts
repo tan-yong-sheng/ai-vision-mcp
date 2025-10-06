@@ -37,7 +37,6 @@ export class FileUploadFactory {
     }
   }
 
-
   static getThreshold(config: Config, type: 'image' | 'video'): number {
     const providerName =
       type === 'image' ? config.IMAGE_PROVIDER : config.VIDEO_PROVIDER;

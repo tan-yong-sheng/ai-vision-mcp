@@ -129,7 +129,6 @@ export class NetworkError extends VisionError {
   }
 }
 
-
 export class ValidationError extends VisionError {
   constructor(message: string, field?: string) {
     super(message, 'VALIDATION_ERROR', undefined, undefined, 400);

@@ -52,21 +52,21 @@ export class ConfigService {
           'https://generativelanguage.googleapis.com',
 
         // Vertex AI configuration
-        VERTEX_CREDENTIALS:
-          process.env.VERTEX_CREDENTIALS,
+        VERTEX_CREDENTIALS: process.env.VERTEX_CREDENTIALS,
         VERTEX_PROJECT_ID: process.env.VERTEX_PROJECT_ID,
         VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
         VERTEX_ENDPOINT:
-          process.env.VERTEX_ENDPOINT ||
-          'https://aiplatform.googleapis.com',
+          process.env.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
 
         // Model configuration
         IMAGE_MODEL: process.env.IMAGE_MODEL,
         VIDEO_MODEL: process.env.VIDEO_MODEL,
 
         // Fallback model configuration
-        FALLBACK_IMAGE_MODEL: process.env.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
-        FALLBACK_VIDEO_MODEL: process.env.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
+        FALLBACK_IMAGE_MODEL:
+          process.env.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
+        FALLBACK_VIDEO_MODEL:
+          process.env.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
 
         // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
@@ -180,7 +180,9 @@ export class ConfigService {
       // Auto-derive VERTEX_PROJECT_ID from credentials if not provided
       if (!config.VERTEX_PROJECT_ID) {
         try {
-          config.VERTEX_PROJECT_ID = extractProjectIdFromCredentials(config.VERTEX_CREDENTIALS);
+          config.VERTEX_PROJECT_ID = extractProjectIdFromCredentials(
+            config.VERTEX_CREDENTIALS
+          );
         } catch (error) {
           throw new ConfigurationError(
             'VERTEX_PROJECT_ID could not be auto-derived from credentials file. Please provide it explicitly.',
@@ -204,7 +206,9 @@ export class ConfigService {
       // Auto-derive GCS_PROJECT_ID from credentials if not provided
       if (!config.GCS_PROJECT_ID) {
         try {
-          config.GCS_PROJECT_ID = extractProjectIdFromCredentials(config.GCS_CREDENTIALS);
+          config.GCS_PROJECT_ID = extractProjectIdFromCredentials(
+            config.GCS_CREDENTIALS
+          );
         } catch (error) {
           throw new ConfigurationError(
             'GCS_PROJECT_ID could not be auto-derived from credentials file. Please provide it explicitly.',
@@ -251,7 +255,8 @@ export class ConfigService {
     return {
       projectId: this.config.VERTEX_PROJECT_ID,
       location: this.config.VERTEX_LOCATION || 'us-central1',
-      endpoint: this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
+      endpoint:
+        this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
       credentials: this.config.VERTEX_CREDENTIALS,
       imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
       videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
@@ -362,7 +367,9 @@ export class ConfigService {
   }
 
   public getAllowedImageFormats(): string[] {
-    return this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    return (
+      this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    );
   }
 
   public getAllowedVideoFormats(): string[] {

@@ -41,12 +41,24 @@ export class GeminiProvider extends BaseVisionProvider {
     _options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      console.log(`[GeminiProvider] Received imageSource: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
-      console.log(`[GeminiProvider] ImageSource starts with data:image: ${imageSource.startsWith('data:image/')}`);
-      console.log(`[GeminiProvider] ImageSource starts with http: ${imageSource.startsWith('http')}`);
-      console.log(`[GeminiProvider] ImageSource starts with gs: ${imageSource.startsWith('gs://')}`);
-      console.log(`[GeminiProvider] ImageSource starts with files/: ${imageSource.startsWith('files/')}`);
-      console.log(`[GeminiProvider] ImageSource contains generativelanguage: ${imageSource.includes('generativelanguage.googleapis.com')}`);
+      console.log(
+        `[GeminiProvider] Received imageSource: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+      );
+      console.log(
+        `[GeminiProvider] ImageSource starts with data:image: ${imageSource.startsWith('data:image/')}`
+      );
+      console.log(
+        `[GeminiProvider] ImageSource starts with http: ${imageSource.startsWith('http')}`
+      );
+      console.log(
+        `[GeminiProvider] ImageSource starts with gs: ${imageSource.startsWith('gs://')}`
+      );
+      console.log(
+        `[GeminiProvider] ImageSource starts with files/: ${imageSource.startsWith('files/')}`
+      );
+      console.log(
+        `[GeminiProvider] ImageSource contains generativelanguage: ${imageSource.includes('generativelanguage.googleapis.com')}`
+      );
 
       let content: any;
       let mimeType: string;
@@ -81,8 +93,8 @@ export class GeminiProvider extends BaseVisionProvider {
         };
       } else if (imageSource.startsWith('http')) {
         // Download image from URL and upload to Files API
-        const { result: imageData, duration: downloadDuration } = await this.measureAsync(
-          async () => {
+        const { result: imageData, duration: downloadDuration } =
+          await this.measureAsync(async () => {
             const response = await fetch(imageSource);
             if (!response.ok) {
               throw new NetworkError(
@@ -91,18 +103,16 @@ export class GeminiProvider extends BaseVisionProvider {
             }
             const arrayBuffer = await response.arrayBuffer();
             return Buffer.from(arrayBuffer);
-          }
-        );
+          });
 
         const filename = imageSource.split('/').pop() || 'image.jpg';
         mimeType = this.getImageMimeTypeFromUrl(imageSource);
         fileSize = imageData.length;
 
-        const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
-          async () => {
+        const { result: uploadedFile, duration: uploadFileDuration } =
+          await this.measureAsync(async () => {
             return await this.uploadFile(imageData, filename, mimeType);
-          }
-        );
+          });
 
         processingDuration = downloadDuration + uploadFileDuration;
         content = {
@@ -111,7 +121,10 @@ export class GeminiProvider extends BaseVisionProvider {
             mimeType,
           },
         };
-      } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+      } else if (
+        imageSource.startsWith('files/') ||
+        imageSource.includes('generativelanguage.googleapis.com')
+      ) {
         // Handle Files API references - for newer SDK, we can use file references directly
         let fileUri: string;
         if (imageSource.startsWith('files/')) {
@@ -132,7 +145,9 @@ export class GeminiProvider extends BaseVisionProvider {
           },
         };
       } else {
-        throw new Error(`Invalid image source format: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''} (starts with http: ${imageSource.startsWith('http')}, starts with data:image: ${imageSource.startsWith('data:image/')}, starts with files/: ${imageSource.startsWith('files/')})`);
+        throw new Error(
+          `Invalid image source format: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''} (starts with http: ${imageSource.startsWith('http')}, starts with data:image: ${imageSource.startsWith('data:image/')}, starts with files/: ${imageSource.startsWith('files/')})`
+        );
       }
 
       const model = this.imageModel;
@@ -182,7 +197,9 @@ export class GeminiProvider extends BaseVisionProvider {
 
       for (let i = 0; i < imageSources.length; i++) {
         const imageSource = imageSources[i];
-        console.log(`[GeminiProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+        console.log(
+          `[GeminiProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+        );
 
         let content: any;
         let mimeType: string;
@@ -217,8 +234,8 @@ export class GeminiProvider extends BaseVisionProvider {
           };
         } else if (imageSource.startsWith('http')) {
           // Download image from URL and upload to Files API
-          const { result: imageData, duration: downloadDuration } = await this.measureAsync(
-            async () => {
+          const { result: imageData, duration: downloadDuration } =
+            await this.measureAsync(async () => {
               const response = await fetch(imageSource);
               if (!response.ok) {
                 throw new NetworkError(
@@ -227,18 +244,16 @@ export class GeminiProvider extends BaseVisionProvider {
               }
               const arrayBuffer = await response.arrayBuffer();
               return Buffer.from(arrayBuffer);
-            }
-          );
+            });
 
           const filename = imageSource.split('/').pop() || `image${i + 1}.jpg`;
           mimeType = this.getImageMimeTypeFromUrl(imageSource);
           fileSize = imageData.length;
 
-          const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
-            async () => {
+          const { result: uploadedFile, duration: uploadFileDuration } =
+            await this.measureAsync(async () => {
               return await this.uploadFile(imageData, filename, mimeType);
-            }
-          );
+            });
 
           processingDuration = downloadDuration + uploadFileDuration;
           content = {
@@ -247,7 +262,10 @@ export class GeminiProvider extends BaseVisionProvider {
               mimeType,
             },
           };
-        } else if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+        } else if (
+          imageSource.startsWith('files/') ||
+          imageSource.includes('generativelanguage.googleapis.com')
+        ) {
           // Handle Files API references
           let fileUri: string;
           if (imageSource.startsWith('files/')) {
@@ -268,7 +286,9 @@ export class GeminiProvider extends BaseVisionProvider {
             },
           };
         } else {
-          throw new Error(`Invalid image source format for image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+          throw new Error(
+            `Invalid image source format for image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+          );
         }
 
         contentParts.push(content);
@@ -281,7 +301,9 @@ export class GeminiProvider extends BaseVisionProvider {
       // Add the prompt as the last content part
       contentParts.push({ text: prompt });
 
-      console.log(`[GeminiProvider] All ${imageSources.length} images processed, sending to Gemini API`);
+      console.log(
+        `[GeminiProvider] All ${imageSources.length} images processed, sending to Gemini API`
+      );
 
       const model = this.imageModel;
 
@@ -324,12 +346,15 @@ export class GeminiProvider extends BaseVisionProvider {
       let content: any;
       let uploadDuration = 0;
 
-      if (videoSource.startsWith('files/') || videoSource.includes('generativelanguage.googleapis.com')) {
+      if (
+        videoSource.startsWith('files/') ||
+        videoSource.includes('generativelanguage.googleapis.com')
+      ) {
         // Use existing file reference - check this FIRST before other http checks
         // videoSource could be either "files/3lahndmttgdq" or full Google API URL
-        const fileUri = videoSource.startsWith('files/') ?
-          `https://generativelanguage.googleapis.com/v1beta/${videoSource}` :
-          videoSource;
+        const fileUri = videoSource.startsWith('files/')
+          ? `https://generativelanguage.googleapis.com/v1beta/${videoSource}`
+          : videoSource;
 
         content = {
           fileData: {
@@ -339,7 +364,10 @@ export class GeminiProvider extends BaseVisionProvider {
         };
       } else if (videoSource.startsWith('http')) {
         // Check if it's a YouTube URL
-        if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+        if (
+          videoSource.includes('youtube.com') ||
+          videoSource.includes('youtu.be')
+        ) {
           // YouTube URLs can be passed directly
           content = {
             fileData: {
@@ -349,8 +377,8 @@ export class GeminiProvider extends BaseVisionProvider {
           };
         } else {
           // For other video URLs, download and upload to Files API
-          const { result: videoData, duration: downloadDuration } = await this.measureAsync(
-            async () => {
+          const { result: videoData, duration: downloadDuration } =
+            await this.measureAsync(async () => {
               const response = await fetch(videoSource);
               if (!response.ok) {
                 throw new NetworkError(
@@ -359,17 +387,15 @@ export class GeminiProvider extends BaseVisionProvider {
               }
               const arrayBuffer = await response.arrayBuffer();
               return Buffer.from(arrayBuffer);
-            }
-          );
+            });
 
           const filename = videoSource.split('/').pop() || 'video.mp4';
           const mimeType = this.getVideoMimeType(videoSource, videoData);
 
-          const { result: uploadedFile, duration: uploadFileDuration } = await this.measureAsync(
-            async () => {
+          const { result: uploadedFile, duration: uploadFileDuration } =
+            await this.measureAsync(async () => {
               return await this.uploadFile(videoData, filename, mimeType);
-            }
-          );
+            });
 
           uploadDuration = downloadDuration + uploadFileDuration;
           content = {
@@ -393,14 +419,13 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const model = this.videoModel;
 
-      const { result: response, duration: analysisDuration } = await this.measureAsync(
-        async () => {
+      const { result: response, duration: analysisDuration } =
+        await this.measureAsync(async () => {
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
           });
-        }
-      );
+        });
 
       const text = response.text || '';
       const usage = response.usageMetadata;
@@ -429,11 +454,9 @@ export class GeminiProvider extends BaseVisionProvider {
     mimeType: string
   ): Promise<UploadedFile> {
     try {
-      const { result: fileMetadata } = await this.measureAsync(
-        async () => {
-          return await this.uploadToGeminiFiles(buffer, filename, mimeType);
-        }
-      );
+      const { result: fileMetadata } = await this.measureAsync(async () => {
+        return await this.uploadToGeminiFiles(buffer, filename, mimeType);
+      });
 
       return {
         id: fileMetadata.name,
@@ -597,7 +620,8 @@ export class GeminiProvider extends BaseVisionProvider {
         expirationTime: file.expirationTime || '',
         sha256Hash: file.sha256Hash || '',
         uri: file.uri || '',
-        state: (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
+        state:
+          (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
       };
     } catch (error) {
       throw new FileUploadError(
@@ -605,7 +629,6 @@ export class GeminiProvider extends BaseVisionProvider {
       );
     }
   }
-
 
   private async getFileMetadata(fileId: string): Promise<GeminiFileMetadata> {
     try {
@@ -621,13 +644,16 @@ export class GeminiProvider extends BaseVisionProvider {
         expirationTime: file.expirationTime || '',
         sha256Hash: file.sha256Hash || '',
         uri: file.uri || '',
-        state: (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
+        state:
+          (file.state as 'PROCESSING' | 'ACTIVE' | 'FAILED') || 'PROCESSING',
       };
     } catch (error) {
       if (error instanceof Error && error.message.includes('404')) {
         throw new FileNotFoundError(fileId, 'gemini');
       }
-      throw new Error(`Failed to get file metadata: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to get file metadata: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -664,7 +690,7 @@ export class GeminiProvider extends BaseVisionProvider {
     }
 
     throw new FileUploadError(
-      `File processing timed out after ${maxAttempts * delay / 1000} seconds`,
+      `File processing timed out after ${(maxAttempts * delay) / 1000} seconds`,
       'gemini'
     );
   }
@@ -736,15 +762,15 @@ export class GeminiProvider extends BaseVisionProvider {
     // Try to detect from file extension
     const extension = source.split('.').pop()?.toLowerCase();
     const mimeTypes: Record<string, string> = {
-      'mp4': 'video/mp4',
-      'mov': 'video/quicktime',
-      'avi': 'video/x-msvideo',
-      'mkv': 'video/x-matroska',
-      'webm': 'video/webm',
-      'flv': 'video/x-flv',
-      'wmv': 'video/x-ms-wmv',
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      avi: 'video/x-msvideo',
+      mkv: 'video/x-matroska',
+      webm: 'video/webm',
+      flv: 'video/x-flv',
+      wmv: 'video/x-ms-wmv',
       '3gp': 'video/3gpp',
-      'm4v': 'video/mp4',
+      m4v: 'video/mp4',
     };
 
     if (extension && mimeTypes[extension]) {

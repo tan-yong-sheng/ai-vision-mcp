@@ -73,7 +73,6 @@ export interface VertexAIConfig {
   videoModel: string;
 }
 
-
 export interface GCSConfig {
   bucketName: string;
   projectId: string;

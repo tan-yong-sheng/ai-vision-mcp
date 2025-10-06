@@ -126,7 +126,9 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       for (let i = 0; i < imageSources.length; i++) {
         const imageSource = imageSources[i];
-        console.log(`[VertexAIProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+        console.log(
+          `[VertexAIProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+        );
 
         const imageData = await this.getImageData(imageSource);
         const mimeType = this.getImageMimeType(imageSource, imageData);
@@ -204,7 +206,10 @@ export class VertexAIProvider extends BaseVisionProvider {
         fileUri = videoSource;
       } else if (videoSource.startsWith('http')) {
         // Check if it's a YouTube URL - these can be passed directly
-        if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+        if (
+          videoSource.includes('youtube.com') ||
+          videoSource.includes('youtu.be')
+        ) {
           fileUri = videoSource;
         } else {
           // For other HTTP URLs, would need to upload to GCS first

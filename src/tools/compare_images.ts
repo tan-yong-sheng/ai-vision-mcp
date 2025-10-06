@@ -24,7 +24,10 @@ export async function compare_images(
   try {
     // Validate arguments
     if (!args.imageSources || !Array.isArray(args.imageSources)) {
-      throw new VisionError('imageSources must be an array', 'MISSING_ARGUMENT');
+      throw new VisionError(
+        'imageSources must be an array',
+        'MISSING_ARGUMENT'
+      );
     }
     if (!args.prompt) {
       throw new VisionError('prompt is required', 'MISSING_ARGUMENT');
@@ -33,7 +36,10 @@ export async function compare_images(
     // Validate image count
     const maxImages = config.MAX_IMAGES_FOR_COMPARISON || 4;
     if (args.imageSources.length < 2) {
-      throw new VisionError('At least 2 images are required for comparison', 'INVALID_ARGUMENT');
+      throw new VisionError(
+        'At least 2 images are required for comparison',
+        'INVALID_ARGUMENT'
+      );
     }
     if (args.imageSources.length > maxImages) {
       throw new VisionError(
@@ -45,21 +51,30 @@ export async function compare_images(
     // Validate each image source
     for (let i = 0; i < args.imageSources.length; i++) {
       if (!args.imageSources[i] || typeof args.imageSources[i] !== 'string') {
-        throw new VisionError(`Image source at index ${i} is invalid`, 'INVALID_ARGUMENT');
+        throw new VisionError(
+          `Image source at index ${i} is invalid`,
+          'INVALID_ARGUMENT'
+        );
       }
     }
 
-    console.log(`[compare_images] Processing ${args.imageSources.length} images for comparison`);
+    console.log(
+      `[compare_images] Processing ${args.imageSources.length} images for comparison`
+    );
 
     // Process all image sources
     const processedImageSources = await Promise.all(
       args.imageSources.map(async (imageSource, index) => {
-        console.log(`[compare_images] Processing image ${index + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+        console.log(
+          `[compare_images] Processing image ${index + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+        );
         return await imageFileService.handleImageSource(imageSource);
       })
     );
 
-    console.log(`[compare_images] All ${processedImageSources.length} images processed successfully`);
+    console.log(
+      `[compare_images] All ${processedImageSources.length} images processed successfully`
+    );
 
     // Merge default options with provided options
     const options: AnalysisOptions = {

@@ -3,10 +3,7 @@
  */
 
 import { Storage, Bucket, File } from '@google-cloud/storage';
-import {
-  StorageProvider,
-  StorageFile,
-} from '../../types/Storage.js';
+import { StorageProvider, StorageFile } from '../../types/Storage.js';
 import { StorageError } from '../../types/Errors.js';
 import type { GCSConfig } from '../../types/Config.js';
 

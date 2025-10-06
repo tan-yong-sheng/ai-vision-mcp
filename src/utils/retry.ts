@@ -2,10 +2,7 @@
  * Retry logic and error handling utilities
  */
 
-import {
-  RateLimitExceededError,
-  NetworkError,
-} from '../types/Errors.js';
+import { RateLimitExceededError, NetworkError } from '../types/Errors.js';
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -268,7 +265,6 @@ export class CircuitBreaker {
     this.successCount = 0;
   }
 }
-
 
 /**
  * Bulkhead pattern for limiting concurrent operations

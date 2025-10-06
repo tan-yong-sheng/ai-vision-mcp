@@ -35,10 +35,25 @@ function getServices() {
     );
 
     // Create file services for handling file uploads
-    const imageFileService = new FileService(configService, 'image', imageProvider as any);
-    const videoFileService = new FileService(configService, 'video', videoProvider as any);
+    const imageFileService = new FileService(
+      configService,
+      'image',
+      imageProvider as any
+    );
+    const videoFileService = new FileService(
+      configService,
+      'video',
+      videoProvider as any
+    );
 
-    return { config, configService, imageProvider, videoProvider, imageFileService, videoFileService };
+    return {
+      config,
+      configService,
+      imageProvider,
+      videoProvider,
+      imageFileService,
+      videoFileService,
+    };
   } catch (error) {
     console.error('Failed to initialize services:', error);
     throw error;
@@ -50,14 +65,38 @@ server.registerTool(
   'analyze_image',
   {
     title: 'Analyze Image',
-    description: 'Analyze an image using AI vision models. Supports URLs, base64 data, and local file paths.',
+    description:
+      'Analyze an image using AI vision models. Supports URLs, base64 data, and local file paths.',
     inputSchema: {
-      imageSource: z.string().describe('Image source - can be a URL, base64 data (data:image/...), or local file path'),
-      prompt: z.string().describe('The prompt describing what you want to know about the image.'),
-      options: z.object({
-        temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
-        maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),
-      }).optional(),
+      imageSource: z
+        .string()
+        .describe(
+          'Image source - can be a URL, base64 data (data:image/...), or local file path'
+        ),
+      prompt: z
+        .string()
+        .describe(
+          'The prompt describing what you want to know about the image.'
+        ),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe('Maximum number of tokens to generate in the response'),
+        })
+        .optional(),
     },
   },
   async ({ imageSource, prompt, options }) => {
@@ -71,7 +110,12 @@ server.registerTool(
       // Initialize services on-demand
       const { config, imageProvider, imageFileService } = getServices();
 
-      const result = await analyze_image(validatedArgs, config, imageProvider, imageFileService);
+      const result = await analyze_image(
+        validatedArgs,
+        config,
+        imageProvider,
+        imageFileService
+      );
 
       return {
         content: [
@@ -120,14 +164,38 @@ server.registerTool(
   'compare_images',
   {
     title: 'Compare Images',
-    description: 'Compare multiple images using AI vision models. Supports URLs, base64 data, and local file paths.',
+    description:
+      'Compare multiple images using AI vision models. Supports URLs, base64 data, and local file paths.',
     inputSchema: {
-      imageSources: z.array(z.string()).min(2).max(4).describe('Array of image sources (URLs, base64 data, or file paths) - minimum 2, maximum 4 images'),
-      prompt: z.string().describe('The prompt describing how you want to compare the images.'),
-      options: z.object({
-        temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
-        maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),
-      }).optional(),
+      imageSources: z
+        .array(z.string())
+        .min(2)
+        .max(4)
+        .describe(
+          'Array of image sources (URLs, base64 data, or file paths) - minimum 2, maximum 4 images'
+        ),
+      prompt: z
+        .string()
+        .describe('The prompt describing how you want to compare the images.'),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe('Maximum number of tokens to generate in the response'),
+        })
+        .optional(),
     },
   },
   async ({ imageSources, prompt, options }) => {
@@ -141,7 +209,12 @@ server.registerTool(
       // Initialize services on-demand
       const { config, imageProvider, imageFileService } = getServices();
 
-      const result = await compare_images(validatedArgs, config, imageProvider, imageFileService);
+      const result = await compare_images(
+        validatedArgs,
+        config,
+        imageProvider,
+        imageFileService
+      );
 
       return {
         content: [
@@ -190,14 +263,36 @@ server.registerTool(
   'analyze_video',
   {
     title: 'Analyze Video',
-    description: 'Analyze a video using AI vision models. Supports URLs and local file paths.',
+    description:
+      'Analyze a video using AI vision models. Supports URLs and local file paths.',
     inputSchema: {
-      videoSource: z.string().describe('Video source - can be a URL or local file path'),
-      prompt: z.string().describe('The prompt describing what you want to know about the video.'),
-      options: z.object({
-        temperature: z.number().min(0).max(2).optional().describe('Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'),
-        maxTokens: z.number().int().min(1).max(8192).optional().describe('Maximum number of tokens to generate in the response'),
-      }).optional(),
+      videoSource: z
+        .string()
+        .describe('Video source - can be a URL or local file path'),
+      prompt: z
+        .string()
+        .describe(
+          'The prompt describing what you want to know about the video.'
+        ),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe('Maximum number of tokens to generate in the response'),
+        })
+        .optional(),
     },
   },
   async ({ videoSource, prompt, options }) => {
@@ -211,7 +306,12 @@ server.registerTool(
       // Initialize services on-demand
       const { config, videoProvider, videoFileService } = getServices();
 
-      const result = await analyze_video(validatedArgs, config, videoProvider, videoFileService);
+      const result = await analyze_video(
+        validatedArgs,
+        config,
+        videoProvider,
+        videoFileService
+      );
 
       return {
         content: [

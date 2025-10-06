@@ -31,7 +31,9 @@ export async function analyze_video(
     }
 
     // Handle video source (URL vs local file)
-    const processedVideoSource = await videoFileService.handleVideoSource(args.videoSource);
+    const processedVideoSource = await videoFileService.handleVideoSource(
+      args.videoSource
+    );
 
     // Merge default options with provided options
     const options: AnalysisOptions = {

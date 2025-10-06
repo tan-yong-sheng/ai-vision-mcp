@@ -33,10 +33,15 @@ export class FileService {
   }
 
   async handleImageSource(imageSource: string): Promise<string> {
-    console.log(`[FileService] handleImageSource input: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`);
+    console.log(
+      `[FileService] handleImageSource input: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
+    );
 
     // If it's already a file reference, return as-is
-    if (imageSource.startsWith('files/') || imageSource.includes('generativelanguage.googleapis.com')) {
+    if (
+      imageSource.startsWith('files/') ||
+      imageSource.includes('generativelanguage.googleapis.com')
+    ) {
       console.log(`[FileService] Returning existing file reference`);
       return imageSource;
     }
@@ -52,16 +57,24 @@ export class FileService {
 
     // Choose processing method based on size threshold
     const threshold = this.configService.getGeminiFilesApiThreshold();
-    console.log(`[FileService] Buffer size: ${buffer.length}, Threshold: ${threshold}`);
+    console.log(
+      `[FileService] Buffer size: ${buffer.length}, Threshold: ${threshold}`
+    );
 
     if (buffer.length <= threshold) {
       // Use inline data for small images
       const result = `data:${mimeType};base64,${buffer.toString('base64')}`;
-      console.log(`[FileService] Returning inline data URL: ${result.substring(0, 100)}...`);
+      console.log(
+        `[FileService] Returning inline data URL: ${result.substring(0, 100)}...`
+      );
       return result;
     } else {
       // Use Files API for large images
-      const result = await this.uploadFile(buffer, filename || `image.${this.getFileExtension(mimeType)}`, mimeType);
+      const result = await this.uploadFile(
+        buffer,
+        filename || `image.${this.getFileExtension(mimeType)}`,
+        mimeType
+      );
       console.log(`[FileService] Returning file URI: ${result}`);
       return result;
     }
@@ -133,7 +146,9 @@ export class FileService {
   }> {
     if (imageSource.startsWith('data:image/')) {
       // Handle base64 data
-      const matches = imageSource.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+      const matches = imageSource.match(
+        /^data:image\/([a-zA-Z]+);base64,(.+)$/
+      );
       if (!matches) {
         throw new FileUploadError('Invalid base64 image format');
       }
@@ -151,13 +166,17 @@ export class FileService {
 
         const response = await fetch(decodedUrl);
         if (!response.ok) {
-          throw new FileUploadError(`Failed to fetch image from URL: ${decodedUrl} (Status: ${response.status})`);
+          throw new FileUploadError(
+            `Failed to fetch image from URL: ${decodedUrl} (Status: ${response.status})`
+          );
         }
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const filename = decodedUrl.split('/').pop() || 'image.jpg';
         const mimeType = this.getMimeType(filename, buffer);
-        console.log(`[FileService] Successfully fetched image - size: ${buffer.length}, mimeType: ${mimeType}`);
+        console.log(
+          `[FileService] Successfully fetched image - size: ${buffer.length}, mimeType: ${mimeType}`
+        );
         return { buffer, mimeType, filename };
       } catch (error) {
         console.error(`[FileService] Error fetching URL:`, error);
@@ -244,7 +263,11 @@ export class FileService {
 
   private isLocalFilePath(filePath: string): boolean {
     // Unix/Linux paths
-    if (filePath.startsWith('/') || filePath.startsWith('./') || filePath.startsWith('../')) {
+    if (
+      filePath.startsWith('/') ||
+      filePath.startsWith('./') ||
+      filePath.startsWith('../')
+    ) {
       return true;
     }
 
@@ -260,14 +283,16 @@ export class FileService {
     }
 
     // Check for relative paths with backslashes (Windows-style)
-    if (filePath.includes('\\') && (filePath.startsWith('.\\') || filePath.startsWith('..\\'))) {
+    if (
+      filePath.includes('\\') &&
+      (filePath.startsWith('.\\') || filePath.startsWith('..\\'))
+    ) {
       return true;
     }
 
     return false;
   }
 
-  
   private isSupportedFileType(mimeType: string): boolean {
     const allowedImageTypes = this.configService.getAllowedImageFormats();
     const allowedVideoTypes = this.configService.getAllowedVideoFormats();
@@ -347,15 +372,27 @@ export class FileService {
 
   private getMimeTypeFromBuffer(buffer: Buffer): string {
     // Check PNG signature
-    if (buffer.length >= 8 &&
-        buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47 &&
-        buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A) {
+    if (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    ) {
       return 'image/png';
     }
 
     // Check JPEG signature
-    if (buffer.length >= 3 &&
-        buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+    if (
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    ) {
       return 'image/jpeg';
     }
 
@@ -368,8 +405,11 @@ export class FileService {
     }
 
     // Check WebP signature (RIFF....WEBP)
-    if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' &&
-        buffer.slice(8, 12).toString('ascii') === 'WEBP') {
+    if (
+      buffer.length >= 12 &&
+      buffer.slice(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.slice(8, 12).toString('ascii') === 'WEBP'
+    ) {
       return 'image/webp';
     }
 
