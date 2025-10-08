@@ -297,7 +297,7 @@ Analyzes a video using AI and returns a detailed description.
 | `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
 | `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
 | **API Configuration** ||||
-| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.8` |
+| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.3` |
 | `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.6` |
 | `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | `500` |
 | `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | `2000` |

@@ -73,7 +73,7 @@ export const ConfigSchema = z.object({
   GCS_REGION: z.string().min(1).optional().default('us-central1'),
 
   // Universal API parameters
-  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
+  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.3),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.6),
   MAX_TOKENS_FOR_IMAGE: z.coerce
     .number()

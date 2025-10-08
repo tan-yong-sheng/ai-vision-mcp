@@ -77,7 +77,7 @@ export class ConfigService {
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
           ? parseFloat(process.env.TEMPERATURE)
-          : 0.8,
+          : 0.3,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.6,
         MAX_TOKENS_FOR_IMAGE: process.env.MAX_TOKENS_FOR_IMAGE
           ? parseInt(process.env.MAX_TOKENS_FOR_IMAGE, 10)
