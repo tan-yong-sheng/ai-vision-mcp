@@ -61,7 +61,22 @@ GCS_BUCKET_NAME=your-vision-files-bucket
 TEMPERATURE=0.2
 TOP_P=0.95
 TOP_K=30
-MAX_TOKENS=16384
+MAX_TOKEN=800
+
+#===============================================
+# TASK-SPECIFIC API PARAMETERS (Optional)
+#===============================================
+# Image-specific parameters (override universal settings)
+TEMPERATURE_FOR_IMAGE=0.2
+TOP_P_FOR_IMAGE=0.95
+TOP_K_FOR_IMAGE=30
+MAX_TOKENS_FOR_IMAGE=500
+
+# Video-specific parameters (override universal settings)
+TEMPERATURE_FOR_VIDEO=0.2
+TOP_P_FOR_VIDEO=0.95
+TOP_K_FOR_VIDEO=30
+MAX_TOKENS_FOR_VIDEO=2000
 
 #===============================================
 # FILE PROCESSING CONFIGURATION
@@ -95,6 +110,44 @@ LOG_LEVEL=info|debug|warn|error
 #===============================================
 NODE_ENV=development|production
 ```
+
+### 2.3 Parameter Priority Resolution
+
+The AI model parameters follow a hierarchical priority system where more specific settings override general ones:
+
+#### Priority Order (Highest to Lowest)
+
+1. **LLM-assigned values** - Parameters passed directly in tool calls
+   ```json
+   {
+     "imageSource": "...",
+     "prompt": "...",
+     "options": {
+       "temperature": 0.1,
+       "maxTokens": 600
+     }
+   }
+   ```
+
+2. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
+3. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
+4. **System defaults** - Built-in fallback values
+
+#### Example Configuration
+
+```bash
+# Universal configuration for all tasks
+TEMPERATURE=0.3
+MAX_TOKEN=600
+
+# Task-specific overrides
+TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
+MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
+
+# LLM can override at runtime via tool parameters
+```
+
+This hierarchy allows for sensible defaults while maintaining granular control per task type.
 
 ## 3. System Architecture
 

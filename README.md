@@ -363,8 +363,15 @@ Analyzes a video using AI and returns a detailed description.
 | `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.2` |
 | `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
 | `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
-| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | `500` |
-| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | `2000` |
+| `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `800` |
+| `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
+| `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
+| `TOP_K_FOR_IMAGE` | No | Image-specific top-k (1–100) | Uses `TOP_K` |
+| `TEMPERATURE_FOR_VIDEO` | No | Video-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
+| `TOP_P_FOR_VIDEO` | No | Video-specific top-p (0.0–1.0) | Uses `TOP_P` |
+| `TOP_K_FOR_VIDEO` | No | Video-specific top-k (1–100) | Uses `TOP_K` |
+| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKEN` |
+| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKEN` |
 | **File Processing** ||||
 | `MAX_IMAGE_SIZE` | No | Maximum image size in bytes | `20971520` (20 MB) |
 | `MAX_VIDEO_SIZE` | No | Maximum video size in bytes | `2147483648` (2 GB) |
@@ -377,6 +384,34 @@ Analyzes a video using AI and returns a detailed description.
 | `NODE_ENV` | No | Environment mode | `development` |
 | `GEMINI_FILES_API_THRESHOLD` | No | Size threshold for Gemini Files API (bytes) | `10485760` (10 MB) |
 | `VERTEX_AI_FILES_API_THRESHOLD` | No | Size threshold for Vertex AI uploads (bytes) | `0` |
+
+
+<details>
+<summary>More on Environment Variable Logic (Optional to learn) </summary>
+
+The environment variables follow a layered priority system that determines which values take effect during runtime.
+
+**Priority Order (highest to lowest):**
+1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
+2. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
+3. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
+4. **System defaults** - Built-in fallback values
+
+**Example Usage:**
+```bash
+# Universal configuration
+TEMPERATURE=0.3
+MAX_TOKEN=600
+
+# Task-specific overrides
+TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
+MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
+
+# LLM can still override at runtime via tool parameters
+```
+
+This allows you to set sensible defaults while maintaining granular control per task type.
+</details>
 
 ## Development
 
