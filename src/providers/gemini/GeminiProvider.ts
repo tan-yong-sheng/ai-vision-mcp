@@ -38,7 +38,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async analyzeImage(
     imageSource: string,
     prompt: string,
-    _options?: AnalysisOptions
+    options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
       console.log(
@@ -157,6 +157,13 @@ export class GeminiProvider extends BaseVisionProvider {
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
+            config: {
+              temperature: options?.temperature,
+              topP: options?.topP,
+              topK: options?.topK,
+              maxOutputTokens: options?.maxTokensForImage,
+              candidateCount: 1,
+            },
           });
         });
 
@@ -185,7 +192,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async compareImages(
     imageSources: string[],
     prompt: string,
-    _options?: AnalysisOptions
+    options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
       console.log(`[GeminiProvider] Comparing ${imageSources.length} images`);
@@ -312,6 +319,13 @@ export class GeminiProvider extends BaseVisionProvider {
           return await this.client.models.generateContent({
             model,
             contents: contentParts,
+            config: {
+              temperature: options?.temperature,
+              topP: options?.topP,
+              topK: options?.topK,
+              maxOutputTokens: options?.maxTokens,
+              candidateCount: 1,
+            },
           });
         });
 
@@ -340,7 +354,7 @@ export class GeminiProvider extends BaseVisionProvider {
   async analyzeVideo(
     videoSource: string,
     prompt: string,
-    _options?: AnalysisOptions
+    options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
       let content: any;
@@ -424,6 +438,13 @@ export class GeminiProvider extends BaseVisionProvider {
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
+            config: {
+              temperature: options?.temperature,
+              topP: options?.topP,
+              topK: options?.topK,
+              maxOutputTokens: options?.maxTokensForVideo,
+              candidateCount: 1,
+            },
           });
         });
 

@@ -34,6 +34,7 @@ export interface Config {
   // Universal API parameters
   TEMPERATURE?: number;
   TOP_P?: number;
+  TOP_K?: number;
   MAX_TOKENS_FOR_IMAGE?: number;
   MAX_TOKENS_FOR_VIDEO?: number;
   STREAM_RESPONSES?: boolean;
@@ -89,6 +90,7 @@ export interface FileUploadConfig {
 export interface ApiConfig {
   temperature: number;
   topP: number;
+  topK: number;
   maxTokensForImage: number;
   maxTokensForVideo: number;
   streamResponses: boolean;

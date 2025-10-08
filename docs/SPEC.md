@@ -58,8 +58,9 @@ GCS_BUCKET_NAME=your-vision-files-bucket
 #===============================================
 # UNIVERSAL API PARAMETERS
 #===============================================
-TEMPERATURE=0.3
-TOP_P=0.6
+TEMPERATURE=0.2
+TOP_P=0.95
+TOP_K=30
 MAX_TOKENS=16384
 
 #===============================================

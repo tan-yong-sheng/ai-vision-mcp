@@ -77,8 +77,9 @@ export class ConfigService {
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
           ? parseFloat(process.env.TEMPERATURE)
-          : 0.3,
-        TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.6,
+          : 0.2,
+        TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.95,
+        TOP_K: process.env.TOP_K ? parseInt(process.env.TOP_K, 10) : 30,
         MAX_TOKENS_FOR_IMAGE: process.env.MAX_TOKENS_FOR_IMAGE
           ? parseInt(process.env.MAX_TOKENS_FOR_IMAGE, 10)
           : 500,
@@ -288,6 +289,7 @@ export class ConfigService {
     return {
       temperature: this.config.TEMPERATURE!,
       topP: this.config.TOP_P!,
+      topK: this.config.TOP_K!,
       maxTokensForImage: this.config.MAX_TOKENS_FOR_IMAGE!,
       maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
       streamResponses: this.config.STREAM_RESPONSES!,

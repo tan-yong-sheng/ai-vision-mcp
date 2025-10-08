@@ -79,6 +79,8 @@ export class VertexAIProvider extends BaseVisionProvider {
             ],
             generationConfig: {
               temperature: options?.temperature ?? 0.4,
+              topP: options?.topP,
+              topK: options?.topK,
               maxOutputTokens: options?.maxTokensForImage ?? 500,
               candidateCount: 1,
             },
@@ -160,6 +162,8 @@ export class VertexAIProvider extends BaseVisionProvider {
             ],
             generationConfig: {
               temperature: options?.temperature ?? 0.4,
+              topP: options?.topP,
+              topK: options?.topK,
               maxOutputTokens: options?.maxTokens ?? 500,
               candidateCount: 1,
             },
@@ -249,6 +253,8 @@ export class VertexAIProvider extends BaseVisionProvider {
             ],
             generationConfig: {
               temperature: options?.temperature ?? 0.4,
+              topP: options?.topP,
+              topK: options?.topK,
               maxOutputTokens: options?.maxTokensForVideo ?? 2000,
               candidateCount: 1,
             },

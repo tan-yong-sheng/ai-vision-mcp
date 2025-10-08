@@ -3,8 +3,11 @@
 
 ## TODO
 **URGENT**
+- remove STREAM_RESPONSES environment variable? (Reason: discard this because it still works as usual after setting STREAM_RESPONSES=true)
 
+- let user to amend SYSTEM_INSTRUCTIONS for IMAGE_MODEL and VIDEO_MODEL ... 
 
+- add analyze_image description for prompt params: "Detailed text prompt. If the task is **front-end code replication**, the prompt you provide must be: "Describe in detail the layout structure, color style, main components, and interactive elements of the website in this image to facilitate subsequent code generation by the model." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to analyze, extract, or understand from the image." (Reason: wait too long for such task to complete ... but can try one more time again)
 
 **ICEBOX**
 
@@ -27,6 +30,6 @@ cost = (token_in * price_in + token_out * price_out) / 1000
 
 - warn user that MAX_TOKENS_FOR_* is smaller than llm-assigned value for both image and video, if happens... (Reason: it's better to let llm to decide and override this)
 
-- remove STREAM_RESPONSES environment variable? (Reason: discard this because it still works as usual after setting STREAM_RESPONSES=true)
 
 - remove MAX_VIDEO_DURATION environment variable...
+

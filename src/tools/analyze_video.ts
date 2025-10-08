@@ -39,6 +39,7 @@ export async function analyze_video(
     const options: AnalysisOptions = {
       temperature: config.TEMPERATURE,
       topP: config.TOP_P,
+      topK: config.TOP_K,
       maxTokens: config.MAX_TOKENS_FOR_VIDEO,
       ...args.options,
     };

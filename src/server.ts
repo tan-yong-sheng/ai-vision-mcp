@@ -76,7 +76,7 @@ server.registerTool(
       prompt: z
         .string()
         .describe(
-          'The prompt describing what you want to know about the image.'
+          'The prompt describing what you want to know about the image.  If the task is **front-end code replication**, the prompt you provide must be: "Describe in detail the layout structure, color style, main components, and interactive elements of the website in this image to facilitate subsequent code generation by the model." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to analyze, extract, or understand from the image.'
         ),
       options: z
         .object({
@@ -88,6 +88,19 @@ server.registerTool(
             .describe(
               'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
             ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
           maxTokens: z
             .number()
             .int()
@@ -187,6 +200,19 @@ server.registerTool(
             .describe(
               'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
             ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
           maxTokens: z
             .number()
             .int()
@@ -284,6 +310,19 @@ server.registerTool(
             .describe(
               'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
             ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
           maxTokens: z
             .number()
             .int()

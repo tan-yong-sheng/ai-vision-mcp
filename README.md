@@ -54,7 +54,7 @@ Below are the installation guide for this MCP on different MCP clients, such as 
 Add to your Claude Desktop configuration:
 
 (i) Using Google AI Studio Provider
-```bash
+```json
 {
   "mcpServers": {
     "ai-vision-mcp": {
@@ -71,7 +71,7 @@ Add to your Claude Desktop configuration:
 ```
 
 (ii) Using Vertex AI Provider
-```bash
+```json
 {
   "mcpServers": {
     "ai-vision-mcp": {
@@ -112,6 +112,18 @@ claude mcp add ai-vision-mcp \
   -- npx ai-vision-mcp
 ```
 
+
+Note: Increase the MCP tool timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
+
+```json
+{
+  "env": {
+    "MCP_TIMEOUT": "20000", // Give the MCP server 20s to start.
+    "MCP_TOOL_TIMEOUT": "300000" // Allow each tool calls before timeout.
+  }
+}
+```
+
 </details>
 
 <details>
@@ -122,7 +134,7 @@ Go to: Settings -> Cursor Settings -> MCP -> Add new global MCP server
 Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is the recommended approach. You may also install in a specific project by creating .cursor/mcp.json in your project folder. See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
 
 (i) Using Google AI Studio Provider
-```bash
+```json
 {
   "mcpServers": {
     "ai-vision-mcp": {
@@ -139,7 +151,7 @@ Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is 
 ```
 
 (ii) Using Vertex AI Provider
-```bash
+```json
 {
   "mcpServers": {
     "ai-vision-mcp": {
@@ -159,6 +171,57 @@ Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is 
 
 
 <details>
+<summary>Cline</summary>
+
+Cline uses a JSON configuration file to manage MCP servers. To integrate the provided MCP server configuration:
+
+1. Open Cline and click on the MCP Servers icon in the top navigation bar.
+2. Select the Installed tab, then click Advanced MCP Settings.
+3. In the cline_mcp_settings.json file, add the following configuration:
+
+(i) Using Google AI Studio Provider
+```json
+{
+  "mcpServers": {
+    "timeout": 300, 
+    "type": "stdio",
+    "ai-vision-mcp": {
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "google",
+        "VIDEO_PROVIDER": "google",
+        "GEMINI_API_KEY": "your-gemini-api-key"
+      }
+    }
+  }
+}
+```
+
+(ii) Using Vertex AI Provider
+```json
+{
+  "mcpServers": {
+    "ai-vision-mcp": {
+      "timeout": 300,
+      "type": "stdio",
+      "command": "npx",
+      "args": ["ai-vision-mcp"],
+      "env": {
+        "IMAGE_PROVIDER": "vertex_ai",
+        "VIDEO_PROVIDER": "vertex_ai",
+        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
+      }
+    }
+  }
+}
+```
+</details>
+
+
+<details>
+
 <summary>Other MCP clients</summary>
 
 The server uses stdio transport and follows the standard MCP protocol. It can be integrated with any MCP-compatible client by running:
@@ -297,8 +360,9 @@ Analyzes a video using AI and returns a detailed description.
 | `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
 | `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
 | **API Configuration** ||||
-| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.3` |
-| `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.6` |
+| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.2` |
+| `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
+| `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
 | `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | `500` |
 | `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | `2000` |
 | **File Processing** ||||

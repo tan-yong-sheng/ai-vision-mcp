@@ -80,6 +80,7 @@ export async function compare_images(
     const options: AnalysisOptions = {
       temperature: config.TEMPERATURE,
       topP: config.TOP_P,
+      topK: config.TOP_K,
       maxTokens: config.MAX_TOKENS_FOR_IMAGE,
       ...args.options,
     };
