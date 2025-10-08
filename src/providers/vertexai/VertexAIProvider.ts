@@ -345,7 +345,6 @@ export class VertexAIProvider extends BaseVisionProvider {
       maxVideoSize: 2 * 1024 * 1024 * 1024, // 2GB
       maxVideoDuration: 3600, // 1 hour
       supportsVideo: true,
-      supportsStreaming: true,
       supportsFileUpload: false, // Requires external storage
     };
   }
@@ -355,7 +354,6 @@ export class VertexAIProvider extends BaseVisionProvider {
       ...this.getBaseModelCapabilities(),
       imageAnalysis: true,
       videoAnalysis: true,
-      streaming: true,
       maxTokensForImage: 500, // Default from config
       maxTokensForVideo: 2000, // Default from config
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(

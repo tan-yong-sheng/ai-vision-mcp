@@ -37,7 +37,6 @@ export interface Config {
   TOP_K?: number;
   MAX_TOKENS_FOR_IMAGE?: number;
   MAX_TOKENS_FOR_VIDEO?: number;
-  STREAM_RESPONSES?: boolean;
 
   // File processing configuration
   MAX_IMAGE_SIZE?: number;
@@ -93,7 +92,6 @@ export interface ApiConfig {
   topK: number;
   maxTokensForImage: number;
   maxTokensForVideo: number;
-  streamResponses: boolean;
 }
 
 export interface FileProcessingConfig {

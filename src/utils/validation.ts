@@ -88,7 +88,6 @@ export const ConfigSchema = z.object({
     .positive()
     .optional()
     .default(2000),
-  STREAM_RESPONSES: z.coerce.boolean().optional().default(false),
 
   // File processing configuration
   MAX_IMAGE_SIZE: z.coerce
@@ -139,7 +138,6 @@ export const AnalysisOptionsSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   topP: z.number().min(0).max(1).optional(),
   maxTokens: z.number().int().positive().optional(),
-  stream: z.boolean().optional().default(false),
   stopSequences: z.array(z.string()).optional(),
 });
 

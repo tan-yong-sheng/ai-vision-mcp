@@ -562,7 +562,6 @@ export class GeminiProvider extends BaseVisionProvider {
       maxImageSize: 20 * 1024 * 1024, // 20MB
       maxVideoSize: 100 * 1024 * 1024, // 100MB for direct upload
       maxVideoDuration: 3600, // 1 hour
-      supportsStreaming: false,
       supportsFileUpload: true,
     };
   }
@@ -572,7 +571,6 @@ export class GeminiProvider extends BaseVisionProvider {
       ...this.getBaseModelCapabilities(),
       imageAnalysis: true,
       videoAnalysis: true,
-      streaming: false,
       maxTokensForImage: 500, // Default from config
       maxTokensForVideo: 2000, // Default from config
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(

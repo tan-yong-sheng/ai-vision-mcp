@@ -86,7 +86,6 @@ export class ConfigService {
         MAX_TOKENS_FOR_VIDEO: process.env.MAX_TOKENS_FOR_VIDEO
           ? parseInt(process.env.MAX_TOKENS_FOR_VIDEO, 10)
           : 2000,
-        STREAM_RESPONSES: process.env.STREAM_RESPONSES === 'true',
 
         // File processing configuration
         MAX_IMAGE_SIZE: process.env.MAX_IMAGE_SIZE
@@ -292,7 +291,6 @@ export class ConfigService {
       topK: this.config.TOP_K!,
       maxTokensForImage: this.config.MAX_TOKENS_FOR_IMAGE!,
       maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
-      streamResponses: this.config.STREAM_RESPONSES!,
     };
   }
 

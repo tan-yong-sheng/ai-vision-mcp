@@ -151,7 +151,6 @@ export abstract class BaseVisionProvider implements VisionProvider {
       maxVideoSize: 2 * 1024 * 1024 * 1024, // 2GB
       maxVideoDuration: 3600, // 1 hour
       supportsVideo: true,
-      supportsStreaming: false,
       supportsFileUpload: true,
     };
   }
@@ -160,7 +159,6 @@ export abstract class BaseVisionProvider implements VisionProvider {
     return {
       imageAnalysis: true,
       videoAnalysis: this.supportsVideo(),
-      streaming: false,
       maxTokensForImage: 500, // Default, will be overridden by specific providers
       maxTokensForVideo: 2000, // Default, will be overridden by specific providers
       supportedFormats: this.getSupportedFormats().supportedImageFormats.concat(

@@ -9,7 +9,6 @@ export interface AnalysisOptions {
   maxTokens?: number | undefined; // Keep for backward compatibility
   maxTokensForImage?: number | undefined;
   maxTokensForVideo?: number | undefined;
-  stream?: boolean | undefined;
   stopSequences?: string[] | undefined;
 }
 
@@ -80,14 +79,12 @@ export interface ProviderCapabilities {
   maxVideoSize: number;
   maxVideoDuration: number;
   supportsVideo: boolean;
-  supportsStreaming: boolean;
   supportsFileUpload: boolean;
 }
 
 export interface ModelCapabilities {
   imageAnalysis: boolean;
   videoAnalysis: boolean;
-  streaming: boolean;
   maxTokensForImage: number;
   maxTokensForVideo: number;
   supportedFormats: string[];
