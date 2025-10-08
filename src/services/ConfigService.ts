@@ -80,12 +80,35 @@ export class ConfigService {
           : 0.2,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.95,
         TOP_K: process.env.TOP_K ? parseInt(process.env.TOP_K, 10) : 30,
+        MAX_TOKEN: process.env.MAX_TOKEN
+          ? parseInt(process.env.MAX_TOKEN, 10)
+          : 800,
+
+        // Task-specific API parameters
+        TEMPERATURE_FOR_IMAGE: process.env.TEMPERATURE_FOR_IMAGE
+          ? parseFloat(process.env.TEMPERATURE_FOR_IMAGE)
+          : undefined,
+        TOP_P_FOR_IMAGE: process.env.TOP_P_FOR_IMAGE
+          ? parseFloat(process.env.TOP_P_FOR_IMAGE)
+          : undefined,
+        TOP_K_FOR_IMAGE: process.env.TOP_K_FOR_IMAGE
+          ? parseInt(process.env.TOP_K_FOR_IMAGE, 10)
+          : undefined,
         MAX_TOKENS_FOR_IMAGE: process.env.MAX_TOKENS_FOR_IMAGE
           ? parseInt(process.env.MAX_TOKENS_FOR_IMAGE, 10)
-          : 500,
+          : undefined,
+        TEMPERATURE_FOR_VIDEO: process.env.TEMPERATURE_FOR_VIDEO
+          ? parseFloat(process.env.TEMPERATURE_FOR_VIDEO)
+          : undefined,
+        TOP_P_FOR_VIDEO: process.env.TOP_P_FOR_VIDEO
+          ? parseFloat(process.env.TOP_P_FOR_VIDEO)
+          : undefined,
+        TOP_K_FOR_VIDEO: process.env.TOP_K_FOR_VIDEO
+          ? parseInt(process.env.TOP_K_FOR_VIDEO, 10)
+          : undefined,
         MAX_TOKENS_FOR_VIDEO: process.env.MAX_TOKENS_FOR_VIDEO
           ? parseInt(process.env.MAX_TOKENS_FOR_VIDEO, 10)
-          : 2000,
+          : undefined,
 
         // File processing configuration
         MAX_IMAGE_SIZE: process.env.MAX_IMAGE_SIZE
@@ -289,9 +312,60 @@ export class ConfigService {
       temperature: this.config.TEMPERATURE!,
       topP: this.config.TOP_P!,
       topK: this.config.TOP_K!,
+      maxToken: this.config.MAX_TOKEN!,
+      temperatureForImage: this.config.TEMPERATURE_FOR_IMAGE,
+      topPForImage: this.config.TOP_P_FOR_IMAGE,
+      topKForImage: this.config.TOP_K_FOR_IMAGE,
       maxTokensForImage: this.config.MAX_TOKENS_FOR_IMAGE!,
+      temperatureForVideo: this.config.TEMPERATURE_FOR_VIDEO,
+      topPForVideo: this.config.TOP_P_FOR_VIDEO,
+      topKForVideo: this.config.TOP_K_FOR_VIDEO,
       maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
     };
+  }
+
+  public getTemperatureForTask(taskType: 'image' | 'video'): number | undefined {
+    switch (taskType) {
+      case 'image':
+        return this.config.TEMPERATURE_FOR_IMAGE;
+      case 'video':
+        return this.config.TEMPERATURE_FOR_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopPForTask(taskType: 'image' | 'video'): number | undefined {
+    switch (taskType) {
+      case 'image':
+        return this.config.TOP_P_FOR_IMAGE;
+      case 'video':
+        return this.config.TOP_P_FOR_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopKForTask(taskType: 'image' | 'video'): number | undefined {
+    switch (taskType) {
+      case 'image':
+        return this.config.TOP_K_FOR_IMAGE;
+      case 'video':
+        return this.config.TOP_K_FOR_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getMaxTokensForTask(taskType: 'image' | 'video'): number | undefined {
+    switch (taskType) {
+      case 'image':
+        return this.config.MAX_TOKENS_FOR_IMAGE;
+      case 'video':
+        return this.config.MAX_TOKENS_FOR_VIDEO;
+      default:
+        return undefined;
+    }
   }
 
   public getFileProcessingConfig(): FileProcessingConfig {

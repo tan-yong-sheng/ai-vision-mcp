@@ -5,12 +5,15 @@
 
 **URGENT**
 
+- add TEMPERATURE_FOR_IMAGE, TOP_P_FOR_IMAGE, TOP_K_FOR_IMAGE, TEMPERATURE_FOR_VIDEO, TOP_P_FOR_VIDEO, TOP_K_FOR_VIDEO (prepare for future....)
+- add MAX_TOKENS, since above set the standard for TOP_P, TOP_K, TEMPERATURE...
+
 - let user to add their custom SYSTEM_INSTRUCTIONS_FOR_IMAGE_MODEL and SYSTEM_INSTRUCTIONS_FOR_VIDEO_MODEL ... 
 
 - add metadata params like supportsThinking, supportsNoThinking - set thinkingbudget=0 for all models (except gemini 2.5 pro)
 
 - add analyze_image description for prompt params: "Detailed text prompt. If the task is **front-end code replication**, the prompt you provide must be: "Describe in detail the layout structure, color style, main components, and interactive elements of the website in this image to facilitate subsequent code generation by the model." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to analyze, extract, or understand from the image." (Reason: wait too long for such task to complete ... but can try one more time again)
-- add TEMPERATURE_FOR_IMAGE, TOP_P_FOR_IMAGE, TOP_K_FOR_IMAGE, TEMPERATURE_FOR_VIDEO, TOP_P_FOR_VIDEO, TOP_K_FOR_VIDEO (prepare for future....)
+
 
 **ICEBOX**
 

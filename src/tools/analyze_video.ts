@@ -40,7 +40,8 @@ export async function analyze_video(
       temperature: config.TEMPERATURE,
       topP: config.TOP_P,
       topK: config.TOP_K,
-      maxTokens: config.MAX_TOKENS_FOR_VIDEO,
+      maxTokens: config.MAX_TOKEN,
+      taskType: 'video',
       ...args.options,
     };
 

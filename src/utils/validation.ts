@@ -76,18 +76,17 @@ export const ConfigSchema = z.object({
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.2),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.95),
   TOP_K: z.coerce.number().int().min(1).max(100).optional().default(30),
-  MAX_TOKENS_FOR_IMAGE: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(500),
-  MAX_TOKENS_FOR_VIDEO: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .default(2000),
+  MAX_TOKEN: z.coerce.number().int().min(1).max(8192).optional().default(800),
+
+  // Task-specific API parameters
+  TEMPERATURE_FOR_IMAGE: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_IMAGE: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_IMAGE: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_IMAGE: z.number().int().positive().optional().default(500),
+  TEMPERATURE_FOR_VIDEO: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_VIDEO: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_VIDEO: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_VIDEO: z.number().int().positive().optional().default(2000),
 
   // File processing configuration
   MAX_IMAGE_SIZE: z.coerce

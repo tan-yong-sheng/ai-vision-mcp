@@ -81,7 +81,8 @@ export async function compare_images(
       temperature: config.TEMPERATURE,
       topP: config.TOP_P,
       topK: config.TOP_K,
-      maxTokens: config.MAX_TOKENS_FOR_IMAGE,
+      maxTokens: config.MAX_TOKEN,
+      taskType: 'image',
       ...args.options,
     };
 

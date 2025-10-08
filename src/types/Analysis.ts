@@ -2,6 +2,8 @@
  * Analysis types for vision providers
  */
 
+export type TaskType = 'image' | 'video';
+
 export interface AnalysisOptions {
   temperature?: number | undefined;
   topP?: number | undefined;
@@ -10,6 +12,7 @@ export interface AnalysisOptions {
   maxTokensForImage?: number | undefined;
   maxTokensForVideo?: number | undefined;
   stopSequences?: string[] | undefined;
+  taskType?: TaskType;
 }
 
 export interface AnalysisResult {

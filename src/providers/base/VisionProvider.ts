@@ -12,16 +12,20 @@ import type {
   ModelCapabilities,
   ProviderInfo,
 } from '../../types/Providers.js';
+import type { TaskType } from '../../types/Analysis.js';
+import { ConfigService } from '../../services/ConfigService.js';
 
 export abstract class BaseVisionProvider implements VisionProvider {
   protected imageModel: string;
   protected videoModel: string;
   protected providerName: string;
+  protected configService: ConfigService;
 
   constructor(providerName: string, imageModel: string, videoModel: string) {
     this.providerName = providerName;
     this.imageModel = imageModel;
     this.videoModel = videoModel;
+    this.configService = ConfigService.getInstance();
   }
 
   // Abstract methods that must be implemented by concrete providers
@@ -167,5 +171,78 @@ export abstract class BaseVisionProvider implements VisionProvider {
           : []
       ),
     };
+  }
+
+  protected resolveParameter(
+    taskType: TaskType,
+    directValue: number | undefined,
+    getTaskSpecificValue: (taskType: TaskType) => number | undefined,
+    getUniversalValue: () => number,
+    defaultValue: number
+  ): number {
+    // Priority hierarchy: LLM-assigned > task-specific > universal > default
+    if (directValue !== undefined) {
+      return directValue;
+    }
+
+    const taskSpecificValue = getTaskSpecificValue(taskType);
+    if (taskSpecificValue !== undefined) {
+      return taskSpecificValue;
+    }
+
+    return getUniversalValue() || defaultValue;
+  }
+
+  protected resolveTemperature(
+    taskType: TaskType,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameter(
+      taskType,
+      directValue,
+      this.configService.getTemperatureForTask.bind(this.configService),
+      () => this.configService.getApiConfig().temperature,
+      0.2
+    );
+  }
+
+  protected resolveTopP(
+    taskType: TaskType,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameter(
+      taskType,
+      directValue,
+      this.configService.getTopPForTask.bind(this.configService),
+      () => this.configService.getApiConfig().topP,
+      0.95
+    );
+  }
+
+  protected resolveTopK(
+    taskType: TaskType,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameter(
+      taskType,
+      directValue,
+      this.configService.getTopKForTask.bind(this.configService),
+      () => this.configService.getApiConfig().topK,
+      30
+    );
+  }
+
+  protected resolveMaxTokens(
+    taskType: TaskType,
+    directValue: number | undefined
+  ): number {
+    const defaultValue = taskType === 'image' ? 500 : 2000;
+    return this.resolveParameter(
+      taskType,
+      directValue,
+      this.configService.getMaxTokensForTask.bind(this.configService),
+      () => this.configService.getApiConfig().maxToken,
+      defaultValue
+    );
   }
 }

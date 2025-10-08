@@ -35,7 +35,16 @@ export interface Config {
   TEMPERATURE?: number;
   TOP_P?: number;
   TOP_K?: number;
+  MAX_TOKEN?: number;
+
+  // Task-specific API parameters
+  TEMPERATURE_FOR_IMAGE?: number;
+  TOP_P_FOR_IMAGE?: number;
+  TOP_K_FOR_IMAGE?: number;
   MAX_TOKENS_FOR_IMAGE?: number;
+  TEMPERATURE_FOR_VIDEO?: number;
+  TOP_P_FOR_VIDEO?: number;
+  TOP_K_FOR_VIDEO?: number;
   MAX_TOKENS_FOR_VIDEO?: number;
 
   // File processing configuration
@@ -90,8 +99,15 @@ export interface ApiConfig {
   temperature: number;
   topP: number;
   topK: number;
+  maxToken: number;
   maxTokensForImage: number;
   maxTokensForVideo: number;
+  temperatureForImage?: number;
+  topPForImage?: number;
+  topKForImage?: number;
+  temperatureForVideo?: number;
+  topPForVideo?: number;
+  topKForVideo?: number;
 }
 
 export interface FileProcessingConfig {

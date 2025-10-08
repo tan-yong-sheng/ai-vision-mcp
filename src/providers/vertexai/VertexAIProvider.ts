@@ -78,10 +78,10 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: options?.temperature ?? 0.4,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokensForImage ?? 500,
+              temperature: this.resolveTemperature('image', options?.temperature),
+              topP: this.resolveTopP('image', options?.topP),
+              topK: this.resolveTopK('image', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokensForImage),
               candidateCount: 1,
             },
           });
@@ -161,10 +161,10 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: options?.temperature ?? 0.4,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokens ?? 500,
+              temperature: this.resolveTemperature('image', options?.temperature),
+              topP: this.resolveTopP('image', options?.topP),
+              topK: this.resolveTopK('image', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokens),
               candidateCount: 1,
             },
           });
@@ -252,10 +252,10 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: options?.temperature ?? 0.4,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokensForVideo ?? 2000,
+              temperature: this.resolveTemperature('video', options?.temperature),
+              topP: this.resolveTopP('video', options?.topP),
+              topK: this.resolveTopK('video', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('video', options?.maxTokensForVideo),
               candidateCount: 1,
             },
           });

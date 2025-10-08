@@ -158,10 +158,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: [content, { text: prompt }],
             config: {
-              temperature: options?.temperature,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokensForImage,
+              temperature: this.resolveTemperature('image', options?.temperature),
+              topP: this.resolveTopP('image', options?.topP),
+              topK: this.resolveTopK('image', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokensForImage),
               candidateCount: 1,
             },
           });
@@ -320,10 +320,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: contentParts,
             config: {
-              temperature: options?.temperature,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokens,
+              temperature: this.resolveTemperature('image', options?.temperature),
+              topP: this.resolveTopP('image', options?.topP),
+              topK: this.resolveTopK('image', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokens),
               candidateCount: 1,
             },
           });
@@ -439,10 +439,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: [content, { text: prompt }],
             config: {
-              temperature: options?.temperature,
-              topP: options?.topP,
-              topK: options?.topK,
-              maxOutputTokens: options?.maxTokensForVideo,
+              temperature: this.resolveTemperature('video', options?.temperature),
+              topP: this.resolveTopP('video', options?.topP),
+              topK: this.resolveTopK('video', options?.topK),
+              maxOutputTokens: this.resolveMaxTokens('video', options?.maxTokensForVideo),
               candidateCount: 1,
             },
           });
