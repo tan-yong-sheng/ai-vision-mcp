@@ -77,12 +77,12 @@ export class ConfigService {
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
           ? parseFloat(process.env.TEMPERATURE)
-          : 0.2,
+          : 0.8,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.95,
         TOP_K: process.env.TOP_K ? parseInt(process.env.TOP_K, 10) : 30,
         MAX_TOKEN: process.env.MAX_TOKEN
           ? parseInt(process.env.MAX_TOKEN, 10)
-          : 800,
+          : 1000,
 
         // Task-specific API parameters
         TEMPERATURE_FOR_IMAGE: process.env.TEMPERATURE_FOR_IMAGE
@@ -108,6 +108,44 @@ export class ConfigService {
           : undefined,
         MAX_TOKENS_FOR_VIDEO: process.env.MAX_TOKENS_FOR_VIDEO
           ? parseInt(process.env.MAX_TOKENS_FOR_VIDEO, 10)
+          : undefined,
+
+        // Function-specific API parameters
+        TEMPERATURE_FOR_ANALYZE_IMAGE: process.env.TEMPERATURE_FOR_ANALYZE_IMAGE
+          ? parseFloat(process.env.TEMPERATURE_FOR_ANALYZE_IMAGE)
+          : undefined,
+        TOP_P_FOR_ANALYZE_IMAGE: process.env.TOP_P_FOR_ANALYZE_IMAGE
+          ? parseFloat(process.env.TOP_P_FOR_ANALYZE_IMAGE)
+          : undefined,
+        TOP_K_FOR_ANALYZE_IMAGE: process.env.TOP_K_FOR_ANALYZE_IMAGE
+          ? parseInt(process.env.TOP_K_FOR_ANALYZE_IMAGE, 10)
+          : undefined,
+        MAX_TOKENS_FOR_ANALYZE_IMAGE: process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE
+          ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE, 10)
+          : undefined,
+        TEMPERATURE_FOR_COMPARE_IMAGES: process.env.TEMPERATURE_FOR_COMPARE_IMAGES
+          ? parseFloat(process.env.TEMPERATURE_FOR_COMPARE_IMAGES)
+          : undefined,
+        TOP_P_FOR_COMPARE_IMAGES: process.env.TOP_P_FOR_COMPARE_IMAGES
+          ? parseFloat(process.env.TOP_P_FOR_COMPARE_IMAGES)
+          : undefined,
+        TOP_K_FOR_COMPARE_IMAGES: process.env.TOP_K_FOR_COMPARE_IMAGES
+          ? parseInt(process.env.TOP_K_FOR_COMPARE_IMAGES, 10)
+          : undefined,
+        MAX_TOKENS_FOR_COMPARE_IMAGES: process.env.MAX_TOKENS_FOR_COMPARE_IMAGES
+          ? parseInt(process.env.MAX_TOKENS_FOR_COMPARE_IMAGES, 10)
+          : undefined,
+        TEMPERATURE_FOR_ANALYZE_VIDEO: process.env.TEMPERATURE_FOR_ANALYZE_VIDEO
+          ? parseFloat(process.env.TEMPERATURE_FOR_ANALYZE_VIDEO)
+          : undefined,
+        TOP_P_FOR_ANALYZE_VIDEO: process.env.TOP_P_FOR_ANALYZE_VIDEO
+          ? parseFloat(process.env.TOP_P_FOR_ANALYZE_VIDEO)
+          : undefined,
+        TOP_K_FOR_ANALYZE_VIDEO: process.env.TOP_K_FOR_ANALYZE_VIDEO
+          ? parseInt(process.env.TOP_K_FOR_ANALYZE_VIDEO, 10)
+          : undefined,
+        MAX_TOKENS_FOR_ANALYZE_VIDEO: process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO
+          ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO, 10)
           : undefined,
 
         // File processing configuration
@@ -321,6 +359,18 @@ export class ConfigService {
       topPForVideo: this.config.TOP_P_FOR_VIDEO,
       topKForVideo: this.config.TOP_K_FOR_VIDEO,
       maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
+      temperatureForAnalyzeImage: this.config.TEMPERATURE_FOR_ANALYZE_IMAGE,
+      topPForAnalyzeImage: this.config.TOP_P_FOR_ANALYZE_IMAGE,
+      topKForAnalyzeImage: this.config.TOP_K_FOR_ANALYZE_IMAGE,
+      maxTokensForAnalyzeImage: this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE,
+      temperatureForCompareImages: this.config.TEMPERATURE_FOR_COMPARE_IMAGES,
+      topPForCompareImages: this.config.TOP_P_FOR_COMPARE_IMAGES,
+      topKForCompareImages: this.config.TOP_K_FOR_COMPARE_IMAGES,
+      maxTokensForCompareImages: this.config.MAX_TOKENS_FOR_COMPARE_IMAGES,
+      temperatureForAnalyzeVideo: this.config.TEMPERATURE_FOR_ANALYZE_VIDEO,
+      topPForAnalyzeVideo: this.config.TOP_P_FOR_ANALYZE_VIDEO,
+      topKForAnalyzeVideo: this.config.TOP_K_FOR_ANALYZE_VIDEO,
+      maxTokensForAnalyzeVideo: this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO,
     };
   }
 
@@ -363,6 +413,59 @@ export class ConfigService {
         return this.config.MAX_TOKENS_FOR_IMAGE;
       case 'video':
         return this.config.MAX_TOKENS_FOR_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  // Function-specific configuration getter methods
+  public getTemperatureForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+    switch (functionName) {
+      case 'analyze_image':
+        return this.config.TEMPERATURE_FOR_ANALYZE_IMAGE;
+      case 'compare_images':
+        return this.config.TEMPERATURE_FOR_COMPARE_IMAGES;
+      case 'analyze_video':
+        return this.config.TEMPERATURE_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopPForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+    switch (functionName) {
+      case 'analyze_image':
+        return this.config.TOP_P_FOR_ANALYZE_IMAGE;
+      case 'compare_images':
+        return this.config.TOP_P_FOR_COMPARE_IMAGES;
+      case 'analyze_video':
+        return this.config.TOP_P_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopKForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+    switch (functionName) {
+      case 'analyze_image':
+        return this.config.TOP_K_FOR_ANALYZE_IMAGE;
+      case 'compare_images':
+        return this.config.TOP_K_FOR_COMPARE_IMAGES;
+      case 'analyze_video':
+        return this.config.TOP_K_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getMaxTokensForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+    switch (functionName) {
+      case 'analyze_image':
+        return this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE;
+      case 'compare_images':
+        return this.config.MAX_TOKENS_FOR_COMPARE_IMAGES;
+      case 'analyze_video':
+        return this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO;
       default:
         return undefined;
     }

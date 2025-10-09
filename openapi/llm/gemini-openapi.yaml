@@ -201,7 +201,7 @@ components:
                       file_uri: "https://www.youtube.com/watch?v=9hE5-98ZeCg"
                       mime_type: "video/mp4"
             generationConfig:
-              temperature: 0.2
+              temperature: 0.8
               maxOutputTokens: 10000
               stopSequences:
                 - "string"

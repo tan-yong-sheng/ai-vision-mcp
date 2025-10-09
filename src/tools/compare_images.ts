@@ -83,6 +83,7 @@ export async function compare_images(
       topK: config.TOP_K,
       maxTokens: config.MAX_TOKEN,
       taskType: 'image',
+      functionName: 'compare_images',
       ...args.options,
     };
 

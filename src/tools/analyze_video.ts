@@ -42,6 +42,7 @@ export async function analyze_video(
       topK: config.TOP_K,
       maxTokens: config.MAX_TOKEN,
       taskType: 'video',
+      functionName: 'analyze_video',
       ...args.options,
     };
 

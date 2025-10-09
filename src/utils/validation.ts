@@ -73,20 +73,34 @@ export const ConfigSchema = z.object({
   GCS_REGION: z.string().min(1).optional().default('us-central1'),
 
   // Universal API parameters
-  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.2),
+  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.95),
   TOP_K: z.coerce.number().int().min(1).max(100).optional().default(30),
-  MAX_TOKEN: z.coerce.number().int().min(1).max(8192).optional().default(800),
+  MAX_TOKEN: z.coerce.number().int().min(1).max(8192).optional().default(1000),
 
   // Task-specific API parameters
   TEMPERATURE_FOR_IMAGE: z.number().min(0).max(2).optional(),
   TOP_P_FOR_IMAGE: z.number().min(0).max(1).optional(),
   TOP_K_FOR_IMAGE: z.number().int().positive().optional(),
-  MAX_TOKENS_FOR_IMAGE: z.number().int().positive().optional().default(500),
+  MAX_TOKENS_FOR_IMAGE: z.number().int().positive().optional(),
   TEMPERATURE_FOR_VIDEO: z.number().min(0).max(2).optional(),
   TOP_P_FOR_VIDEO: z.number().min(0).max(1).optional(),
   TOP_K_FOR_VIDEO: z.number().int().positive().optional(),
-  MAX_TOKENS_FOR_VIDEO: z.number().int().positive().optional().default(2000),
+  MAX_TOKENS_FOR_VIDEO: z.number().int().positive().optional(),
+
+  // Function-specific API parameters
+  TEMPERATURE_FOR_ANALYZE_IMAGE: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_ANALYZE_IMAGE: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_ANALYZE_IMAGE: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_ANALYZE_IMAGE: z.number().int().positive().optional(),
+  TEMPERATURE_FOR_COMPARE_IMAGES: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_COMPARE_IMAGES: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
+  TEMPERATURE_FOR_ANALYZE_VIDEO: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_ANALYZE_VIDEO: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),
 
   // File processing configuration
   MAX_IMAGE_SIZE: z.coerce
@@ -138,6 +152,8 @@ export const AnalysisOptionsSchema = z.object({
   topP: z.number().min(0).max(1).optional(),
   maxTokens: z.number().int().positive().optional(),
   stopSequences: z.array(z.string()).optional(),
+  taskType: z.enum(['image', 'video']).optional(),
+  functionName: z.enum(['analyze_image', 'compare_images', 'analyze_video']).optional(),
 });
 
 // MCP tool argument schemas

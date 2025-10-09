@@ -13,7 +13,6 @@ A powerful Model Context Protocol (MCP) server that provides AI-powered image an
 - **TypeScript**: Full TypeScript support with strict type checking
 
 
-
 ## Quick Start
 
 ### Pre-requisites
@@ -46,7 +45,7 @@ Refer to [the guideline here](docs/provider/vertex-ai-setup-guide.md) on how to 
 
 ### Installation
 
-Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, etc.
+Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, Cline, etc.
 
 <details>
 <summary>Claude Desktop</summary>
@@ -330,7 +329,6 @@ Analyzes a video using AI and returns a detailed description.
 }
 ```
 
-
 **Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
 
 ## Configuration
@@ -355,15 +353,15 @@ Analyzes a video using AI and returns a detailed description.
 | `VERTEX_LOCATION` | No | Vertex AI region | `us-central1` |
 | `VERTEX_ENDPOINT` | No | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
 | **Google Cloud Storage (Vertex AI)** ||||
-| `GCS_BUCKET_NAME` | If `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | GCS bucket name for Vertex AI uploads | Required for Vertex AI |
+| `GCS_BUCKET_NAME` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | GCS bucket name for Vertex AI uploads | Required for Vertex AI |
 | `GCS_CREDENTIALS` | No | Path to GCS credentials | Defaults to `VERTEX_CREDENTIALS` |
 | `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
 | `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
 | **API Configuration** ||||
-| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.2` |
+| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.8` |
 | `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
 | `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
-| `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `800` |
+| `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `1000` |
 | `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
 | `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
 | `TOP_K_FOR_IMAGE` | No | Image-specific top-k (1–100) | Uses `TOP_K` |
@@ -372,6 +370,19 @@ Analyzes a video using AI and returns a detailed description.
 | `TOP_K_FOR_VIDEO` | No | Video-specific top-k (1–100) | Uses `TOP_K` |
 | `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKEN` |
 | `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKEN` |
+| **Function-specific Configuration** |||||
+| `TEMPERATURE_FOR_ANALYZE_IMAGE` | No | Temperature for analyze_image function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
+| `TOP_P_FOR_ANALYZE_IMAGE` | No | Top-p for analyze_image function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
+| `TOP_K_FOR_ANALYZE_IMAGE` | No | Top-k for analyze_image function (1–100) | Uses `TOP_K_FOR_IMAGE` |
+| `MAX_TOKENS_FOR_ANALYZE_IMAGE` | No | Max tokens for analyze_image function | Uses `MAX_TOKENS_FOR_IMAGE` |
+| `TEMPERATURE_FOR_COMPARE_IMAGES` | No | Temperature for compare_images function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
+| `TOP_P_FOR_COMPARE_IMAGES` | No | Top-p for compare_images function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
+| `TOP_K_FOR_COMPARE_IMAGES` | No | Top-k for compare_images function (1–100) | Uses `TOP_K_FOR_IMAGE` |
+| `MAX_TOKENS_FOR_COMPARE_IMAGES` | No | Max tokens for compare_images function | Uses `MAX_TOKENS_FOR_IMAGE` |
+| `TEMPERATURE_FOR_ANALYZE_VIDEO` | No | Temperature for analyze_video function (0.0–2.0) | Uses `TEMPERATURE_FOR_VIDEO` |
+| `TOP_P_FOR_ANALYZE_VIDEO` | No | Top-p for analyze_video function (0.0–1.0) | Uses `TOP_P_FOR_VIDEO` |
+| `TOP_K_FOR_ANALYZE_VIDEO` | No | Top-k for analyze_video function (1–100) | Uses `TOP_K_FOR_VIDEO` |
+| `MAX_TOKENS_FOR_ANALYZE_VIDEO` | No | Max tokens for analyze_video function | Uses `MAX_TOKENS_FOR_VIDEO` |
 | **File Processing** ||||
 | `MAX_IMAGE_SIZE` | No | Maximum image size in bytes | `20971520` (20 MB) |
 | `MAX_VIDEO_SIZE` | No | Maximum video size in bytes | `2147483648` (2 GB) |
@@ -389,13 +400,13 @@ Analyzes a video using AI and returns a detailed description.
 <details>
 <summary>More on Environment Variable Logic (Optional to learn) </summary>
 
-The environment variables follow a layered priority system that determines which values take effect during runtime.
+The MCP server uses a four-level configuration priority system (highest to lowest):
 
-**Priority Order (highest to lowest):**
 1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
-2. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-3. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
-4. **System defaults** - Built-in fallback values
+2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
+3. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
+4. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
+5. **System defaults** - Built-in fallback values
 
 **Example Usage:**
 ```bash
@@ -407,10 +418,16 @@ MAX_TOKEN=600
 TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
 MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
 
+# Function-specific overrides
+TEMPERATURE_FOR_ANALYZE_IMAGE=0.05     # Very precise for single image analysis
+TEMPERATURE_FOR_COMPARE_IMAGES=0.2     # More creative for comparisons
+MAX_TOKENS_FOR_COMPARE_IMAGES=1500      # Longer responses for image comparisons
+TEMPERATURE_FOR_ANALYZE_VIDEO=0.1      # Precise video analysis
+
 # LLM can still override at runtime via tool parameters
 ```
 
-This allows you to set sensible defaults while maintaining granular control per task type.
+This allows you to set sensible defaults while maintaining granular control per task type and per function.
 </details>
 
 ## Development

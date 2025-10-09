@@ -49,6 +49,7 @@ export async function analyze_image(
       topK: config.TOP_K,
       maxTokens: config.MAX_TOKEN,
       taskType: 'image',
+      functionName: 'analyze_image',
       ...args.options,
     };
 

@@ -193,6 +193,35 @@ export abstract class BaseVisionProvider implements VisionProvider {
     return getUniversalValue() || defaultValue;
   }
 
+  protected resolveParameterWithFunction(
+    taskType: TaskType,
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video' | undefined,
+    directValue: number | undefined,
+    getFunctionSpecificValue: (functionName: 'analyze_image' | 'compare_images' | 'analyze_video') => number | undefined,
+    getTaskSpecificValue: (taskType: TaskType) => number | undefined,
+    getUniversalValue: () => number,
+    defaultValue: number
+  ): number {
+    // Priority hierarchy: LLM-assigned > function-specific > task-specific > universal > default
+    if (directValue !== undefined) {
+      return directValue;
+    }
+
+    if (functionName) {
+      const functionSpecificValue = getFunctionSpecificValue(functionName);
+      if (functionSpecificValue !== undefined) {
+        return functionSpecificValue;
+      }
+    }
+
+    const taskSpecificValue = getTaskSpecificValue(taskType);
+    if (taskSpecificValue !== undefined) {
+      return taskSpecificValue;
+    }
+
+    return getUniversalValue() || defaultValue;
+  }
+
   protected resolveTemperature(
     taskType: TaskType,
     directValue: number | undefined
@@ -202,7 +231,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
       directValue,
       this.configService.getTemperatureForTask.bind(this.configService),
       () => this.configService.getApiConfig().temperature,
-      0.2
+      0.8
     );
   }
 
@@ -240,6 +269,72 @@ export abstract class BaseVisionProvider implements VisionProvider {
     return this.resolveParameter(
       taskType,
       directValue,
+      this.configService.getMaxTokensForTask.bind(this.configService),
+      () => this.configService.getApiConfig().maxToken,
+      defaultValue
+    );
+  }
+
+  // Function-specific resolution methods
+  protected resolveTemperatureForFunction(
+    taskType: TaskType,
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video' | undefined,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameterWithFunction(
+      taskType,
+      functionName,
+      directValue,
+      this.configService.getTemperatureForFunction.bind(this.configService),
+      this.configService.getTemperatureForTask.bind(this.configService),
+      () => this.configService.getApiConfig().temperature,
+      0.8
+    );
+  }
+
+  protected resolveTopPForFunction(
+    taskType: TaskType,
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video' | undefined,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameterWithFunction(
+      taskType,
+      functionName,
+      directValue,
+      this.configService.getTopPForFunction.bind(this.configService),
+      this.configService.getTopPForTask.bind(this.configService),
+      () => this.configService.getApiConfig().topP,
+      0.95
+    );
+  }
+
+  protected resolveTopKForFunction(
+    taskType: TaskType,
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video' | undefined,
+    directValue: number | undefined
+  ): number {
+    return this.resolveParameterWithFunction(
+      taskType,
+      functionName,
+      directValue,
+      this.configService.getTopKForFunction.bind(this.configService),
+      this.configService.getTopKForTask.bind(this.configService),
+      () => this.configService.getApiConfig().topK,
+      30
+    );
+  }
+
+  protected resolveMaxTokensForFunction(
+    taskType: TaskType,
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video' | undefined,
+    directValue: number | undefined
+  ): number {
+    const defaultValue = taskType === 'image' ? 500 : 2000;
+    return this.resolveParameterWithFunction(
+      taskType,
+      functionName,
+      directValue,
+      this.configService.getMaxTokensForFunction.bind(this.configService),
       this.configService.getMaxTokensForTask.bind(this.configService),
       () => this.configService.getApiConfig().maxToken,
       defaultValue

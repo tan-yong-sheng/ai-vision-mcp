@@ -158,10 +158,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: [content, { text: prompt }],
             config: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokensForImage),
+              temperature: this.resolveTemperatureForFunction('image', options?.functionName, options?.temperature),
+              topP: this.resolveTopPForFunction('image', options?.functionName, options?.topP),
+              topK: this.resolveTopKForFunction('image', options?.functionName, options?.topK),
+              maxOutputTokens: this.resolveMaxTokensForFunction('image', options?.functionName, options?.maxTokensForImage),
               candidateCount: 1,
             },
           });
@@ -320,10 +320,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: contentParts,
             config: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokens),
+              temperature: this.resolveTemperatureForFunction('image', options?.functionName, options?.temperature),
+              topP: this.resolveTopPForFunction('image', options?.functionName, options?.topP),
+              topK: this.resolveTopKForFunction('image', options?.functionName, options?.topK),
+              maxOutputTokens: this.resolveMaxTokensForFunction('image', options?.functionName, options?.maxTokens),
               candidateCount: 1,
             },
           });
@@ -439,10 +439,10 @@ export class GeminiProvider extends BaseVisionProvider {
             model,
             contents: [content, { text: prompt }],
             config: {
-              temperature: this.resolveTemperature('video', options?.temperature),
-              topP: this.resolveTopP('video', options?.topP),
-              topK: this.resolveTopK('video', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('video', options?.maxTokensForVideo),
+              temperature: this.resolveTemperatureForFunction('video', options?.functionName, options?.temperature),
+              topP: this.resolveTopPForFunction('video', options?.functionName, options?.topP),
+              topK: this.resolveTopKForFunction('video', options?.functionName, options?.topK),
+              maxOutputTokens: this.resolveMaxTokensForFunction('video', options?.functionName, options?.maxTokensForVideo),
               candidateCount: 1,
             },
           });

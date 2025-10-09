@@ -13,6 +13,7 @@ export interface AnalysisOptions {
   maxTokensForVideo?: number | undefined;
   stopSequences?: string[] | undefined;
   taskType?: TaskType;
+  functionName?: 'analyze_image' | 'compare_images' | 'analyze_video';
 }
 
 export interface AnalysisResult {

@@ -58,22 +58,22 @@ GCS_BUCKET_NAME=your-vision-files-bucket
 #===============================================
 # UNIVERSAL API PARAMETERS
 #===============================================
-TEMPERATURE=0.2
+TEMPERATURE=0.8
 TOP_P=0.95
 TOP_K=30
-MAX_TOKEN=800
+MAX_TOKEN=1000
 
 #===============================================
 # TASK-SPECIFIC API PARAMETERS (Optional)
 #===============================================
 # Image-specific parameters (override universal settings)
-TEMPERATURE_FOR_IMAGE=0.2
+TEMPERATURE_FOR_IMAGE=0.8
 TOP_P_FOR_IMAGE=0.95
 TOP_K_FOR_IMAGE=30
 MAX_TOKENS_FOR_IMAGE=500
 
 # Video-specific parameters (override universal settings)
-TEMPERATURE_FOR_VIDEO=0.2
+TEMPERATURE_FOR_VIDEO=0.8
 TOP_P_FOR_VIDEO=0.95
 TOP_K_FOR_VIDEO=30
 MAX_TOKENS_FOR_VIDEO=2000
