@@ -62,11 +62,10 @@ export class ConfigService {
         IMAGE_MODEL: process.env.IMAGE_MODEL,
         VIDEO_MODEL: process.env.VIDEO_MODEL,
 
-        // Fallback model configuration
-        FALLBACK_IMAGE_MODEL:
-          process.env.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
-        FALLBACK_VIDEO_MODEL:
-          process.env.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
+        // Function-specific model configuration
+        ANALYZE_IMAGE_MODEL: process.env.ANALYZE_IMAGE_MODEL,
+        COMPARE_IMAGES_MODEL: process.env.COMPARE_IMAGES_MODEL,
+        ANALYZE_VIDEO_MODEL: process.env.ANALYZE_VIDEO_MODEL,
 
         // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
@@ -123,7 +122,8 @@ export class ConfigService {
         MAX_TOKENS_FOR_ANALYZE_IMAGE: process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE
           ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE, 10)
           : undefined,
-        TEMPERATURE_FOR_COMPARE_IMAGES: process.env.TEMPERATURE_FOR_COMPARE_IMAGES
+        TEMPERATURE_FOR_COMPARE_IMAGES: process.env
+          .TEMPERATURE_FOR_COMPARE_IMAGES
           ? parseFloat(process.env.TEMPERATURE_FOR_COMPARE_IMAGES)
           : undefined,
         TOP_P_FOR_COMPARE_IMAGES: process.env.TOP_P_FOR_COMPARE_IMAGES
@@ -300,8 +300,8 @@ export class ConfigService {
     return {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
-      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
-      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
+      imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
     } as GeminiConfig;
   }
 
@@ -319,8 +319,8 @@ export class ConfigService {
       endpoint:
         this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
       credentials: this.config.VERTEX_CREDENTIALS,
-      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
-      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
+      imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
     };
   }
 
@@ -371,10 +371,16 @@ export class ConfigService {
       topPForAnalyzeVideo: this.config.TOP_P_FOR_ANALYZE_VIDEO,
       topKForAnalyzeVideo: this.config.TOP_K_FOR_ANALYZE_VIDEO,
       maxTokensForAnalyzeVideo: this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO,
+      // Model configuration
+      analyzeImageModel: this.config.ANALYZE_IMAGE_MODEL,
+      compareImagesModel: this.config.COMPARE_IMAGES_MODEL,
+      analyzeVideoModel: this.config.ANALYZE_VIDEO_MODEL,
     };
   }
 
-  public getTemperatureForTask(taskType: 'image' | 'video'): number | undefined {
+  public getTemperatureForTask(
+    taskType: 'image' | 'video'
+  ): number | undefined {
     switch (taskType) {
       case 'image':
         return this.config.TEMPERATURE_FOR_IMAGE;
@@ -419,7 +425,9 @@ export class ConfigService {
   }
 
   // Function-specific configuration getter methods
-  public getTemperatureForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+  public getTemperatureForFunction(
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+  ): number | undefined {
     switch (functionName) {
       case 'analyze_image':
         return this.config.TEMPERATURE_FOR_ANALYZE_IMAGE;
@@ -432,7 +440,9 @@ export class ConfigService {
     }
   }
 
-  public getTopPForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+  public getTopPForFunction(
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+  ): number | undefined {
     switch (functionName) {
       case 'analyze_image':
         return this.config.TOP_P_FOR_ANALYZE_IMAGE;
@@ -445,7 +455,9 @@ export class ConfigService {
     }
   }
 
-  public getTopKForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+  public getTopKForFunction(
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+  ): number | undefined {
     switch (functionName) {
       case 'analyze_image':
         return this.config.TOP_K_FOR_ANALYZE_IMAGE;
@@ -458,7 +470,9 @@ export class ConfigService {
     }
   }
 
-  public getMaxTokensForFunction(functionName: 'analyze_image' | 'compare_images' | 'analyze_video'): number | undefined {
+  public getMaxTokensForFunction(
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+  ): number | undefined {
     switch (functionName) {
       case 'analyze_image':
         return this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE;
@@ -466,6 +480,22 @@ export class ConfigService {
         return this.config.MAX_TOKENS_FOR_COMPARE_IMAGES;
       case 'analyze_video':
         return this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  // Function-specific model getter methods
+  public getModelForFunction(
+    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+  ): string | undefined {
+    switch (functionName) {
+      case 'analyze_image':
+        return this.config.ANALYZE_IMAGE_MODEL;
+      case 'compare_images':
+        return this.config.COMPARE_IMAGES_MODEL;
+      case 'analyze_video':
+        return this.config.ANALYZE_VIDEO_MODEL;
       default:
         return undefined;
     }

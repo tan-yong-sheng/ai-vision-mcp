@@ -45,8 +45,11 @@ export const ConfigSchema = z.object({
   // Model configuration
   IMAGE_MODEL: z.string().min(1).optional(),
   VIDEO_MODEL: z.string().min(1).optional(),
-  FALLBACK_IMAGE_MODEL: z.string().min(1).optional(),
-  FALLBACK_VIDEO_MODEL: z.string().min(1).optional(),
+
+  // Function-specific model configuration
+  ANALYZE_IMAGE_MODEL: z.string().min(1).optional(),
+  COMPARE_IMAGES_MODEL: z.string().min(1).optional(),
+  ANALYZE_VIDEO_MODEL: z.string().min(1).optional(),
 
   // Gemini API configuration
   GEMINI_API_KEY: z.string().min(1).optional(),
@@ -153,7 +156,9 @@ export const AnalysisOptionsSchema = z.object({
   maxTokens: z.number().int().positive().optional(),
   stopSequences: z.array(z.string()).optional(),
   taskType: z.enum(['image', 'video']).optional(),
-  functionName: z.enum(['analyze_image', 'compare_images', 'analyze_video']).optional(),
+  functionName: z
+    .enum(['analyze_image', 'compare_images', 'analyze_video'])
+    .optional(),
 });
 
 // MCP tool argument schemas

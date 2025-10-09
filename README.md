@@ -342,8 +342,10 @@ Analyzes a video using AI and returns a detailed description.
 | **Model Selection** ||||
 | `IMAGE_MODEL` | No | Model for image analysis | `gemini-2.5-flash-lite` |
 | `VIDEO_MODEL` | No | Model for video analysis | `gemini-2.5-flash` |
-| `FALLBACK_IMAGE_MODEL` | No | Fallback Model for image analysis | `gemini-2.5-flash-lite` |
-| `FALLBACK_VIDEO_MODEL` | No | Fallback Model for video analysis | `gemini-2.5-flash` |
+| **Function-specific Model Selection** ||||
+| `ANALYZE_IMAGE_MODEL` | No | Model for analyze_image function | Uses `IMAGE_MODEL` |
+| `COMPARE_IMAGES_MODEL` | No | Model for compare_images function | Uses `IMAGE_MODEL` |
+| `ANALYZE_VIDEO_MODEL` | No | Model for analyze_video function | Uses `VIDEO_MODEL` |
 | **Google Gemini API** ||||
 | `GEMINI_API_KEY` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `google` | Google Gemini API key | Required for Gemini |
 | `GEMINI_BASE_URL` | No | Gemini API base URL | `https://generativelanguage.googleapis.com` |
@@ -362,6 +364,7 @@ Analyzes a video using AI and returns a detailed description.
 | `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
 | `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
 | `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `1000` |
+| **Task-type level Configuration** |||||
 | `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
 | `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
 | `TOP_K_FOR_IMAGE` | No | Image-specific top-k (1–100) | Uses `TOP_K` |
@@ -400,7 +403,7 @@ Analyzes a video using AI and returns a detailed description.
 <details>
 <summary>More on Environment Variable Logic (Optional to learn) </summary>
 
-The MCP server uses a four-level configuration priority system (highest to lowest):
+The MCP server uses a four-level configuration priority system for AI parameters (highest to lowest):
 
 1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
 2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
@@ -408,9 +411,15 @@ The MCP server uses a four-level configuration priority system (highest to lowes
 4. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
 5. **System defaults** - Built-in fallback values
 
+For model selection, the server uses a three-level hierarchy (highest to lowest):
+
+1. **Function-specific models** - `ANALYZE_IMAGE_MODEL`, `COMPARE_IMAGES_MODEL`, `ANALYZE_VIDEO_MODEL`
+2. **Task-specific models** - `IMAGE_MODEL`, `VIDEO_MODEL`
+3. **System defaults** - Built-in fallback models (`gemini-2.5-flash-lite`, `gemini-2.5-flash`)
+
 **Example Usage:**
 ```bash
-# Universal configuration
+# AI Parameters configuration
 TEMPERATURE=0.3
 MAX_TOKEN=600
 
@@ -424,10 +433,24 @@ TEMPERATURE_FOR_COMPARE_IMAGES=0.2     # More creative for comparisons
 MAX_TOKENS_FOR_COMPARE_IMAGES=1500      # Longer responses for image comparisons
 TEMPERATURE_FOR_ANALYZE_VIDEO=0.1      # Precise video analysis
 
+# Model selection configuration
+ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"          # Fast, cost-effective for single image analysis
+COMPARE_IMAGES_MODEL="gemini-2.5-flash-lite"         
+ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"           # Most capable for video analysis
+
+# Task-specific models (existing pattern still works)
+IMAGE_MODEL="gemini-2.5-flash"
+VIDEO_MODEL="gemini-2.5-flash-pro"
+
+# Resolution order for analyze_image:
+# 1. ANALYZE_IMAGE_MODEL
+# 2. IMAGE_MODEL
+# 3. System default ("gemini-2.5-flash-lite")
+
 # LLM can still override at runtime via tool parameters
 ```
 
-This allows you to set sensible defaults while maintaining granular control per task type and per function.
+This allows you to set sensible defaults while maintaining granular control per task type and per function, with a clean and maintainable 3-level hierarchy.
 </details>
 
 ## Development

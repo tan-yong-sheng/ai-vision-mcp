@@ -57,7 +57,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
       const model = this.client.getGenerativeModel({
-        model: this.imageModel,
+        model: this.resolveModelForFunction('image', options?.functionName),
       });
 
       const { result: response, duration } = await this.measureAsync(
@@ -78,10 +78,26 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: this.resolveTemperatureForFunction('image', options?.functionName, options?.temperature),
-              topP: this.resolveTopPForFunction('image', options?.functionName, options?.topP),
-              topK: this.resolveTopKForFunction('image', options?.functionName, options?.topK),
-              maxOutputTokens: this.resolveMaxTokensForFunction('image', options?.functionName, options?.maxTokensForImage),
+              temperature: this.resolveTemperatureForFunction(
+                'image',
+                options?.functionName,
+                options?.temperature
+              ),
+              topP: this.resolveTopPForFunction(
+                'image',
+                options?.functionName,
+                options?.topP
+              ),
+              topK: this.resolveTopKForFunction(
+                'image',
+                options?.functionName,
+                options?.topK
+              ),
+              maxOutputTokens: this.resolveMaxTokensForFunction(
+                'image',
+                options?.functionName,
+                options?.maxTokensForImage
+              ),
               candidateCount: 1,
             },
           });
@@ -148,7 +164,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       imageParts.push({ text: prompt });
 
       const model = this.client.getGenerativeModel({
-        model: this.imageModel,
+        model: this.resolveModelForFunction('image', options?.functionName),
       });
 
       const { result: response, duration } = await this.measureAsync(
@@ -161,10 +177,26 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: this.resolveTemperatureForFunction('image', options?.functionName, options?.temperature),
-              topP: this.resolveTopPForFunction('image', options?.functionName, options?.topP),
-              topK: this.resolveTopKForFunction('image', options?.functionName, options?.topK),
-              maxOutputTokens: this.resolveMaxTokensForFunction('image', options?.functionName, options?.maxTokens),
+              temperature: this.resolveTemperatureForFunction(
+                'image',
+                options?.functionName,
+                options?.temperature
+              ),
+              topP: this.resolveTopPForFunction(
+                'image',
+                options?.functionName,
+                options?.topP
+              ),
+              topK: this.resolveTopKForFunction(
+                'image',
+                options?.functionName,
+                options?.topK
+              ),
+              maxOutputTokens: this.resolveMaxTokensForFunction(
+                'image',
+                options?.functionName,
+                options?.maxTokens
+              ),
               candidateCount: 1,
             },
           });
@@ -231,7 +263,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       }
 
       const model = this.client.getGenerativeModel({
-        model: this.videoModel,
+        model: this.resolveModelForFunction('video', options?.functionName),
       });
 
       const { result: response, duration } = await this.measureAsync(
@@ -252,10 +284,26 @@ export class VertexAIProvider extends BaseVisionProvider {
               },
             ],
             generationConfig: {
-              temperature: this.resolveTemperatureForFunction('video', options?.functionName, options?.temperature),
-              topP: this.resolveTopPForFunction('video', options?.functionName, options?.topP),
-              topK: this.resolveTopKForFunction('video', options?.functionName, options?.topK),
-              maxOutputTokens: this.resolveMaxTokensForFunction('video', options?.functionName, options?.maxTokensForVideo),
+              temperature: this.resolveTemperatureForFunction(
+                'video',
+                options?.functionName,
+                options?.temperature
+              ),
+              topP: this.resolveTopPForFunction(
+                'video',
+                options?.functionName,
+                options?.topP
+              ),
+              topK: this.resolveTopKForFunction(
+                'video',
+                options?.functionName,
+                options?.topK
+              ),
+              maxOutputTokens: this.resolveMaxTokensForFunction(
+                'video',
+                options?.functionName,
+                options?.maxTokensForVideo
+              ),
               candidateCount: 1,
             },
           });
@@ -377,7 +425,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     try {
       const { duration } = await this.measureAsync(async () => {
         const model = this.client.getGenerativeModel({
-          model: this.imageModel,
+          model: this.resolveModelForFunction('image', 'analyze_image'),
         });
         // Simple test with minimal content
         await model.generateContent({
@@ -512,9 +560,12 @@ export class VertexAIProvider extends BaseVisionProvider {
   }
 
   private validateEndpoint(endpoint: string): void {
-    if (!endpoint.startsWith('https://aiplatform.googleapis.com')) {
+    // Validate that it's a valid URL format
+    try {
+      new URL(endpoint);
+    } catch (error) {
       throw new ProviderError(
-        `Invalid Vertex AI endpoint: ${endpoint}. Expected endpoint to start with 'https://aiplatform.googleapis.com'`,
+        `Invalid Vertex AI endpoint format: ${endpoint}. Must be a valid URL.`,
         'vertex_ai',
         undefined,
         400

@@ -21,9 +21,10 @@ export interface Config {
   IMAGE_MODEL?: string;
   VIDEO_MODEL?: string;
 
-  // Fallback model configuration
-  FALLBACK_IMAGE_MODEL?: string;
-  FALLBACK_VIDEO_MODEL?: string;
+  // Function-specific model configuration
+  ANALYZE_IMAGE_MODEL?: string;
+  COMPARE_IMAGES_MODEL?: string;
+  ANALYZE_VIDEO_MODEL?: string;
 
   // Google Cloud Storage configuration (for Vertex AI file storage)
   GCS_BUCKET_NAME?: string;
@@ -134,6 +135,10 @@ export interface ApiConfig {
   topPForAnalyzeVideo?: number;
   topKForAnalyzeVideo?: number;
   maxTokensForAnalyzeVideo?: number;
+  // Model configuration
+  analyzeImageModel?: string;
+  compareImagesModel?: string;
+  analyzeVideoModel?: string;
 }
 
 export interface FileProcessingConfig {
