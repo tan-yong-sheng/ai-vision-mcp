@@ -61,7 +61,7 @@ GCS_BUCKET_NAME=your-vision-files-bucket
 TEMPERATURE=0.8
 TOP_P=0.95
 TOP_K=30
-MAX_TOKEN=1000
+MAX_TOKENS=1000
 
 #===============================================
 # TASK-SPECIFIC API PARAMETERS (Optional)
@@ -130,7 +130,7 @@ The AI model parameters follow a hierarchical priority system where more specifi
    ```
 
 2. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-3. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
+3. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
 4. **System defaults** - Built-in fallback values
 
 #### Example Configuration
@@ -138,7 +138,7 @@ The AI model parameters follow a hierarchical priority system where more specifi
 ```bash
 # Universal configuration for all tasks
 TEMPERATURE=0.3
-MAX_TOKEN=600
+MAX_TOKENS=600
 
 # Task-specific overrides
 TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
@@ -226,7 +226,124 @@ interface VisionProvider {
 }
 ```
 
-### 3.3 Provider Factory
+### 3.3 Architecture Decision: Tool-Level vs Provider-Level Methods
+
+#### Why `detect_objects_in_image` Uses `analyzeImage()` Instead of Having Its Own Provider Method
+
+The `detect_objects_in_image` MCP tool is implemented at the **tool layer** and uses the existing `analyzeImage()` provider method rather than having a dedicated `detectObjectsInImage()` method in the provider. This is an intentional architectural decision based on the following principles:
+
+**1. Separation of Concerns**
+
+The architecture follows a clear **layered design**:
+
+- **Provider Layer** (`GeminiProvider`, `VertexAIProvider`):
+  - Provides **primitive operations** for AI vision tasks
+  - Handles low-level API communication, authentication, and error handling
+  - Agnostic to domain-specific use cases
+
+- **Tool Layer** (`detect_objects_in_image.ts`, `analyze_image.ts`, etc.):
+  - Composes provider primitives with **domain-specific logic**
+  - Adds specialized workflows (annotation, file handling, coordinate conversion)
+  - Handles MCP-specific response formatting
+
+**2. Functional Equivalence at Provider Level**
+
+Object detection is fundamentally **single-image analysis** with specific configuration:
+- System instruction for format requirements (`DETECTION_SYSTEM_INSTRUCTION`)
+- Response schema for structured JSON output (bounding boxes)
+- User prompt for detection query
+
+The provider doesn't need to know it's doing "object detection" vs "general analysis" - it simply sends image + prompt + config to the AI model.
+
+**3. DRY Principle (Don't Repeat Yourself)**
+
+Adding `detectObjectsInImage()` to the provider would:
+- Duplicate 90% of `analyzeImage()` code
+- Add minimal value (only difference is passing `responseSchema` and `systemInstruction` in options)
+- Create maintenance burden - any changes to image analysis would need updating in multiple places
+
+**4. Tool-Specific Logic Belongs in Tool Layer**
+
+The `detect_objects_in_image` tool includes specialized logic that doesn't belong in the provider:
+
+```typescript
+// Tool layer responsibilities (src/tools/detect_objects_in_image.ts):
+- Parse and validate JSON detection results (lines 221-269)
+- Convert normalized coordinates (0-1000) to pixel coordinates (lines 276-325)
+- Draw bounding box annotations using Sharp (lines 328-334)
+- Handle 3-step file output logic:
+  * Explicit outputFilePath → save to exact path (lines 345-366)
+  * Large files (≥2MB) → auto-save to temp (lines 367-393)
+  * Small files (<2MB) → return inline base64 (lines 394-418)
+```
+
+**5. Extensibility Through Composition**
+
+The current design allows **any tool** to use structured output without adding provider methods:
+
+```typescript
+// Flexible approach - any tool can use structured output
+await provider.analyzeImage(source, prompt, {
+  responseSchema: customSchema,
+  systemInstruction: customInstruction,
+  temperature: 0,
+});
+```
+
+If detection was a separate method, we'd need separate provider methods for every specialized use case (facial recognition, OCR, scene segmentation, etc.).
+
+**6. Provider Interface Consistency**
+
+The `VisionProvider` interface defines methods based on **input modality**, not **output format**:
+- `analyzeImage()` - takes **1 image** → returns text analysis
+- `compareImages()` - takes **N images** → returns comparative analysis
+- `analyzeVideo()` - takes **1 video** → returns temporal analysis
+
+Object detection takes **1 image** (same input as `analyzeImage()`), so it naturally uses that method. The difference is only in **options** (schema, system instruction) which are already parameterized.
+
+**Comparison: Why `compareImages()` Has Its Own Method**
+
+`compareImages()` is justified as a separate provider method because it has **structurally different requirements**:
+- Takes **multiple image sources** (different input cardinality)
+- Requires **batch processing** - loop through images, upload each
+- Assembles **different content format** - array of images + prompt
+- Provider-level distinction based on **input type**, not output format
+
+**Implementation Reference**
+
+```typescript
+// src/tools/detect_objects_in_image.ts (lines 210-214)
+const result = await imageProvider.analyzeImage(
+  processedImageSource,
+  detectionPrompt,
+  options  // includes responseSchema and systemInstruction
+);
+
+// Options configuration (lines 188-200)
+const options: AnalysisOptions = {
+  temperature: config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
+  topP: config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_P_FOR_IMAGE ?? config.TOP_P,
+  topK: config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_K_FOR_IMAGE ?? config.TOP_K,
+  maxTokens: config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
+  taskType: 'image',
+  functionName: FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE,
+  responseSchema: createDetectionSchema(config.IMAGE_PROVIDER),  // Structured output
+  systemInstruction: DETECTION_SYSTEM_INSTRUCTION,                // Format requirements
+  ...args.options,  // User options override defaults
+};
+```
+
+**Benefits of This Architecture**
+
+1. **Reusability**: `analyzeImage()` serves multiple use cases
+2. **Flexibility**: Options-based configuration allows any structured output schema
+3. **Maintainability**: No code duplication, single source of truth
+4. **Separation**: Tool layer handles domain logic, provider handles API communication
+5. **Extensibility**: New tools can leverage existing provider primitives
+
+This design follows SOLID principles and maintains clean separation between infrastructure (provider) and business logic (tools).
+
+### 3.4 Provider Factory
 
 ```typescript
 class ProviderFactory {
@@ -250,7 +367,7 @@ class ProviderFactory {
   }
 ```
 
-### 3.4 Storage Provider
+### 3.5 Storage Provider
 
 ```typescript
 // Storage provider interface
@@ -316,7 +433,7 @@ class GCSStorageProvider implements StorageProvider {
 }
 ```
 
-### 3.5 File Upload Strategies
+### 3.6 File Upload Strategies
 
 ```typescript
 // File upload strategy interface

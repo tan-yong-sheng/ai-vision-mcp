@@ -23,8 +23,8 @@ import sharp from 'sharp';
 // 2MB threshold for inline vs temp file
 const INLINE_THRESHOLD = 2 * 1024 * 1024; // 2MB
 
-// Default object detection prompt (can be overridden)
-const DEFAULT_DETECTION_PROMPT = `
+// System instruction for object detection (provides format and requirements)
+const DETECTION_SYSTEM_INSTRUCTION = `
 You are a precise visual detection assistant.
 
 Your task is to detect all visible objects in the image and return results as a JSON array.
@@ -122,6 +122,9 @@ export async function detect_objects_in_image(
     if (!args.imageSource) {
       throw new VisionError('imageSource is required', 'MISSING_ARGUMENT');
     }
+    if (!args.prompt) {
+      throw new VisionError('prompt is required', 'MISSING_ARGUMENT');
+    }
 
     // Handle image source (URL vs local file vs base64)
     const processedImageSource = await imageFileService.handleImageSource(
@@ -178,23 +181,29 @@ export async function detect_objects_in_image(
       `[detect_objects_in_image] Image size: ${imageWidth}x${imageHeight}`
     );
 
-    // Prepare detection prompt
-    const detectionPrompt = args.prompt || DEFAULT_DETECTION_PROMPT;
+    // Use the provided prompt as the detection query
+    const detectionPrompt = args.prompt;
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: 0, // Deterministic for object detection
-      topP: 0.95,
-      topK: 30,
-      maxTokens: 8192,
+      temperature: config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
+      topP: config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_P_FOR_IMAGE ?? config.TOP_P,
+      topK: config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_K_FOR_IMAGE ?? config.TOP_K,
+      maxTokens: config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
       taskType: 'image',
       functionName: FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE,
       // Add structured output configuration for object detection
       responseSchema: createDetectionSchema(config.IMAGE_PROVIDER),
+      // Add system instruction to guide the model's behavior
+      systemInstruction: DETECTION_SYSTEM_INSTRUCTION,
+      ...args.options,  // User options override defaults
     };
 
     console.log(
       '[detect_objects_in_image] Analyzing image for object detection...'
+    );
+    console.log(
+      `[detect_objects_in_image] Using maxTokens: ${options.maxTokens}`
     );
 
     // Analyze the image for object detection
@@ -204,17 +213,59 @@ export async function detect_objects_in_image(
       options
     );
 
+    console.log(
+      `[detect_objects_in_image] Response length: ${result.text.length} characters`
+    );
+
     // Parse detection results
     let detections: DetectedObject[];
     try {
+      // Try to parse the result directly
       detections = JSON.parse(result.text);
     } catch (parseError) {
-      throw new VisionError(
-        `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-        'PARSE_ERROR',
-        config.IMAGE_PROVIDER,
-        parseError instanceof Error ? parseError : undefined
+      console.log(
+        `[detect_objects_in_image] Initial JSON parse failed, attempting cleanup...`
       );
+      console.log(
+        `[detect_objects_in_image] Raw response (first 500 chars): ${result.text.substring(0, 500)}`
+      );
+
+      // Try to extract JSON from markdown code blocks if present
+      let cleanedText = result.text.trim();
+
+      // Remove markdown code fences if present
+      if (cleanedText.startsWith('```')) {
+        const lines = cleanedText.split('\n');
+        // Remove first line (```json or ```)
+        lines.shift();
+        // Remove last line if it's closing fence
+        if (lines[lines.length - 1].trim() === '```') {
+          lines.pop();
+        }
+        cleanedText = lines.join('\n').trim();
+      }
+
+      // Try parsing the cleaned text
+      try {
+        detections = JSON.parse(cleanedText);
+        console.log(
+          `[detect_objects_in_image] Successfully parsed after cleanup`
+        );
+      } catch (secondError) {
+        console.error(
+          `[detect_objects_in_image] Failed to parse even after cleanup`
+        );
+        console.error(
+          `[detect_objects_in_image] Cleaned text (first 1000 chars): ${cleanedText.substring(0, 1000)}`
+        );
+
+        throw new VisionError(
+          `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}`,
+          'PARSE_ERROR',
+          config.IMAGE_PROVIDER,
+          parseError instanceof Error ? parseError : undefined
+        );
+      }
     }
 
     console.log(
@@ -283,24 +334,25 @@ export async function detect_objects_in_image(
     );
 
     const annotatedImageSize = annotatedImageBuffer.length;
-    const outputFormat = args.outputFormat || 'png';
+    // Determine output format from original image
+    const outputFormat = metadata.format || 'png';
 
     console.log(
       `[detect_objects_in_image] Annotated image size: ${annotatedImageSize} bytes`
     );
 
     // 3-step workflow for image file handling
-    if (args.filePath) {
-      // Step 1: Explicit filePath provided → Save to exact path
-      await annotator.saveToExplicitPath(args.filePath, annotatedImageBuffer);
+    if (args.outputFilePath) {
+      // Step 1: Explicit outputFilePath provided → Save to exact path
+      await annotator.saveToExplicitPath(args.outputFilePath, annotatedImageBuffer);
       console.log(
-        `[detect_objects_in_image] Annotated image saved to: ${args.filePath}`
+        `[detect_objects_in_image] Annotated image saved to: ${args.outputFilePath}`
       );
 
       const response: DetectionWithFile = {
         detections: processedDetections,
         file: {
-          path: args.filePath,
+          path: args.outputFilePath,
           size_bytes: annotatedImageSize,
           format: outputFormat,
         },

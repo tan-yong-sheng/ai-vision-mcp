@@ -289,21 +289,29 @@ server.registerTool(
   }
 );
 
-// Register analyze_video tool
+// Register detect_objects_in_image tool
 server.registerTool(
-  'analyze_video',
+  'detect_objects_in_image',
   {
-    title: 'Analyze Video',
+    title: 'Detect Objects in Image',
     description:
-      'Analyze a video using AI vision models. Supports URLs and local file paths.',
+      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64.',
     inputSchema: {
-      videoSource: z
+      imageSource: z
         .string()
-        .describe('Video source - can be a URL or local file path'),
+        .describe(
+          'Image source - can be a URL, base64 data (data:image/...), or local file path'
+        ),
       prompt: z
         .string()
         .describe(
-          'The prompt describing what you want to know about the video.'
+          'Detection prompt describing what objects to detect. The response will be structured JSON with fields: "object" (object category), "label" (descriptive label), and "normalized_box_2d" ([ymin, xmin, ymax, xmax] in 0-1000 scale). Your prompt should align with these fields. Example: "Detect all buttons. For each, return object as \'button\', label as button text or description, and normalized_box_2d coordinates."'
+        ),
+      outputFilePath: z
+        .string()
+        .optional()
+        .describe(
+          "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
         ),
       options: z
         .object({
@@ -337,108 +345,15 @@ server.registerTool(
             .describe('Maximum number of tokens to generate in the response'),
         })
         .optional(),
-    },
   },
-  async ({ videoSource, prompt, options }) => {
-    try {
-      const validatedArgs = {
-        videoSource,
-        prompt,
-        options,
-      };
-
-      // Initialize services on-demand
-      const { config, videoProvider, videoFileService } = getServices();
-
-      const result = await analyze_video(
-        validatedArgs,
-        config,
-        videoProvider,
-        videoFileService
-      );
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      console.error('Error executing analyze_video tool:', error);
-
-      let errorMessage = 'An unknown error occurred';
-      if (error instanceof VisionError) {
-        errorMessage = `${error.name}: ${error.message}`;
-        if (error.provider) {
-          errorMessage += ` (Provider: ${error.provider})`;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                error: true,
-                message: errorMessage,
-                tool: 'analyze_video',
-              },
-              null,
-              2
-            ),
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-);
-
-// Register detect_objects_in_image tool
-server.registerTool(
-  'detect_objects_in_image',
-  {
-    title: 'Detect Objects in Image',
-    description:
-      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64.',
-    inputSchema: {
-      imageSource: z
-        .string()
-        .describe(
-          'Image source - can be a URL, base64 data (data:image/...), or local file path'
-        ),
-      prompt: z
-        .string()
-        .optional()
-        .describe(
-          'Optional custom detection prompt. If not provided, uses a general object detection prompt to find all objects in the image.'
-        ),
-      filePath: z
-        .string()
-        .optional()
-        .describe(
-          "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
-        ),
-      outputFormat: z
-        .enum(['png', 'jpg', 'webp'])
-        .optional()
-        .describe(
-          'Optional output format for the annotated image. Default is PNG. Supported formats: PNG (lossless, recommended), JPG (lossy, smaller), WebP (modern format).'
-        ),
-    },
   },
-  async ({ imageSource, prompt, filePath, outputFormat }) => {
+  async ({ imageSource, prompt, outputFilePath, options }) => {
     try {
       const validatedArgs = {
         imageSource,
         prompt,
-        filePath,
-        outputFormat,
+        outputFilePath,
+        options,
       };
 
       // Initialize services on-demand
@@ -541,6 +456,116 @@ server.registerTool(
                 error: true,
                 message: errorMessage,
                 tool: 'detect_objects_in_image',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Register analyze_video tool
+server.registerTool(
+  'analyze_video',
+  {
+    title: 'Analyze Video',
+    description:
+      'Analyze a video using AI vision models. Supports URLs and local file paths.',
+    inputSchema: {
+      videoSource: z
+        .string()
+        .describe('Video source - can be a URL or local file path'),
+      prompt: z
+        .string()
+        .describe(
+          'The prompt describing what you want to know about the video.'
+        ),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe('Maximum number of tokens to generate in the response'),
+        })
+        .optional(),
+    },
+  },
+  async ({ videoSource, prompt, options }) => {
+    try {
+      const validatedArgs = {
+        videoSource,
+        prompt,
+        options,
+      };
+
+      // Initialize services on-demand
+      const { config, videoProvider, videoFileService } = getServices();
+
+      const result = await analyze_video(
+        validatedArgs,
+        config,
+        videoProvider,
+        videoFileService
+      );
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Error executing analyze_video tool:', error);
+
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof VisionError) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.provider) {
+          errorMessage += ` (Provider: ${error.provider})`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'analyze_video',
               },
               null,
               2

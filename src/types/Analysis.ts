@@ -17,6 +17,7 @@ export interface AnalysisOptions {
   taskType?: TaskType;
   functionName?: FunctionName;
   responseSchema?: any; // Structured output schema for object detection
+  systemInstruction?: string | undefined; // System instruction to guide model behavior
 }
 
 export interface AnalysisResult {

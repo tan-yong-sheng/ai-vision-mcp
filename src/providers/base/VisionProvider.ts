@@ -273,7 +273,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
       taskType,
       directValue,
       this.configService.getMaxTokensForTask.bind(this.configService),
-      () => this.configService.getApiConfig().maxToken,
+      () => this.configService.getApiConfig().maxTokens,
       defaultValue
     );
   }
@@ -339,7 +339,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
       directValue,
       this.configService.getMaxTokensForFunction.bind(this.configService),
       this.configService.getMaxTokensForTask.bind(this.configService),
-      () => this.configService.getApiConfig().maxToken,
+      () => this.configService.getApiConfig().maxTokens,
       defaultValue
     );
   }

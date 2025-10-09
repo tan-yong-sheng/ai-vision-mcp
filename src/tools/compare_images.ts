@@ -79,13 +79,13 @@ export async function compare_images(
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: config.TEMPERATURE,
-      topP: config.TOP_P,
-      topK: config.TOP_K,
-      maxTokens: config.MAX_TOKEN,
+      temperature: config.TEMPERATURE_FOR_COMPARE_IMAGES ?? config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
+      topP: config.TOP_P_FOR_COMPARE_IMAGES ?? config.TOP_P_FOR_IMAGE ?? config.TOP_P,
+      topK: config.TOP_K_FOR_COMPARE_IMAGES ?? config.TOP_K_FOR_IMAGE ?? config.TOP_K,
+      maxTokens: config.MAX_TOKENS_FOR_COMPARE_IMAGES ?? config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
       taskType: 'image',
       functionName: FUNCTION_NAMES.COMPARE_IMAGES,
-      ...args.options,
+      ...args.options,  // User options override defaults
     };
 
     // Call the provider's comparison method

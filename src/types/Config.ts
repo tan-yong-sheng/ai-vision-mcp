@@ -37,7 +37,7 @@ export interface Config {
   TEMPERATURE?: number;
   TOP_P?: number;
   TOP_K?: number;
-  MAX_TOKEN?: number;
+  MAX_TOKENS?: number;
 
   // Task-specific API parameters
   TEMPERATURE_FOR_IMAGE?: number;
@@ -119,7 +119,7 @@ export interface ApiConfig {
   temperature: number;
   topP: number;
   topK: number;
-  maxToken: number;
+  maxTokens: number;
   maxTokensForImage: number;
   maxTokensForVideo: number;
   temperatureForImage?: number;

@@ -219,9 +219,13 @@ export class ImageAnnotator {
       }
     }
 
+    // Calculate approximate text width (rough estimate: 8 pixels per character)
+    // Add padding for better visual appearance
+    const estimatedWidth = Math.max(text.length * 8 + 8, 50); // Minimum 50px width
+
     const textBuffer = await sharp({
       create: {
-        width: 600, // Maximum width
+        width: estimatedWidth,
         height: this.options.labelHeight,
         channels: 4,
         background: { r: 255, g: 0, b: 0, alpha: 1 }, // Red background

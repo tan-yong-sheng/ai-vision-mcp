@@ -84,7 +84,7 @@ export const ConfigSchema = z.object({
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.95),
   TOP_K: z.coerce.number().int().min(1).max(100).optional().default(30),
-  MAX_TOKEN: z.coerce.number().int().min(1).max(8192).optional().default(1000),
+  MAX_TOKENS: z.coerce.number().int().min(1).max(8192).optional().default(1000),
 
   // Task-specific API parameters
   TEMPERATURE_FOR_IMAGE: z.number().min(0).max(2).optional(),
@@ -105,10 +105,10 @@ export const ConfigSchema = z.object({
   TOP_P_FOR_COMPARE_IMAGES: z.number().min(0).max(1).optional(),
   TOP_K_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
   MAX_TOKENS_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
-  TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().min(0).max(2).optional(),
+  TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().min(0).max(2).optional().default(0),
   TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().min(0).max(1).optional(),
   TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().int().positive().optional(),
-  MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().int().positive().optional().default(2048),
   TEMPERATURE_FOR_ANALYZE_VIDEO: z.number().min(0).max(2).optional(),
   TOP_P_FOR_ANALYZE_VIDEO: z.number().min(0).max(1).optional(),
   TOP_K_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),

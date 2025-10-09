@@ -415,7 +415,7 @@ Detects objects in an image using AI vision models and generates annotated image
 | `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.8` |
 | `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
 | `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
-| `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `1000` |
+| `MAX_TOKENS` | No | Maximum tokens for analysis (1–8192) | `1000` |
 | **Task-type level Configuration** |||||
 | `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
 | `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
@@ -423,8 +423,8 @@ Detects objects in an image using AI vision models and generates annotated image
 | `TEMPERATURE_FOR_VIDEO` | No | Video-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
 | `TOP_P_FOR_VIDEO` | No | Video-specific top-p (0.0–1.0) | Uses `TOP_P` |
 | `TOP_K_FOR_VIDEO` | No | Video-specific top-k (1–100) | Uses `TOP_K` |
-| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKEN` |
-| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKEN` |
+| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKENS` |
+| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKENS` |
 | **Function-specific Configuration** |||||
 | `TEMPERATURE_FOR_ANALYZE_IMAGE` | No | Temperature for analyze_image function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
 | `TOP_P_FOR_ANALYZE_IMAGE` | No | Top-p for analyze_image function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
@@ -464,7 +464,7 @@ The MCP server uses a four-level configuration priority system for AI parameters
 1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
 2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
 3. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-4. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
+4. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
 5. **System defaults** - Built-in fallback values
 
 For model selection, the server uses a three-level hierarchy (highest to lowest):
@@ -477,7 +477,7 @@ For model selection, the server uses a three-level hierarchy (highest to lowest)
 ```bash
 # AI Parameters configuration
 TEMPERATURE=0.3
-MAX_TOKEN=600
+MAX_TOKENS=600
 
 # Task-specific overrides
 TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis

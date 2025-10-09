@@ -100,7 +100,7 @@ export class VertexAIProvider extends BaseVisionProvider {
               maxOutputTokens: this.resolveMaxTokensForFunction(
                 'image',
                 options?.functionName,
-                options?.maxTokensForImage
+                options?.maxTokens
               ),
               candidateCount: 1,
             },
@@ -298,7 +298,7 @@ export class VertexAIProvider extends BaseVisionProvider {
               maxOutputTokens: this.resolveMaxTokensForFunction(
                 'video',
                 options?.functionName,
-                options?.maxTokensForVideo
+                options?.maxTokens
               ),
               candidateCount: 1,
             },

@@ -2,6 +2,8 @@
  * Object detection types for AI Vision MCP
  */
 
+import type { AnalysisOptions } from './Providers.js';
+
 export interface DetectedObject {
   object: string; // Generic category for detected object
   label: string; // Descriptive label or instance-specific detail
@@ -26,8 +28,8 @@ export interface ObjectDetectionResult {
 export interface ObjectDetectionArgs {
   imageSource: string; // URL, base64, or local file path
   prompt?: string; // Optional custom detection prompt
-  filePath?: string; // Optional explicit output path
-  outputFormat?: 'png' | 'jpg' | 'webp'; // Optional image format override
+  outputFilePath?: string; // Optional explicit output path
+  options?: AnalysisOptions; // Optional API configuration parameters
 }
 
 // MCP response types for different output scenarios

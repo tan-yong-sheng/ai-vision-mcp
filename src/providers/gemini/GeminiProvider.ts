@@ -179,32 +179,45 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
+          const config: any = {
+            temperature: this.resolveTemperatureForFunction(
+              'image',
+              options?.functionName,
+              options?.temperature
+            ),
+            topP: this.resolveTopPForFunction(
+              'image',
+              options?.functionName,
+              options?.topP
+            ),
+            topK: this.resolveTopKForFunction(
+              'image',
+              options?.functionName,
+              options?.topK
+            ),
+            maxOutputTokens: this.resolveMaxTokensForFunction(
+              'image',
+              options?.functionName,
+              options?.maxTokens
+            ),
+            candidateCount: 1,
+          };
+
+          // Add structured output configuration if responseSchema is provided
+          if (options?.responseSchema) {
+            config.responseMimeType = 'application/json';
+            config.responseSchema = options.responseSchema;
+          }
+
+          // Add system instruction if provided
+          if (options?.systemInstruction) {
+            config.systemInstruction = options.systemInstruction;
+          }
+
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'image',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'image',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'image',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'image',
-                options?.functionName,
-                options?.maxTokensForImage
-              ),
-              candidateCount: 1,
-            },
+            config,
           });
         });
 
@@ -360,32 +373,45 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
+          const config: any = {
+            temperature: this.resolveTemperatureForFunction(
+              'image',
+              options?.functionName,
+              options?.temperature
+            ),
+            topP: this.resolveTopPForFunction(
+              'image',
+              options?.functionName,
+              options?.topP
+            ),
+            topK: this.resolveTopKForFunction(
+              'image',
+              options?.functionName,
+              options?.topK
+            ),
+            maxOutputTokens: this.resolveMaxTokensForFunction(
+              'image',
+              options?.functionName,
+              options?.maxTokens
+            ),
+            candidateCount: 1,
+          };
+
+          // Add structured output configuration if responseSchema is provided
+          if (options?.responseSchema) {
+            config.responseMimeType = 'application/json';
+            config.responseSchema = options.responseSchema;
+          }
+
+          // Add system instruction if provided
+          if (options?.systemInstruction) {
+            config.systemInstruction = options.systemInstruction;
+          }
+
           return await this.client.models.generateContent({
             model,
             contents: contentParts,
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'image',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'image',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'image',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'image',
-                options?.functionName,
-                options?.maxTokens
-              ),
-              candidateCount: 1,
-            },
+            config,
           });
         });
 
@@ -498,32 +524,45 @@ export class GeminiProvider extends BaseVisionProvider {
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
+          const config: any = {
+            temperature: this.resolveTemperatureForFunction(
+              'video',
+              options?.functionName,
+              options?.temperature
+            ),
+            topP: this.resolveTopPForFunction(
+              'video',
+              options?.functionName,
+              options?.topP
+            ),
+            topK: this.resolveTopKForFunction(
+              'video',
+              options?.functionName,
+              options?.topK
+            ),
+            maxOutputTokens: this.resolveMaxTokensForFunction(
+              'video',
+              options?.functionName,
+              options?.maxTokens
+            ),
+            candidateCount: 1,
+          };
+
+          // Add structured output configuration if responseSchema is provided
+          if (options?.responseSchema) {
+            config.responseMimeType = 'application/json';
+            config.responseSchema = options.responseSchema;
+          }
+
+          // Add system instruction if provided
+          if (options?.systemInstruction) {
+            config.systemInstruction = options.systemInstruction;
+          }
+
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'video',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'video',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'video',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'video',
-                options?.functionName,
-                options?.maxTokensForVideo
-              ),
-              candidateCount: 1,
-            },
+            config,
           });
         });
 

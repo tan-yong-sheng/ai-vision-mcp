@@ -85,8 +85,8 @@ export class ConfigService {
           : 0.8,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.95,
         TOP_K: process.env.TOP_K ? parseInt(process.env.TOP_K, 10) : 30,
-        MAX_TOKEN: process.env.MAX_TOKEN
-          ? parseInt(process.env.MAX_TOKEN, 10)
+        MAX_TOKENS: process.env.MAX_TOKENS
+          ? parseInt(process.env.MAX_TOKENS, 10)
           : 1000,
 
         // Task-specific API parameters
@@ -144,7 +144,7 @@ export class ConfigService {
         TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
           .TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE
           ? parseFloat(process.env.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE)
-          : undefined,
+          : 0, // Default to 0 for deterministic object detection
         TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
           .TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE
           ? parseFloat(process.env.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE)
@@ -372,7 +372,7 @@ export class ConfigService {
       temperature: this.config.TEMPERATURE!,
       topP: this.config.TOP_P!,
       topK: this.config.TOP_K!,
-      maxToken: this.config.MAX_TOKEN!,
+      maxTokens: this.config.MAX_TOKENS!,
       temperatureForImage: this.config.TEMPERATURE_FOR_IMAGE,
       topPForImage: this.config.TOP_P_FOR_IMAGE,
       topKForImage: this.config.TOP_K_FOR_IMAGE,

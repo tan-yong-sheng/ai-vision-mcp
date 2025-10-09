@@ -38,13 +38,13 @@ export async function analyze_video(
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: config.TEMPERATURE,
-      topP: config.TOP_P,
-      topK: config.TOP_K,
-      maxTokens: config.MAX_TOKEN,
+      temperature: config.TEMPERATURE_FOR_ANALYZE_VIDEO ?? config.TEMPERATURE_FOR_VIDEO ?? config.TEMPERATURE,
+      topP: config.TOP_P_FOR_ANALYZE_VIDEO ?? config.TOP_P_FOR_VIDEO ?? config.TOP_P,
+      topK: config.TOP_K_FOR_ANALYZE_VIDEO ?? config.TOP_K_FOR_VIDEO ?? config.TOP_K,
+      maxTokens: config.MAX_TOKENS_FOR_ANALYZE_VIDEO ?? config.MAX_TOKENS_FOR_VIDEO ?? config.MAX_TOKENS,
       taskType: 'video',
       functionName: FUNCTION_NAMES.ANALYZE_VIDEO,
-      ...args.options,
+      ...args.options,  // User options override defaults
     };
 
     // Analyze the video

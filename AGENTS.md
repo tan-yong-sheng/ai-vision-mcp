@@ -1,14 +1,43 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. 
-Use context7 MCP, web search, or web fetch for additional information when fixing bugs or implementing new features.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Please always use context7 MCP, web search, or web fetch for additional information when fixing bugs or implementing new features.
+
+## **CRITICAL: Documentation Maintenance Requirements**
+
+**BEFORE starting any coding work:**
+1. **ALWAYS create a plan document** in the `docs/` folder before writing any code
+2. **ALWAYS update README.md** when introducing changes that affect:
+   - New MCP tools or parameters
+   - Environment variables
+   - Configuration options
+   - Installation instructions
+   - Breaking changes
+3. **ALWAYS update docs/SPEC.md** when introducing changes that affect:
+   - Architecture modifications
+   - New provider implementations
+   - API interface changes
+   - File handling logic
+   - Error handling patterns
+
+**Planning Process:**
+- Create plan documents in `docs/` folder (e.g., `docs/feature-name-plan.md`)
+- Include architecture decisions, implementation steps, and testing strategy
+- Reference this plan in your commit messages
+- Keep plan documents as documentation of implementation decisions
+
+**Documentation Synchronization:**
+- README.md is for **users** - installation, usage, and configuration
+- docs/SPEC.md is for **developers** - technical specifications and architecture
+- CLAUDE.md is for **AI assistants** - development patterns and constraints
+- All three documents must stay consistent with the actual implementation
 
 ## Development Commands
 
 ### Building and Testing
 - `npm run build` - Build TypeScript project to `dist/` directory
-- `npm run dev` - Start development server with watch mode
-- `npm start` - Start the built MCP server
+- `npm run dev` - Start development server with watch mode (tsc --watch)
+- `npm start` - Start the built MCP server (node dist/index.js)
 
 ### Code Quality
 - `npm run lint` - Run ESLint on all TypeScript files
@@ -16,9 +45,10 @@ Use context7 MCP, web search, or web fetch for additional information when fixin
 - `npm run format` - Format code with Prettier
 
 ### Publishing
-- `npm run prepublishOnly` - Run tests and lint before publish
+- `npm run prepublishOnly` - Run lint before publish
 - `npm run preversion` - Run lint before version bump
 - `npm run version` - Format code and add to git before version
+- `npm run prepare` - Build project automatically on install
 
 ## Architecture Overview
 
@@ -28,21 +58,31 @@ This is a Model Context Protocol (MCP) server that provides AI-powered image and
 
 **Server Architecture** (`src/server.ts`):
 - Main MCP server entry point using `@modelcontextprotocol/sdk`
-- Lazy-loaded services initialized on first request
-- Four primary tools: `analyze_image`, `compare_images`, `detect_object_in_image`, and `analyze_video`
-- Comprehensive error handling with custom error types
+- Lazy-loaded services initialized on first request via `getServices()` function
+- Four primary tools: `analyze_image`, `compare_images`, `detect_objects_in_image`, and `analyze_video`
+- Comprehensive error handling with custom `VisionError` types
+- Graceful shutdown handling for SIGINT/SIGTERM
+
+**Configuration Hierarchy System**:
+The server implements a sophisticated 4-level configuration priority system:
+1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
+2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
+3. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
+4. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
 
 **Provider Factory** (`src/providers/factory/ProviderFactory.ts`):
-- Factory pattern for creating AI provider instances
+- Factory pattern for creating AI provider instances with validation
 - Supports two providers: `google` (Gemini API) and `vertex_ai` (Vertex AI)
 - Automatic provider detection from model names
 - Configuration validation before provider creation
+- Dynamic provider registration support
 
 **Configuration Service** (`src/services/ConfigService.ts`):
-- Singleton pattern for configuration management
+- Singleton pattern for configuration management via `ConfigService.getInstance()`
 - Environment variable validation with Zod schemas
 - Provider-specific configuration methods
-- File processing limits and format validation
+- Auto-derivation of related settings (e.g., project ID from credentials)
+- Hierarchical configuration resolution
 
 **Configuration Validation** (`src/types/Config.ts` and `src/utils/validation.ts`):
 - `Config.ts` defines TypeScript interfaces for all configuration options
@@ -50,72 +90,112 @@ This is a Model Context Protocol (MCP) server that provides AI-powered image and
 - These files must stay synchronized - any new config field in Config.ts requires corresponding validation rules in validation.ts
 
 **Key Services**:
-- `FileService` - Handles file uploads, validation, and processing
+- `FileService` - Handles file uploads, validation, and processing with support for URLs, local files, and base64
 - `ConfigService` - Manages environment variables and settings
 - Vision providers in `src/providers/` - AI model implementations
 - Storage strategies in `src/storage/` and `src/file-upload/` - File handling
 
+### MCP Tools Implementation
+
+**All tools follow consistent patterns:**
+- Configuration hierarchy: function-specific → task-specific → universal variables
+- File source support: URLs, local files, base64 data
+- Error handling with custom `VisionError` types with provider context
+- Provider-agnostic interface through factory pattern
+- Structured output schemas for object detection
+
+**Tool-specific behaviors:**
+- `detect_objects_in_image`: Returns annotated images with bounding boxes, 3-step file handling (explicit path → temp file → inline base64), uses structured JSON output with coordinates
+- `compare_images`: Supports 2-4 images with mixed source types, batch processing optimization
+- `analyze_image`: Special prompt handling for frontend code replication tasks, intelligent file processing based on size
+- `analyze_video`: YouTube URL and local file support, GCS integration for Vertex AI, duration and size validation
+
 ### Provider Implementation
 
 **Gemini Provider** (`src/providers/gemini/`):
-- Direct Google Gemini API integration
-- Files API for larger uploads (>10MB)
+- Direct Google Gemini API integration using `@google/genai`
+- Files API for larger uploads (>10MB via `GEMINI_FILES_API_THRESHOLD`)
 - Base64 encoding for smaller files
+- Structured output support for object detection
 
 **Vertex AI Provider** (`src/providers/vertexai/`):
 - Google Cloud Vertex AI integration
-- Requires GCS bucket for video processing
-- Service account authentication
+- Requires GCS bucket for all file uploads (configured via `VERTEX_AI_FILES_API_THRESHOLD`)
+- Service account authentication with auto project ID extraction
+- Streaming support considerations
 
 ### File Processing Flow
 
-1. **Input Validation**: File size, format, and duration checks
-2. **Upload Strategy**: Direct upload vs cloud storage based on size
-3. **AI Analysis**: Provider-specific API calls
-4. **Response Processing**: Structured JSON responses with error handling
+1. **Input Validation**: File size, format, and duration checks using configurable limits
+2. **Upload Strategy Selection**: Based on provider and file size thresholds
+3. **File Processing**: MIME type detection, path resolution, cross-platform support (Windows/Unix)
+4. **AI Analysis**: Provider-specific API calls with structured output schemas
+5. **Response Processing**: Structured JSON responses with comprehensive error handling
 
-### Configuration Requirements
+## Critical Development Constraints
 
-**Environment Variables**:
-- `IMAGE_PROVIDER`/`VIDEO_PROVIDER`: Set to `google` or `vertex_ai`
-- **Gemini**: `GEMINI_API_KEY`
-- **Vertex AI**: `VERTEX_PROJECT_ID`, `VERTEX_CREDENTIALS`, `GCS_BUCKET_NAME`
+### Configuration Synchronization
+- `src/types/Config.ts` and `src/utils/validation.ts` MUST stay synchronized
+- Every new config field in Config.ts requires corresponding Zod validation in validation.ts
+- Function-specific environment variables must follow the naming pattern: `TEMPERATURE_FOR_ANALYZE_IMAGE`, etc.
+- When adding new configuration, always implement the 4-level hierarchy
 
-**File Limits**:
-- Images: 20MB max, formats: PNG, JPG, JPEG, WebP, GIF, BMP, TIFF
-- Videos: 2GB max, 1 hour duration, formats: MP4, MOV, AVI, MKV, WebM, FLV, WMV, 3GP
-
-## Development Notes
+### Error Handling Requirements
+- Always use custom `VisionError` types with provider context
+- Include error codes for proper client handling
+- Implement retry logic for network failures
+- Never expose sensitive credentials in error messages
+- Provider-specific error context for debugging
 
 ### TypeScript Configuration
-- ES2022 target with ESNext modules
-- Strict type checking enabled
-- Path mapping with `@/*` pointing to `src/*`
-- Declaration maps and source maps enabled
-
-### Error Handling
-- Custom error types in `src/types/Errors.ts`
-- Provider-specific error context
-- Graceful degradation with informative error messages
-- Retry logic for network failures
-
-### Testing Strategy
-- Unit tests for individual components
-- Integration tests for provider functionality
-- Configuration validation tests
-- File processing validation tests
+- ES2022 target with ESNext modules, strict type checking enabled
+- Path mapping with `@/*` pointing to `src/*` for clean imports
+- Declaration maps and source maps enabled for debugging
+- No implicit any, returns, or this allowed (strict mode)
 
 ### File Organization
-- Type definitions in `src/types/`
-- Utility functions in `src/utils/`
-- Provider implementations in `src/providers/`
-- Service layer in `src/services/`
-- MCP tool implementations in `src/tools/`
+```
+src/
+├── providers/          # AI provider implementations
+│   ├── gemini/        # Google Gemini provider
+│   ├── vertexai/      # Vertex AI provider
+│   └── factory/       # Provider factory
+├── services/          # Core services
+│   ├── ConfigService.ts
+│   └── FileService.ts
+├── storage/           # Storage implementations
+├── file-upload/       # File upload strategies
+├── types/            # TypeScript type definitions
+├── utils/            # Utility functions
+└── tools/            # MCP tool implementations
+```
 
-## Common Development Patterns
+## Development Patterns
 
-1. **Lazy Loading**: Services are initialized on first request to improve startup time
-2. **Factory Pattern**: Providers created through factory with validation
-3. **Singleton Pattern**: Configuration service uses singleton for consistency
-4. **Strategy Pattern**: Different file upload strategies based on provider and size
-5. **Zod Validation**: All input validated with Zod schemas for type safety
+1. **Lazy Loading**: Services initialized on first request via `getServices()` function
+2. **Factory Pattern**: Providers created through `VisionProviderFactory` with validation
+3. **Singleton Pattern**: `ConfigService.getInstance()` ensures consistency
+4. **Strategy Pattern**: File upload strategies selected based on provider and size
+5. **Zod Validation**: All inputs validated with Zod schemas for runtime type safety
+6. **Configuration Hierarchy**: Always implement 4-level priority: LLM-assigned → function-specific → task-specific → universal
+7. **Error Context**: Always include provider information in errors for debugging
+8. **Cross-Platform Support**: Handle both Windows and Unix file paths correctly
+
+## Environment Variables
+
+**Required for Development:**
+- `IMAGE_PROVIDER` and `VIDEO_PROVIDER`: Set to `google` or `vertex_ai`
+- Provider-specific credentials (GEMINI_API_KEY or VERTEX_CREDENTIALS + GCS_BUCKET_NAME)
+
+**Common Development Overrides:**
+- `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0` for deterministic object detection
+- `LOG_LEVEL=debug` for verbose logging during development
+- `NODE_ENV=development` for development-specific behavior
+
+## Testing and Debugging
+
+- Use `npm run dev` for development with automatic rebuilding
+- Check console logs for detailed file processing information
+- Verify configuration hierarchy by setting different levels of environment variables
+- Test with multiple file sources (URLs, local files, base64) to ensure compatibility
+- Use structured logging patterns for consistent debugging output

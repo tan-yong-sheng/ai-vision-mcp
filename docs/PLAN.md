@@ -6,7 +6,7 @@
 
 **IMPLEMENTED BUT TO BE TESTED**
 - add TEMPERATURE_FOR_IMAGE, TOP_P_FOR_IMAGE, TOP_K_FOR_IMAGE, TEMPERATURE_FOR_VIDEO, TOP_P_FOR_VIDEO, TOP_K_FOR_VIDEO (prepare for future....)
-- add MAX_TOKEN, TOP_P, TOP_K, TEMPERATURE configurable as environment variable for each function
+- add MAX_TOKENS, TOP_P, TOP_K, TEMPERATURE configurable as environment variable for each function
 - add MAX_TOKENS, since above set the standard for TOP_P, TOP_K, TEMPERATURE...
 - add ANALYZE_IMAGE_MODEL, COMPARE_IMAGES_MODEL , ANALYZE_VIDEO_MODEL environment variable...
 - actually could we use @google/genai in vertex ai library so that we can add native support for VERTEX_ENDPOINT to be switched to another proxy provider
