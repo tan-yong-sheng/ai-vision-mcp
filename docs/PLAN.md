@@ -9,8 +9,7 @@
 - add MAX_TOKEN, TOP_P, TOP_K, TEMPERATURE configurable as environment variable for each function
 - add MAX_TOKENS, since above set the standard for TOP_P, TOP_K, TEMPERATURE...
 - add ANALYZE_IMAGE_MODEL, COMPARE_IMAGES_MODEL , ANALYZE_VIDEO_MODEL environment variable...
-
-- add native support for VERTEX_ENDPOINT to other proxy provider, to solve where change of GEMINI_BASE_URL or VERTEX_ENDPOINT not working...
+- actually could we use @google/genai in vertex ai library so that we can add native support for VERTEX_ENDPOINT to be switched to another proxy provider
 
 **URGENT**
 - add metadata params per model level like supportsThinking, supportsNoThinking - set thinkingbudget=0 for all models (except gemini 2.5 pro)
@@ -18,7 +17,7 @@
 
 
 **ICEBOX**
-- ...
+- optional dependencies to download when define, for example, ai-vision-mcp[google] (Reason: a bit hard to manage, currently only two providers so the dependencies not that large yet ...)
 
 **DISPOSAL**
 

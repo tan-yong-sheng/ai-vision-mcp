@@ -2,7 +2,7 @@
  * Vertex AI provider implementation
  */
 
-import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
 import type {
@@ -22,7 +22,7 @@ import {
 } from '../../types/Errors.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
-  private client: VertexAI;
+  private client: GoogleGenAI;
   private config: VertexAIConfig;
 
   constructor(config: VertexAIConfig) {
@@ -35,13 +35,19 @@ export class VertexAIProvider extends BaseVisionProvider {
     // Validate endpoint format
     this.validateEndpoint(endpoint);
 
-    this.client = new VertexAI({
+    // Initialize GoogleGenAI client with Vertex AI configuration
+    const clientConfig: any = {
+      vertexai: true,
       project: config.projectId,
       location: config.location,
-      googleAuthOptions: {
-        keyFilename: config.credentials,
-      },
-    });
+    };
+
+    // Add custom base URL if not using default Google endpoint
+    if (endpoint !== 'https://aiplatform.googleapis.com') {
+      clientConfig.baseUrl = endpoint;
+    }
+
+    this.client = new GoogleGenAI(clientConfig);
 
     // Log debug information
     this.logDebugInfo();
@@ -56,13 +62,10 @@ export class VertexAIProvider extends BaseVisionProvider {
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
-      const model = this.client.getGenerativeModel({
-        model: this.resolveModelForFunction('image', options?.functionName),
-      });
-
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model: this.resolveModelForFunction('image', options?.functionName),
             contents: [
               {
                 role: 'user',
@@ -77,7 +80,7 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            generationConfig: {
+            config: {
               temperature: this.resolveTemperatureForFunction(
                 'image',
                 options?.functionName,
@@ -104,9 +107,8 @@ export class VertexAIProvider extends BaseVisionProvider {
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
@@ -163,20 +165,17 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Add the prompt as the last part
       imageParts.push({ text: prompt });
 
-      const model = this.client.getGenerativeModel({
-        model: this.resolveModelForFunction('image', options?.functionName),
-      });
-
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model: this.resolveModelForFunction('image', options?.functionName),
             contents: [
               {
                 role: 'user',
                 parts: imageParts,
               },
             ],
-            generationConfig: {
+            config: {
               temperature: this.resolveTemperatureForFunction(
                 'image',
                 options?.functionName,
@@ -203,9 +202,8 @@ export class VertexAIProvider extends BaseVisionProvider {
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
@@ -262,13 +260,10 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
       }
 
-      const model = this.client.getGenerativeModel({
-        model: this.resolveModelForFunction('video', options?.functionName),
-      });
-
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model: this.resolveModelForFunction('video', options?.functionName),
             contents: [
               {
                 role: 'user',
@@ -283,7 +278,7 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            generationConfig: {
+            config: {
               temperature: this.resolveTemperatureForFunction(
                 'video',
                 options?.functionName,
@@ -310,9 +305,8 @@ export class VertexAIProvider extends BaseVisionProvider {
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
@@ -424,11 +418,9 @@ export class VertexAIProvider extends BaseVisionProvider {
   async healthCheck(): Promise<HealthStatus> {
     try {
       const { duration } = await this.measureAsync(async () => {
-        const model = this.client.getGenerativeModel({
-          model: this.resolveModelForFunction('image', 'analyze_image'),
-        });
         // Simple test with minimal content
-        await model.generateContent({
+        await this.client.models.generateContent({
+          model: this.resolveModelForFunction('image', 'analyze_image'),
           contents: [
             {
               role: 'user',
