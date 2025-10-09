@@ -137,6 +137,13 @@ export class FileService {
     }
   }
 
+  // Public method to read file directly (used by detect_objects_in_image)
+  async readFile(filePath: string): Promise<Buffer> {
+    const normalizedPath = path.normalize(filePath);
+    await fs.access(normalizedPath);
+    return await fs.readFile(normalizedPath);
+  }
+
   // Private helper methods
 
   private async getImageData(imageSource: string): Promise<{

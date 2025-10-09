@@ -8,6 +8,7 @@ import type { VisionProvider } from '../types/Providers.js';
 import { FileService } from '../services/FileService.js';
 import type { Config } from '../types/Config.js';
 import { VisionError } from '../types/Errors.js';
+import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
 
 export interface AnalyzeImageArgs {
   imageSource: string; // Can be URL, base64 data, or local file path
@@ -49,7 +50,7 @@ export async function analyze_image(
       topK: config.TOP_K,
       maxTokens: config.MAX_TOKEN,
       taskType: 'image',
-      functionName: 'analyze_image',
+      functionName: FUNCTION_NAMES.ANALYZE_IMAGE,
       ...args.options,
     };
 

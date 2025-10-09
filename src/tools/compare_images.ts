@@ -8,6 +8,7 @@ import type { VisionProvider } from '../types/Providers.js';
 import { FileService } from '../services/FileService.js';
 import type { Config } from '../types/Config.js';
 import { VisionError } from '../types/Errors.js';
+import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
 
 export interface CompareImagesArgs {
   imageSources: string[]; // Array of image sources (URLs/base64/file paths)
@@ -83,7 +84,7 @@ export async function compare_images(
       topK: config.TOP_K,
       maxTokens: config.MAX_TOKEN,
       taskType: 'image',
-      functionName: 'compare_images',
+      functionName: FUNCTION_NAMES.COMPARE_IMAGES,
       ...args.options,
     };
 

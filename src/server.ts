@@ -8,7 +8,12 @@ import { z } from 'zod';
 import { ConfigService } from './services/ConfigService.js';
 import { FileService } from './services/FileService.js';
 import { VisionProviderFactory } from './providers/factory/ProviderFactory.js';
-import { analyze_image, compare_images, analyze_video } from './tools/index.js';
+import {
+  analyze_image,
+  compare_images,
+  analyze_video,
+  detect_objects_in_image,
+} from './tools/index.js';
 import { VisionError } from './types/Errors.js';
 
 // Create MCP server
@@ -382,6 +387,160 @@ server.registerTool(
                 error: true,
                 message: errorMessage,
                 tool: 'analyze_video',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Register detect_objects_in_image tool
+server.registerTool(
+  'detect_objects_in_image',
+  {
+    title: 'Detect Objects in Image',
+    description:
+      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64.',
+    inputSchema: {
+      imageSource: z
+        .string()
+        .describe(
+          'Image source - can be a URL, base64 data (data:image/...), or local file path'
+        ),
+      prompt: z
+        .string()
+        .optional()
+        .describe(
+          'Optional custom detection prompt. If not provided, uses a general object detection prompt to find all objects in the image.'
+        ),
+      filePath: z
+        .string()
+        .optional()
+        .describe(
+          "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
+        ),
+      outputFormat: z
+        .enum(['png', 'jpg', 'webp'])
+        .optional()
+        .describe(
+          'Optional output format for the annotated image. Default is PNG. Supported formats: PNG (lossless, recommended), JPG (lossy, smaller), WebP (modern format).'
+        ),
+    },
+  },
+  async ({ imageSource, prompt, filePath, outputFormat }) => {
+    try {
+      const validatedArgs = {
+        imageSource,
+        prompt,
+        filePath,
+        outputFormat,
+      };
+
+      // Initialize services on-demand
+      const { config, imageProvider, imageFileService } = getServices();
+
+      const result = await detect_objects_in_image(
+        validatedArgs,
+        config,
+        imageProvider,
+        imageFileService
+      );
+
+      // Handle different response types
+      if ('file' in result) {
+        // Case 1: Explicit file path provided
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  detections: result.detections,
+                  file: result.file,
+                  image_metadata: result.image_metadata,
+                  note: 'Annotated image saved to specified path.',
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } else if ('tempFile' in result) {
+        // Case 2: Large file auto-saved to temp
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  detections: result.detections,
+                  tempFile: result.tempFile,
+                  image_metadata: result.image_metadata,
+                  note: 'Large annotated image automatically saved to temporary directory.',
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } else {
+        // Case 3: Small image returned inline
+        const responseContent = [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                detections: result.detections,
+                image_metadata: result.image_metadata,
+                note: 'Annotated image returned inline (base64 encoded).',
+              },
+              null,
+              2
+            ),
+          },
+        ];
+
+        // Add inline image if available
+        if (result.image) {
+          responseContent.push({
+            type: 'text' as const,
+            text: `data:${result.image.mimeType};base64,${result.image.data}`,
+          });
+        }
+
+        return {
+          content: responseContent,
+        };
+      }
+    } catch (error) {
+      console.error('Error executing detect_objects_in_image tool:', error);
+
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof VisionError) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.provider) {
+          errorMessage += ` (Provider: ${error.provider})`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'detect_objects_in_image',
               },
               null,
               2

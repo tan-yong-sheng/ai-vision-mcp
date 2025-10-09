@@ -24,6 +24,7 @@ export interface Config {
   // Function-specific model configuration
   ANALYZE_IMAGE_MODEL?: string;
   COMPARE_IMAGES_MODEL?: string;
+  DETECT_OBJECTS_IN_IMAGE_MODEL?: string;
   ANALYZE_VIDEO_MODEL?: string;
 
   // Google Cloud Storage configuration (for Vertex AI file storage)
@@ -57,6 +58,10 @@ export interface Config {
   TOP_P_FOR_COMPARE_IMAGES?: number;
   TOP_K_FOR_COMPARE_IMAGES?: number;
   MAX_TOKENS_FOR_COMPARE_IMAGES?: number;
+  TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE?: number;
+  TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE?: number;
+  TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE?: number;
+  MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE?: number;
   TEMPERATURE_FOR_ANALYZE_VIDEO?: number;
   TOP_P_FOR_ANALYZE_VIDEO?: number;
   TOP_K_FOR_ANALYZE_VIDEO?: number;
@@ -131,6 +136,10 @@ export interface ApiConfig {
   topPForCompareImages?: number;
   topKForCompareImages?: number;
   maxTokensForCompareImages?: number;
+  temperatureForDetectObjectsInImage?: number;
+  topPForDetectObjectsInImage?: number;
+  topKForDetectObjectsInImage?: number;
+  maxTokensForDetectObjectsInImage?: number;
   temperatureForAnalyzeVideo?: number;
   topPForAnalyzeVideo?: number;
   topKForAnalyzeVideo?: number;
@@ -138,6 +147,7 @@ export interface ApiConfig {
   // Model configuration
   analyzeImageModel?: string;
   compareImagesModel?: string;
+  detectObjectsInImageModel?: string;
   analyzeVideoModel?: string;
 }
 

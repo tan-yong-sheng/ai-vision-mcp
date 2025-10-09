@@ -12,16 +12,13 @@
 - actually could we use @google/genai in vertex ai library so that we can add native support for VERTEX_ENDPOINT to be switched to another proxy provider
 
 **URGENT**
-- add metadata params per model level like supportsThinking, supportsNoThinking - set thinkingbudget=0 for all models (except gemini 2.5 pro)
 - add detect_objects_in_image mcp function ... (Note: not sure if we need to use `sharp` library to output image, i tend not to do so... )
-
 
 **ICEBOX**
 - optional dependencies to download when define, for example, ai-vision-mcp[google] (Reason: a bit hard to manage, currently only two providers so the dependencies not that large yet ...)
 
-**DISPOSAL**
 
-- warn user that MAX_TOKENS_FOR_* is smaller than llm-assigned value for both image and video, if happens... (Reason: it's better to let llm to decide and override this)
+**DISPOSAL**
 
 - remove MAX_VIDEO_DURATION environment variable...
 
@@ -29,15 +26,4 @@
 
 - add analyze_image description for prompt params: "Detailed text prompt. If the task is **front-end code replication**, the prompt you provide must be: "Describe in detail the layout structure, color style, main components, and interactive elements of the website in this image to facilitate subsequent code generation by the model." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to analyze, extract, or understand from the image." (Reason: wait too long for such task to complete, but can try to add `timeout` params to mcp client in future)
 
-
-- like LiteLLM, have a centralized metadata handling at src/ folder (e.g., cost for output token, cost for input token, check metadata like support function calling, support thinking budget, structured output, etc).... Not sure if we should put this at src/proivders folder or not...
-
-- add cost metadata into gemini response with formula: `cost = (token_in * price_in + token_out * price_out) / 1000`
-
-```py
-token_in = response.usage_metadata.prompt_token_count
-token_out = response.usage_metadata.candidates_token_count
-price_in = 0.0001  # e.g., per 1K input tokens (depends on model)
-price_out = 0.0004 # e.g., per 1K output tokens
-cost = (token_in * price_in + token_out * price_out) / 1000
-``` 
+- add metadata params per model level like supportsThinking, supportsNoThinking - set thinkingbudget=0 for all models (except gemini 2.5 pro) - (Reason: hard to add another layer `thinking` as I think thinking_budget is not that useful for image analysis - unsure about this...)

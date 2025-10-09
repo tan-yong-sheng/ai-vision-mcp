@@ -5,6 +5,7 @@
 import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
+import { FUNCTION_NAMES } from '../../constants/FunctionNames.js';
 import type {
   VertexAIConfig,
   AnalysisOptions,
@@ -420,7 +421,10 @@ export class VertexAIProvider extends BaseVisionProvider {
       const { duration } = await this.measureAsync(async () => {
         // Simple test with minimal content
         await this.client.models.generateContent({
-          model: this.resolveModelForFunction('image', 'analyze_image'),
+          model: this.resolveModelForFunction(
+            'image',
+            FUNCTION_NAMES.ANALYZE_IMAGE
+          ),
           contents: [
             {
               role: 'user',

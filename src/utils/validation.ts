@@ -5,6 +5,10 @@
 import { z } from 'zod';
 import type { Config } from '../types/Config.js';
 import type { AnalysisOptions } from '../types/Analysis.js';
+import {
+  FUNCTION_NAMES,
+  type FunctionName,
+} from '../constants/FunctionNames.js';
 
 // Provider selection schemas
 const ProviderSchema = z.enum(['google', 'vertex_ai']);
@@ -49,6 +53,7 @@ export const ConfigSchema = z.object({
   // Function-specific model configuration
   ANALYZE_IMAGE_MODEL: z.string().min(1).optional(),
   COMPARE_IMAGES_MODEL: z.string().min(1).optional(),
+  DETECT_OBJECTS_IN_IMAGE_MODEL: z.string().min(1).optional(),
   ANALYZE_VIDEO_MODEL: z.string().min(1).optional(),
 
   // Gemini API configuration
@@ -100,6 +105,10 @@ export const ConfigSchema = z.object({
   TOP_P_FOR_COMPARE_IMAGES: z.number().min(0).max(1).optional(),
   TOP_K_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
   MAX_TOKENS_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
+  TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: z.number().int().positive().optional(),
   TEMPERATURE_FOR_ANALYZE_VIDEO: z.number().min(0).max(2).optional(),
   TOP_P_FOR_ANALYZE_VIDEO: z.number().min(0).max(1).optional(),
   TOP_K_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),
@@ -132,6 +141,12 @@ export const ConfigSchema = z.object({
     .positive()
     .optional()
     .default(3600), // 1 hour
+  MAX_IMAGES_FOR_COMPARISON: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(4), // Maximum 4 images for comparison
 
   // File upload configuration
   GEMINI_FILES_API_THRESHOLD: z.coerce
@@ -157,7 +172,7 @@ export const AnalysisOptionsSchema = z.object({
   stopSequences: z.array(z.string()).optional(),
   taskType: z.enum(['image', 'video']).optional(),
   functionName: z
-    .enum(['analyze_image', 'compare_images', 'analyze_video'])
+    .enum(Object.values(FUNCTION_NAMES) as [FunctionName, ...FunctionName[]])
     .optional(),
 });
 

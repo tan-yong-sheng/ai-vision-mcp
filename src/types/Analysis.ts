@@ -2,6 +2,8 @@
  * Analysis types for vision providers
  */
 
+import { type FunctionName } from '../constants/FunctionNames.js';
+
 export type TaskType = 'image' | 'video';
 
 export interface AnalysisOptions {
@@ -13,7 +15,8 @@ export interface AnalysisOptions {
   maxTokensForVideo?: number | undefined;
   stopSequences?: string[] | undefined;
   taskType?: TaskType;
-  functionName?: 'analyze_image' | 'compare_images' | 'analyze_video';
+  functionName?: FunctionName;
+  responseSchema?: any; // Structured output schema for object detection
 }
 
 export interface AnalysisResult {

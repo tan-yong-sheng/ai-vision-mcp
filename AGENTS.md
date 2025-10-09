@@ -29,7 +29,7 @@ This is a Model Context Protocol (MCP) server that provides AI-powered image and
 **Server Architecture** (`src/server.ts`):
 - Main MCP server entry point using `@modelcontextprotocol/sdk`
 - Lazy-loaded services initialized on first request
-- Two primary tools: `analyze_image` and `analyze_video`
+- Four primary tools: `analyze_image`, `compare_images`, `detect_object_in_image`, and `analyze_video`
 - Comprehensive error handling with custom error types
 
 **Provider Factory** (`src/providers/factory/ProviderFactory.ts`):
@@ -43,6 +43,11 @@ This is a Model Context Protocol (MCP) server that provides AI-powered image and
 - Environment variable validation with Zod schemas
 - Provider-specific configuration methods
 - File processing limits and format validation
+
+**Configuration Validation** (`src/types/Config.ts` and `src/utils/validation.ts`):
+- `Config.ts` defines TypeScript interfaces for all configuration options
+- `validation.ts` provides Zod schemas that validate environment variables against these interfaces
+- These files must stay synchronized - any new config field in Config.ts requires corresponding validation rules in validation.ts
 
 **Key Services**:
 - `FileService` - Handles file uploads, validation, and processing

@@ -13,6 +13,7 @@ import type {
   ProviderInfo,
 } from '../../types/Providers.js';
 import type { TaskType } from '../../types/Analysis.js';
+import { type FunctionName } from '../../constants/FunctionNames.js';
 import { ConfigService } from '../../services/ConfigService.js';
 
 export abstract class BaseVisionProvider implements VisionProvider {
@@ -195,14 +196,10 @@ export abstract class BaseVisionProvider implements VisionProvider {
 
   protected resolveParameterWithFunction(
     taskType: TaskType,
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined,
+    functionName: FunctionName | undefined,
     directValue: number | undefined,
     getFunctionSpecificValue: (
-      functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+      functionName: FunctionName
     ) => number | undefined,
     getTaskSpecificValue: (taskType: TaskType) => number | undefined,
     getUniversalValue: () => number,
@@ -284,11 +281,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
   // Function-specific resolution methods
   protected resolveTemperatureForFunction(
     taskType: TaskType,
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined,
+    functionName: FunctionName | undefined,
     directValue: number | undefined
   ): number {
     return this.resolveParameterWithFunction(
@@ -304,11 +297,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
 
   protected resolveTopPForFunction(
     taskType: TaskType,
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined,
+    functionName: FunctionName | undefined,
     directValue: number | undefined
   ): number {
     return this.resolveParameterWithFunction(
@@ -324,11 +313,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
 
   protected resolveTopKForFunction(
     taskType: TaskType,
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined,
+    functionName: FunctionName | undefined,
     directValue: number | undefined
   ): number {
     return this.resolveParameterWithFunction(
@@ -344,11 +329,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
 
   protected resolveMaxTokensForFunction(
     taskType: TaskType,
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined,
+    functionName: FunctionName | undefined,
     directValue: number | undefined
   ): number {
     const defaultValue = taskType === 'image' ? 500 : 2000;
@@ -366,11 +347,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
   // Function-specific model resolution methods
   protected resolveModelForFunction(
     taskType: 'image' | 'video',
-    functionName:
-      | 'analyze_image'
-      | 'compare_images'
-      | 'analyze_video'
-      | undefined
+    functionName: FunctionName | undefined
   ): string {
     const systemDefault =
       taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';

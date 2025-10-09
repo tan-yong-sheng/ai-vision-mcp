@@ -14,6 +14,10 @@ import type {
   DevelopmentConfig,
 } from '../types/Config.js';
 import { ConfigurationError } from '../types/Errors.js';
+import {
+  type FunctionName,
+  FUNCTION_NAMES,
+} from '../constants/FunctionNames.js';
 import { validateConfig, formatZodError } from '../utils/validation.js';
 import { extractProjectIdFromCredentials } from '../utils/credentialsParser.js';
 
@@ -65,6 +69,8 @@ export class ConfigService {
         // Function-specific model configuration
         ANALYZE_IMAGE_MODEL: process.env.ANALYZE_IMAGE_MODEL,
         COMPARE_IMAGES_MODEL: process.env.COMPARE_IMAGES_MODEL,
+        DETECT_OBJECTS_IN_IMAGE_MODEL:
+          process.env.DETECT_OBJECTS_IN_IMAGE_MODEL,
         ANALYZE_VIDEO_MODEL: process.env.ANALYZE_VIDEO_MODEL,
 
         // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
@@ -135,6 +141,22 @@ export class ConfigService {
         MAX_TOKENS_FOR_COMPARE_IMAGES: process.env.MAX_TOKENS_FOR_COMPARE_IMAGES
           ? parseInt(process.env.MAX_TOKENS_FOR_COMPARE_IMAGES, 10)
           : undefined,
+        TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseFloat(process.env.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE)
+          : undefined,
+        TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseFloat(process.env.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE)
+          : undefined,
+        TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseInt(process.env.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE, 10)
+          : undefined,
+        MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseInt(process.env.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE, 10)
+          : undefined,
         TEMPERATURE_FOR_ANALYZE_VIDEO: process.env.TEMPERATURE_FOR_ANALYZE_VIDEO
           ? parseFloat(process.env.TEMPERATURE_FOR_ANALYZE_VIDEO)
           : undefined,
@@ -182,7 +204,7 @@ export class ConfigService {
           ? parseInt(process.env.MAX_VIDEO_DURATION, 10)
           : 3600,
         MAX_IMAGES_FOR_COMPARISON: process.env.MAX_IMAGES_FOR_COMPARISON
-          ? parseInt(process.env.MAX_IMAGES_FOR_COMPARISON, 10)
+          ? parseInt(process.env.MAX_IMAGES_FOR_COMPARISON, 4)
           : 4,
 
         // File upload configuration
@@ -367,6 +389,14 @@ export class ConfigService {
       topPForCompareImages: this.config.TOP_P_FOR_COMPARE_IMAGES,
       topKForCompareImages: this.config.TOP_K_FOR_COMPARE_IMAGES,
       maxTokensForCompareImages: this.config.MAX_TOKENS_FOR_COMPARE_IMAGES,
+      temperatureForDetectObjectsInImage:
+        this.config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE,
+      topPForDetectObjectsInImage:
+        this.config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE,
+      topKForDetectObjectsInImage:
+        this.config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE,
+      maxTokensForDetectObjectsInImage:
+        this.config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE,
       temperatureForAnalyzeVideo: this.config.TEMPERATURE_FOR_ANALYZE_VIDEO,
       topPForAnalyzeVideo: this.config.TOP_P_FOR_ANALYZE_VIDEO,
       topKForAnalyzeVideo: this.config.TOP_K_FOR_ANALYZE_VIDEO,
@@ -374,6 +404,7 @@ export class ConfigService {
       // Model configuration
       analyzeImageModel: this.config.ANALYZE_IMAGE_MODEL,
       compareImagesModel: this.config.COMPARE_IMAGES_MODEL,
+      detectObjectsInImageModel: this.config.DETECT_OBJECTS_IN_IMAGE_MODEL,
       analyzeVideoModel: this.config.ANALYZE_VIDEO_MODEL,
     };
   }
@@ -426,44 +457,46 @@ export class ConfigService {
 
   // Function-specific configuration getter methods
   public getTemperatureForFunction(
-    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+    functionName: FunctionName
   ): number | undefined {
     switch (functionName) {
-      case 'analyze_image':
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
         return this.config.TEMPERATURE_FOR_ANALYZE_IMAGE;
-      case 'compare_images':
+      case FUNCTION_NAMES.COMPARE_IMAGES:
         return this.config.TEMPERATURE_FOR_COMPARE_IMAGES;
-      case 'analyze_video':
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
         return this.config.TEMPERATURE_FOR_ANALYZE_VIDEO;
       default:
         return undefined;
     }
   }
 
-  public getTopPForFunction(
-    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
-  ): number | undefined {
+  public getTopPForFunction(functionName: FunctionName): number | undefined {
     switch (functionName) {
-      case 'analyze_image':
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
         return this.config.TOP_P_FOR_ANALYZE_IMAGE;
-      case 'compare_images':
+      case FUNCTION_NAMES.COMPARE_IMAGES:
         return this.config.TOP_P_FOR_COMPARE_IMAGES;
-      case 'analyze_video':
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
         return this.config.TOP_P_FOR_ANALYZE_VIDEO;
       default:
         return undefined;
     }
   }
 
-  public getTopKForFunction(
-    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
-  ): number | undefined {
+  public getTopKForFunction(functionName: FunctionName): number | undefined {
     switch (functionName) {
-      case 'analyze_image':
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
         return this.config.TOP_K_FOR_ANALYZE_IMAGE;
-      case 'compare_images':
+      case FUNCTION_NAMES.COMPARE_IMAGES:
         return this.config.TOP_K_FOR_COMPARE_IMAGES;
-      case 'analyze_video':
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
         return this.config.TOP_K_FOR_ANALYZE_VIDEO;
       default:
         return undefined;
@@ -471,14 +504,16 @@ export class ConfigService {
   }
 
   public getMaxTokensForFunction(
-    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
+    functionName: FunctionName
   ): number | undefined {
     switch (functionName) {
-      case 'analyze_image':
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
         return this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE;
-      case 'compare_images':
+      case FUNCTION_NAMES.COMPARE_IMAGES:
         return this.config.MAX_TOKENS_FOR_COMPARE_IMAGES;
-      case 'analyze_video':
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
         return this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO;
       default:
         return undefined;
@@ -486,15 +521,15 @@ export class ConfigService {
   }
 
   // Function-specific model getter methods
-  public getModelForFunction(
-    functionName: 'analyze_image' | 'compare_images' | 'analyze_video'
-  ): string | undefined {
+  public getModelForFunction(functionName: FunctionName): string | undefined {
     switch (functionName) {
-      case 'analyze_image':
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
         return this.config.ANALYZE_IMAGE_MODEL;
-      case 'compare_images':
+      case FUNCTION_NAMES.COMPARE_IMAGES:
         return this.config.COMPARE_IMAGES_MODEL;
-      case 'analyze_video':
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.DETECT_OBJECTS_IN_IMAGE_MODEL;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
         return this.config.ANALYZE_VIDEO_MODEL;
       default:
         return undefined;

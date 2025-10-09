@@ -233,7 +233,7 @@ npx ai-vision-mcp
 
 ## MCP Tools
 
-The server provides three main MCP tools:
+The server provides four main MCP tools:
 
 ### 1) `analyze_image`
 
@@ -331,6 +331,57 @@ Analyzes a video using AI and returns a detailed description.
 
 **Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
 
+
+### 4) `detect_objects_in_image`
+
+Detects objects in an image using AI vision models and generates annotated images with bounding boxes. Returns detected objects with coordinates and either saves the annotated image to a file, temporary directory, or returns it inline (base64 encoded) depending on size.
+
+**Parameters:**
+- `imageSource` (string): URL, base64 data, or file path to the image
+- `prompt` (string, optional): Custom detection prompt. If not provided, uses a general object detection prompt
+- `filePath` (string, optional): Explicit output path for the annotated image
+- `outputFormat` (string, optional): Output format for the annotated image. Default is PNG. Supported formats: PNG, JPG, WebP
+
+**File Handling Logic:**
+1. **Explicit filePath provided** → Saves to the exact path specified
+2. **Large files (≥2MB)** → Automatically saves to temporary directory
+3. **Small files (<2MB)** → Returns inline as base64 encoded data
+
+**Response Types:**
+- Returns `file` object when explicit filePath is provided
+- Returns `tempFile` object when large files are auto-saved to temp
+- Returns `image` object with base64 data for small files
+- Always includes `detections` array with detected objects and coordinates
+
+**Examples:**
+
+1. **Basic object detection:**
+```json
+{
+  "imageSource": "https://example.com/image.jpg",
+  "prompt": "Detect all objects in this image"
+}
+```
+
+2. **Save annotated image to specific path:**
+```json
+{
+  "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
+  "filePath": "C:\\Users\\username\\Documents\\annotated_image.png",
+  "outputFormat": "png"
+}
+```
+
+3. **Custom detection prompt:**
+```json
+{
+  "imageSource": "data:image/jpeg;base64,/9j/4AAQSkZJRgAB...",
+  "prompt": "Detect and label all electronic devices in this image",
+  "outputFormat": "jpg"
+}
+```
+
+
 ## Configuration
 
 ### Environment Variables
@@ -345,6 +396,7 @@ Analyzes a video using AI and returns a detailed description.
 | **Function-specific Model Selection** ||||
 | `ANALYZE_IMAGE_MODEL` | No | Model for analyze_image function | Uses `IMAGE_MODEL` |
 | `COMPARE_IMAGES_MODEL` | No | Model for compare_images function | Uses `IMAGE_MODEL` |
+| `DETECT_OBJECTS_IN_IMAGE_MODEL` | No | Model for detect_objects_in_image function | Uses `IMAGE_MODEL` |
 | `ANALYZE_VIDEO_MODEL` | No | Model for analyze_video function | Uses `VIDEO_MODEL` |
 | **Google Gemini API** ||||
 | `GEMINI_API_KEY` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `google` | Google Gemini API key | Required for Gemini |
@@ -382,6 +434,10 @@ Analyzes a video using AI and returns a detailed description.
 | `TOP_P_FOR_COMPARE_IMAGES` | No | Top-p for compare_images function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
 | `TOP_K_FOR_COMPARE_IMAGES` | No | Top-k for compare_images function (1–100) | Uses `TOP_K_FOR_IMAGE` |
 | `MAX_TOKENS_FOR_COMPARE_IMAGES` | No | Max tokens for compare_images function | Uses `MAX_TOKENS_FOR_IMAGE` |
+| `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Temperature for detect_objects_in_image function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
+| `TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-p for detect_objects_in_image function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
+| `TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-k for detect_objects_in_image function (1–100) | Uses `TOP_K_FOR_IMAGE` |
+| `MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Max tokens for detect_objects_in_image function | Uses `MAX_TOKENS_FOR_IMAGE` |
 | `TEMPERATURE_FOR_ANALYZE_VIDEO` | No | Temperature for analyze_video function (0.0–2.0) | Uses `TEMPERATURE_FOR_VIDEO` |
 | `TOP_P_FOR_ANALYZE_VIDEO` | No | Top-p for analyze_video function (0.0–1.0) | Uses `TOP_P_FOR_VIDEO` |
 | `TOP_K_FOR_ANALYZE_VIDEO` | No | Top-k for analyze_video function (1–100) | Uses `TOP_K_FOR_VIDEO` |
@@ -431,11 +487,14 @@ MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
 TEMPERATURE_FOR_ANALYZE_IMAGE=0.05     # Very precise for single image analysis
 TEMPERATURE_FOR_COMPARE_IMAGES=0.2     # More creative for comparisons
 MAX_TOKENS_FOR_COMPARE_IMAGES=1500      # Longer responses for image comparisons
+TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0   # Deterministic for object detection
+MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192   # Higher token limit for structured output
 TEMPERATURE_FOR_ANALYZE_VIDEO=0.1      # Precise video analysis
 
 # Model selection configuration
 ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"          # Fast, cost-effective for single image analysis
-COMPARE_IMAGES_MODEL="gemini-2.5-flash-lite"         
+COMPARE_IMAGES_MODEL="gemini-2.5-flash-lite"
+DETECT_OBJECTS_IN_IMAGE_MODEL="gemini-2.5-flash-lite"  # Structured output capable model
 ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"           # Most capable for video analysis
 
 # Task-specific models (existing pattern still works)
@@ -444,6 +503,11 @@ VIDEO_MODEL="gemini-2.5-flash-pro"
 
 # Resolution order for analyze_image:
 # 1. ANALYZE_IMAGE_MODEL
+# 2. IMAGE_MODEL
+# 3. System default ("gemini-2.5-flash-lite")
+
+# Resolution order for detect_objects_in_image:
+# 1. DETECT_OBJECTS_IN_IMAGE_MODEL
 # 2. IMAGE_MODEL
 # 3. System default ("gemini-2.5-flash-lite")
 
