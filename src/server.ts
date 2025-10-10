@@ -19,7 +19,7 @@ import { VisionError } from './types/Errors.js';
 // Create MCP server
 const server = new McpServer({
   name: 'ai-vision-mcp',
-  version: '0.0.2',
+  version: '0.0.3',
 });
 
 // Helper function to initialize services (lazy loading)
@@ -195,9 +195,7 @@ server.registerTool(
         ),
       prompt: z
         .string()
-        .describe(
-          'The prompt describing how you want to compare the images. If the task is **front-end or UI consistency**, the prompt you provide must specify what to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, and visual hierarchy. Pay special attention to shared sections like the **navbar**, **header**, **footer**, and **main content areas** to identify layout shifts or inconsistent styles between versions. \ For **other tasks**, the prompt you provide must clearly describe what aspects to compare or analyze — such as visual differences, content changes, design variations, or quality degradation.'
-        ),
+        .describe('The prompt describing how you want to compare the images. If the task is **front-end or UI consistency**, the prompt you provide must specify what to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, and visual hierarchy. Pay special attention to shared sections like the **navbar**, **header**, **footer**, and **main content areas** to identify layout shifts or inconsistent styles between versions. \ For **other tasks**, the prompt you provide must clearly describe what aspects to compare or analyze — such as visual differences, content changes, design variations, or quality degradation.'),
       options: z
         .object({
           temperature: z
