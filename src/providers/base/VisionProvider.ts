@@ -344,6 +344,57 @@ export abstract class BaseVisionProvider implements VisionProvider {
     );
   }
 
+  /**
+   * Build config object with all standard options including structured output support
+   * @param taskType - 'image' or 'video'
+   * @param functionName - Specific function being called (for function-specific config)
+   * @param options - Analysis options from caller
+   * @returns Config object ready for API call
+   */
+  protected buildConfigWithOptions(
+    taskType: TaskType,
+    functionName: FunctionName | undefined,
+    options?: AnalysisOptions
+  ): any {
+    const config: any = {
+      temperature: this.resolveTemperatureForFunction(
+        taskType,
+        functionName,
+        options?.temperature
+      ),
+      topP: this.resolveTopPForFunction(taskType, functionName, options?.topP),
+      topK: this.resolveTopKForFunction(taskType, functionName, options?.topK),
+      maxOutputTokens: this.resolveMaxTokensForFunction(
+        taskType,
+        functionName,
+        options?.maxTokens
+      ),
+      candidateCount: 1,
+    };
+
+    // Add structured output configuration if responseSchema is provided
+    if (options?.responseSchema) {
+      config.responseMimeType = 'application/json';
+      config.responseSchema = options.responseSchema;
+    }
+
+    // Add system instruction if provided
+    if (options?.systemInstruction) {
+      config.systemInstruction = options.systemInstruction;
+    }
+
+    // Add thinking budget configuration for Gemini models
+    const model = this.resolveModelForFunction(taskType, functionName);
+    const thinkingBudget = this.getThinkingBudgetForModel(model);
+    if (thinkingBudget !== undefined) {
+      config.thinkingConfig = {
+        thinkingBudget: thinkingBudget,
+      };
+    }
+
+    return config;
+  }
+
   // Function-specific model resolution methods
   protected resolveModelForFunction(
     taskType: 'image' | 'video',
@@ -373,5 +424,30 @@ export abstract class BaseVisionProvider implements VisionProvider {
     return taskType === 'image'
       ? this.configService.getConfig().IMAGE_MODEL
       : this.configService.getConfig().VIDEO_MODEL;
+  }
+
+  /**
+   * Determine the appropriate thinking budget for Gemini model variants
+   * Applies to both Gemini API and Vertex AI providers when using Gemini models
+   * Based on user requirements:
+   * - gemini-2.5-flash-lite and gemini-2.5-flash: thinking_budget = 0
+   * - gemini-2.5-pro: thinking_budget = 128
+   * - Other models: no thinking budget (undefined)
+   * @param model - The model name
+   * @returns thinking budget value or undefined if not applicable
+   */
+  protected getThinkingBudgetForModel(model: string): number | undefined {
+    // Only apply thinking budget to specific Gemini model variants
+    // This works for both direct Gemini API and Vertex AI when using Gemini models
+    if (model.includes('gemini-2.5-flash-lite') || model.includes('gemini-2.5-flash')) {
+      // For flash models, use minimal thinking budget for faster response
+      return 0;
+    } else if (model.includes('gemini-2.5-pro')) {
+      // For pro models, use higher thinking budget for better reasoning
+      return 128;
+    }
+
+    // For other models (older Gemini versions, non-Gemini models), don't set thinking budget
+    return undefined;
   }
 }

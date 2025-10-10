@@ -8,8 +8,6 @@ export interface DetectedObject {
   object: string; // Generic category for detected object
   label: string; // Descriptive label or instance-specific detail
   normalized_box_2d: [number, number, number, number]; // [ymin, xmin, ymax, xmax] normalized to 0-1000
-  box_2d_in_px?: [number, number, number, number]; // [xmin, ymin, xmax, ymax] in pixels
-  confidence?: number; // Optional confidence score
 }
 
 export interface ObjectDetectionResult {
@@ -45,6 +43,7 @@ export interface DetectionWithFile {
     height: number;
     original_size: number;
   };
+  summary: string; // Human-readable summary with percentage coordinates
 }
 
 export interface DetectionWithTempFile {
@@ -60,6 +59,7 @@ export interface DetectionWithTempFile {
     height: number;
     original_size: number;
   };
+  summary: string; // Human-readable summary with percentage coordinates
 }
 
 export interface DetectionWithInlineImage {
@@ -74,6 +74,7 @@ export interface DetectionWithInlineImage {
     height: number;
     original_size: number;
   };
+  summary: string; // Human-readable summary with percentage coordinates
 }
 
 // Union type for all possible response types

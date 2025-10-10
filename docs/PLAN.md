@@ -12,6 +12,21 @@
 - actually could we use @google/genai in vertex ai library so that we can add native support for VERTEX_ENDPOINT to be switched to another proxy provider
 
 **URGENT**
+- for detect_objects_in_image mcp function, there seems like some plotting issue cause the bounding box to repeat by 2... Need to check the logic for box_2d_in_px as well, perhaps stick to the format like normalize_box_2d ...
+
+- for detect_objects_in_image mcp function, if the llm give relative file path, we don't know where it saves? Perhaps just ask LLM to print out absolute file path...
+```json
+{
+  "imageSource": "C:/Users/tys/Downloads/export/static/output/annotated_output.png",
+  "prompt": "Detect all buttons in this webpage image. Include form buttons, header/nav buttons, footer buttons, icon-only buttons, and links visually styled as buttons. For each detected button, identify readable label/text if present, provide a bounding box in pixel coordinates (x, y, width, height). Also produce an annotated image marking each detected button.",
+  "outputFilePath": "./output/detected_buttons_annotated.png",
+  "options": {
+    "maxTokens": 2048
+  }
+}
+``` ... also keep writting output style...
+
+
 - add detect_objects_in_image mcp function ... (Note: not sure if we need to use `sharp` library to output image, i tend not to do so... )
 
 **ICEBOX**

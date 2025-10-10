@@ -6,7 +6,7 @@ Please always use context7 MCP, web search, or web fetch for additional informat
 ## **CRITICAL: Documentation Maintenance Requirements**
 
 **BEFORE starting any coding work:**
-1. **ALWAYS create a plan document** in the `docs/` folder before writing any code
+1. **ALWAYS create a plan document** in the `docs/llm_logs/` folder before writing any code
 2. **ALWAYS update README.md** when introducing changes that affect:
    - New MCP tools or parameters
    - Environment variables
@@ -21,10 +21,42 @@ Please always use context7 MCP, web search, or web fetch for additional informat
    - Error handling patterns
 
 **Planning Process:**
-- Create plan documents in `docs/` folder (e.g., `docs/feature-name-plan.md`)
+- Create plan documents in `docs/llm_logs/` folder (e.g., `docs/llm_logs/feature-name-plan.md`)
 - Include architecture decisions, implementation steps, and testing strategy
 - Reference this plan in your commit messages
 - Keep plan documents as documentation of implementation decisions
+
+**Solution Planning Best Practices:**
+- **ALWAYS present at least 3 options** when planning solutions to problems
+- Analyze trade-offs: effort vs. benefit, maintainability vs. speed, risk vs. reward
+- Provide clear recommendations with rationale (e.g., "Option 2 recommended because...")
+- Consider: quick fixes, balanced approaches, and comprehensive solutions
+- Include effort estimates, risk assessments, and rollback strategies for each option
+- Use structured format: Option 1 (Simple), Option 2 (Balanced), Option 3 (Comprehensive)
+
+**Example Planning Structure:**
+```
+## Plan: [Problem Description]
+
+### Option 1: Quick Fix (15 min)
+- ✅ Minimal change, fastest implementation
+- ❌ Technical debt, not future-proof
+- **When to use**: Urgent hotfixes, time pressure
+
+### Option 2: Balanced Solution (45 min) - RECOMMENDED
+- ✅ Good maintainability, moderate effort
+- ✅ Addresses root cause, extensible
+- ❌ Longer implementation time
+- **When to use**: Most production scenarios
+
+### Option 3: Comprehensive Refactor (2 hours)
+- ✅ Perfect architecture, future-proof
+- ❌ High effort, potential for new bugs
+- **When to use**: Major feature additions, architectural improvements
+
+### Recommendation: Option 2
+**Rationale**: Balances immediate needs with long-term maintainability...
+```
 
 **Documentation Synchronization:**
 - README.md is for **users** - installation, usage, and configuration
@@ -180,6 +212,57 @@ src/
 6. **Configuration Hierarchy**: Always implement 4-level priority: LLM-assigned → function-specific → task-specific → universal
 7. **Error Context**: Always include provider information in errors for debugging
 8. **Cross-Platform Support**: Handle both Windows and Unix file paths correctly
+9. **Config Building Pattern**: Use `buildConfigWithOptions()` helper from BaseVisionProvider for consistent config generation
+
+### Config Building Pattern (IMPORTANT)
+
+When implementing provider methods that need AI configuration, **always use** the `buildConfigWithOptions()` helper:
+
+```typescript
+// ✅ Correct - uses helper method
+const config = this.buildConfigWithOptions('image', options?.functionName, options);
+
+await this.client.models.generateContent({
+  model,
+  contents,
+  config,  // Automatically includes responseSchema and systemInstruction if provided
+});
+
+// ❌ Incorrect - manual config building (duplicates code)
+const config = {
+  temperature: this.resolveTemperatureForFunction(...),
+  topP: this.resolveTopPForFunction(...),
+  topK: this.resolveTopKForFunction(...),
+  maxOutputTokens: this.resolveMaxTokensForFunction(...),
+  candidateCount: 1,
+};
+if (options?.responseSchema) {
+  config.responseMimeType = 'application/json';
+  config.responseSchema = options.responseSchema;
+}
+if (options?.systemInstruction) {
+  config.systemInstruction = options.systemInstruction;
+}
+// ... manual config building creates maintenance burden
+```
+
+**Why use `buildConfigWithOptions()`?**
+
+1. **DRY Principle**: Single source of truth for config generation
+2. **Automatic Structured Output**: Handles `responseSchema` and `systemInstruction` automatically
+3. **Consistency**: Same config format across all providers (Gemini, Vertex AI)
+4. **Maintainability**: Adding new config options only requires updating one method
+5. **Type Safety**: Centralized TypeScript type checking
+
+**This pattern is critical for:**
+- Object detection (`detect_objects_in_image`) - requires structured JSON output
+- Any future tools that need custom response schemas
+- Maintaining consistency between Gemini and Vertex AI providers
+
+**Reference Implementation:**
+- Helper method: `src/providers/base/VisionProvider.ts:354-395`
+- Usage in Gemini: `src/providers/gemini/GeminiProvider.ts:185-189, 348-352, 468-472`
+- Usage in Vertex AI: `src/providers/vertexai/VertexAIProvider.ts:84-88, 161-165, 246-250`
 
 ## Environment Variables
 

@@ -10,7 +10,7 @@ export interface AnalysisOptions {
   temperature?: number | undefined;
   topP?: number | undefined;
   topK?: number | undefined;
-  maxTokens?: number | undefined; // Keep for backward compatibility
+  maxTokens?: number | undefined;
   maxTokensForImage?: number | undefined;
   maxTokensForVideo?: number | undefined;
   stopSequences?: string[] | undefined;

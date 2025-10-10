@@ -112,7 +112,9 @@ server.registerTool(
             .min(1)
             .max(8192)
             .optional()
-            .describe('Maximum number of tokens to generate in the response'),
+            .describe(
+              'Maximum number of tokens to generate in the response. For detailed image analysis, 1000-2000 tokens typically sufficient.'
+            ),
         })
         .optional(),
     },
@@ -224,7 +226,9 @@ server.registerTool(
             .min(1)
             .max(8192)
             .optional()
-            .describe('Maximum number of tokens to generate in the response'),
+            .describe(
+              'Maximum number of tokens to generate in the response. For comparing multiple images, recommend 1500-3000 tokens for comprehensive analysis.'
+            ),
         })
         .optional(),
     },
@@ -295,7 +299,7 @@ server.registerTool(
   {
     title: 'Detect Objects in Image',
     description:
-      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64.',
+      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64. Uses optimized default parameters for object detection.',
     inputSchema: {
       imageSource: z
         .string()
@@ -305,7 +309,7 @@ server.registerTool(
       prompt: z
         .string()
         .describe(
-          'Detection prompt describing what objects to detect. The response will be structured JSON with fields: "object" (object category), "label" (descriptive label), and "normalized_box_2d" ([ymin, xmin, ymax, xmax] in 0-1000 scale). Your prompt should align with these fields. Example: "Detect all buttons. For each, return object as \'button\', label as button text or description, and normalized_box_2d coordinates."'
+          'Text prompt describing what to detect or recognize in the image. Avoid including any instructions about output structure or formatting — these are automatically managed by the workflow.'
         ),
       outputFilePath: z
         .string()
@@ -313,47 +317,15 @@ server.registerTool(
         .describe(
           "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
         ),
-      options: z
-        .object({
-          temperature: z
-            .number()
-            .min(0)
-            .max(2)
-            .optional()
-            .describe(
-              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
-            ),
-          topP: z
-            .number()
-            .min(0)
-            .max(1)
-            .optional()
-            .describe('Nucleus sampling parameter (0.0-1.0)'),
-          topK: z
-            .number()
-            .int()
-            .min(1)
-            .max(100)
-            .optional()
-            .describe('Top-k sampling parameter (1-100)'),
-          maxTokens: z
-            .number()
-            .int()
-            .min(1)
-            .max(8192)
-            .optional()
-            .describe('Maximum number of tokens to generate in the response'),
-        })
-        .optional(),
+    },
   },
-  },
-  async ({ imageSource, prompt, outputFilePath, options }) => {
+  async ({ imageSource, prompt, outputFilePath }) => {
     try {
       const validatedArgs = {
         imageSource,
         prompt,
         outputFilePath,
-        options,
+        // Remove options parameter - use environment variable configuration instead
       };
 
       // Initialize services on-demand
@@ -513,7 +485,9 @@ server.registerTool(
             .min(1)
             .max(8192)
             .optional()
-            .describe('Maximum number of tokens to generate in the response'),
+            .describe(
+              'Maximum number of tokens to generate in the response. For video analysis, recommend 2000-4000 tokens for comprehensive temporal understanding.'
+            ),
         })
         .optional(),
     },

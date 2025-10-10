@@ -343,7 +343,85 @@ const options: AnalysisOptions = {
 
 This design follows SOLID principles and maintains clean separation between infrastructure (provider) and business logic (tools).
 
-### 3.4 Provider Factory
+### 3.5 Structured Output Support
+
+Both Gemini and Vertex AI providers support structured JSON output via the `responseSchema` and `systemInstruction` configuration options. This enables advanced features like object detection with bounding box coordinates.
+
+**Implementation Details:**
+
+The `buildConfigWithOptions()` helper method in `BaseVisionProvider` (src/providers/base/VisionProvider.ts:354-395) automatically handles structured output configuration:
+
+```typescript
+protected buildConfigWithOptions(
+  taskType: TaskType,
+  functionName: FunctionName | undefined,
+  options?: AnalysisOptions
+): any {
+  const config: any = {
+    temperature: this.resolveTemperatureForFunction(...),
+    topP: this.resolveTopPForFunction(...),
+    topK: this.resolveTopKForFunction(...),
+    maxOutputTokens: this.resolveMaxTokensForFunction(...),
+    candidateCount: 1,
+  };
+
+  // Add structured output configuration if responseSchema is provided
+  if (options?.responseSchema) {
+    config.responseMimeType = 'application/json';
+    config.responseSchema = options.responseSchema;
+  }
+
+  // Add system instruction if provided
+  if (options?.systemInstruction) {
+    config.systemInstruction = options.systemInstruction;
+  }
+
+  return config;
+}
+```
+
+**Provider Support:**
+
+| Provider | Structured Output | System Instructions | SDK Version |
+|----------|------------------|---------------------|-------------|
+| **Gemini** | ✅ Native support | ✅ Native support | `@google/genai` v1.0.0+ |
+| **Vertex AI** | ✅ Native support | ✅ Native support | `@google/genai` v1.0.0+ |
+
+Both providers use the same `@google/genai` SDK, which provides unified support for structured outputs across Gemini and Vertex AI backends.
+
+**Usage Pattern:**
+
+```typescript
+// Tools pass responseSchema and systemInstruction via AnalysisOptions
+const options: AnalysisOptions = {
+  temperature: 0,
+  maxTokens: 8192,
+  responseSchema: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        object: { type: 'string' },
+        label: { type: 'string' },
+        normalized_box_2d: { type: 'array', items: { type: 'integer' } }
+      }
+    }
+  },
+  systemInstruction: 'Detect all objects and return as JSON...'
+};
+
+// Provider automatically includes these in API call
+await provider.analyzeImage(imageSource, prompt, options);
+```
+
+**Benefits:**
+
+1. **DRY Principle**: Single implementation in BaseVisionProvider serves all providers
+2. **Consistency**: Same configuration format across Gemini and Vertex AI
+3. **Extensibility**: Easy to add new providers with structured output support
+4. **Type Safety**: TypeScript ensures correct schema structure
+
+### 3.6 Provider Factory
 
 ```typescript
 class ProviderFactory {
@@ -433,7 +511,7 @@ class GCSStorageProvider implements StorageProvider {
 }
 ```
 
-### 3.6 File Upload Strategies
+### 3.7 File Upload Strategies
 
 ```typescript
 // File upload strategy interface

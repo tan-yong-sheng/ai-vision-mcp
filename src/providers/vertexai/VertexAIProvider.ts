@@ -81,29 +81,11 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'image',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'image',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'image',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'image',
-                options?.functionName,
-                options?.maxTokens
-              ),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         }
       );
@@ -176,29 +158,11 @@ export class VertexAIProvider extends BaseVisionProvider {
                 parts: imageParts,
               },
             ],
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'image',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'image',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'image',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'image',
-                options?.functionName,
-                options?.maxTokens
-              ),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         }
       );
@@ -279,29 +243,11 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            config: {
-              temperature: this.resolveTemperatureForFunction(
-                'video',
-                options?.functionName,
-                options?.temperature
-              ),
-              topP: this.resolveTopPForFunction(
-                'video',
-                options?.functionName,
-                options?.topP
-              ),
-              topK: this.resolveTopKForFunction(
-                'video',
-                options?.functionName,
-                options?.topK
-              ),
-              maxOutputTokens: this.resolveMaxTokensForFunction(
-                'video',
-                options?.functionName,
-                options?.maxTokens
-              ),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'video',
+              options?.functionName,
+              options
+            ),
           });
         }
       );

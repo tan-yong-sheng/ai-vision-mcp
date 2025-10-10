@@ -3,6 +3,7 @@
  * Detects objects in images using AI vision models with bounding box annotations.
  */
 
+import path from 'path';
 import type { AnalysisOptions } from '../types/Providers.js';
 import type { VisionProvider } from '../types/Providers.js';
 import { FileService } from '../services/FileService.js';
@@ -111,6 +112,83 @@ const createDetectionSchema = (provider: string) => {
 
 export type { ObjectDetectionArgs } from '../types/ObjectDetection.js';
 
+/**
+ * Generate human-readable text summary with percentage coordinates
+ */
+function generateDetectionSummary(
+  detections: DetectedObject[],
+  imageMetadata: { width: number; height: number; size_bytes: number; format: string },
+  model: string,
+  provider: string
+): string {
+  const summary = [];
+
+  // Header with image context
+  summary.push(`🖼️ IMAGE ANALYSIS COMPLETE\n`);
+  summary.push(`📏 Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`);
+  summary.push(`🤖 Detection Model: ${model} (${provider})`);
+  summary.push(`📊 Elements Found: ${detections.length} objects detected\n`);
+
+  // Critical automation warning
+  summary.push(`⚠️  IMPORTANT FOR BROWSER AUTOMATION:`);
+  summary.push(`- All coordinates are relative to the source image size (${imageMetadata.width}×${imageMetadata.height})`);
+  summary.push(`- Use percentage coordinates for viewport-independent automation`);
+  summary.push(`- Convert percentages to pixels: (percentage / 100) × viewport_dimension\n`);
+
+  // Element details
+  summary.push(`## 🔍 DETECTED ELEMENTS:\n`);
+
+  detections.forEach((detection, index) => {
+    const [ymin, xmin, ymax, xmax] = detection.normalized_box_2d;
+
+    // Convert normalized to percentage (0-1000 → 0-100)
+    const centerX = (xmin + xmax) / 2 / 10;  // 78.5%
+    const centerY = (ymin + ymax) / 2 / 10;  // 26.7%
+    const widthPercent = (xmax - xmin) / 10; // 13.0%
+    const heightPercent = (ymax - ymin) / 10; // 4.5%
+
+    // Calculate pixel details from normalized coordinates
+    const pixelBox = {
+      x: Math.round((xmin / 1000) * imageMetadata.width),
+      y: Math.round((ymin / 1000) * imageMetadata.height),
+      width: Math.round(((xmax - xmin) / 1000) * imageMetadata.width),
+      height: Math.round(((ymax - ymin) / 1000) * imageMetadata.height)
+    };
+
+    summary.push(`### ${index + 1}. ${detection.object} - ${detection.label}`);
+    summary.push(`- **Position**: ${centerX.toFixed(1)}% across, ${centerY.toFixed(1)}% down from top-left`);
+    summary.push(`- **Size**: ${widthPercent.toFixed(1)}% × ${heightPercent.toFixed(1)}% of screen`);
+    summary.push(`- **Bounding Box**: Top ${(ymin/10).toFixed(1)}%, Left ${(xmin/10).toFixed(1)}%, Bottom ${(ymax/10).toFixed(1)}%, Right ${(xmax/10).toFixed(1)}%`);
+    summary.push(`- **Click Target**: (${centerX.toFixed(1)}%, ${centerY.toFixed(1)}%) → Use for automation`);
+    summary.push(`- **Pixel Details**: ${pixelBox.width}×${pixelBox.height} pixels at (${pixelBox.x}, ${pixelBox.y}) *[calculated from normalized coordinates]*\n`);
+  });
+
+  // Automation guidance
+  summary.push(`## 🤖 AUTOMATION GUIDANCE:\n`);
+  summary.push(`**For Puppeteer/Playwright:**`);
+  summary.push(`\`\`\`javascript`);
+  if (detections.length > 0) {
+    const firstDetection = detections[0];
+    const [ymin, xmin, ymax, xmax] = firstDetection.normalized_box_2d;
+    const centerX = (xmin + xmax) / 2 / 10;
+    const centerY = (ymin + ymax) / 2 / 10;
+
+    summary.push(`// Example: Click ${firstDetection.object}`);
+    summary.push(`const viewport = page.viewport();`);
+    summary.push(`const clickX = (${centerX.toFixed(1)} / 100) * viewport.width;  // ${centerX.toFixed(1)}% across`);
+    summary.push(`const clickY = (${centerY.toFixed(1)} / 100) * viewport.height; // ${centerY.toFixed(1)}% down`);
+    summary.push(`await page.mouse.click(clickX, clickY);`);
+  } else {
+    summary.push(`// Convert percentage coordinates to viewport pixels:`);
+    summary.push(`const clickX = (percentageX / 100) * page.viewport().width;`);
+    summary.push(`const clickY = (percentageY / 100) * page.viewport().height;`);
+    summary.push(`await page.mouse.click(clickX, clickY);`);
+  }
+  summary.push(`\`\`\``);
+
+  return summary.join('\n');
+}
+
 export async function detect_objects_in_image(
   args: ObjectDetectionArgs,
   config: Config,
@@ -186,24 +264,36 @@ export async function detect_objects_in_image(
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
-      topP: config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_P_FOR_IMAGE ?? config.TOP_P,
-      topK: config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.TOP_K_FOR_IMAGE ?? config.TOP_K,
-      maxTokens: config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE ?? config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
+      temperature:
+        config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE ??
+        config.TEMPERATURE_FOR_IMAGE ??
+        config.TEMPERATURE,
+      topP:
+        config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE ??
+        config.TOP_P_FOR_IMAGE ??
+        config.TOP_P,
+      topK:
+        config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE ??
+        config.TOP_K_FOR_IMAGE ??
+        config.TOP_K,
+      maxTokens:
+        config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE ??
+        config.MAX_TOKENS_FOR_IMAGE ??
+        config.MAX_TOKENS,
       taskType: 'image',
       functionName: FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE,
       // Add structured output configuration for object detection
       responseSchema: createDetectionSchema(config.IMAGE_PROVIDER),
       // Add system instruction to guide the model's behavior
       systemInstruction: DETECTION_SYSTEM_INSTRUCTION,
-      ...args.options,  // User options override defaults
+      ...args.options, // User options override defaults
     };
 
     console.log(
       '[detect_objects_in_image] Analyzing image for object detection...'
     );
     console.log(
-      `[detect_objects_in_image] Using maxTokens: ${options.maxTokens}`
+      `[detect_objects_in_image] Configuration: temperature=${options.temperature}, topP=${options.topP}, topK=${options.topK}, maxTokens=${options.maxTokens}`
     );
 
     // Analyze the image for object detection
@@ -215,6 +305,9 @@ export async function detect_objects_in_image(
 
     console.log(
       `[detect_objects_in_image] Response length: ${result.text.length} characters`
+    );
+    console.log(
+      `[detect_objects_in_image] Response ends with: "${result.text.slice(-50)}"`
     );
 
     // Parse detection results
@@ -228,6 +321,9 @@ export async function detect_objects_in_image(
       );
       console.log(
         `[detect_objects_in_image] Raw response (first 500 chars): ${result.text.substring(0, 500)}`
+      );
+      console.log(
+        `[detect_objects_in_image] Full response length: ${result.text.length} characters`
       );
 
       // Try to extract JSON from markdown code blocks if present
@@ -259,12 +355,56 @@ export async function detect_objects_in_image(
           `[detect_objects_in_image] Cleaned text (first 1000 chars): ${cleanedText.substring(0, 1000)}`
         );
 
-        throw new VisionError(
-          `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}`,
-          'PARSE_ERROR',
-          config.IMAGE_PROVIDER,
-          parseError instanceof Error ? parseError : undefined
-        );
+        // Try to fix truncated JSON arrays
+        let fixedText = cleanedText;
+
+        // Check if the JSON looks like a truncated array
+        if (cleanedText.startsWith('[') && !cleanedText.endsWith(']')) {
+          console.log(
+            `[detect_objects_in_image] Attempting to fix truncated JSON array...`
+          );
+
+          // Find the last complete object by looking for the last complete "},"
+          const lastCompleteObjectIndex = cleanedText.lastIndexOf('},');
+          if (lastCompleteObjectIndex > 0) {
+            // Truncate at the last complete object and close the array
+            fixedText = cleanedText.substring(0, lastCompleteObjectIndex + 1) + '\n]';
+            console.log(
+              `[detect_objects_in_image] Fixed text ends with: "${fixedText.slice(-100)}"`
+            );
+
+            try {
+              detections = JSON.parse(fixedText);
+              console.log(
+                `[detect_objects_in_image] Successfully parsed truncated JSON after fix. Objects found: ${detections.length}`
+              );
+            } catch (thirdError) {
+              console.error(
+                `[detect_objects_in_image] Failed to parse even after fixing truncated JSON`
+              );
+              throw new VisionError(
+                `Failed to parse detection results as JSON (response appears truncated): ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}. Consider increasing maxTokens parameter.`,
+                'PARSE_ERROR',
+                config.IMAGE_PROVIDER,
+                parseError instanceof Error ? parseError : undefined
+              );
+            }
+          } else {
+            throw new VisionError(
+              `Failed to parse detection results as JSON (response appears truncated): ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}. Consider increasing maxTokens parameter.`,
+              'PARSE_ERROR',
+              config.IMAGE_PROVIDER,
+              parseError instanceof Error ? parseError : undefined
+            );
+          }
+        } else {
+          throw new VisionError(
+            `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}`,
+            'PARSE_ERROR',
+            config.IMAGE_PROVIDER,
+            parseError instanceof Error ? parseError : undefined
+          );
+        }
       }
     }
 
@@ -272,7 +412,7 @@ export async function detect_objects_in_image(
       `[detect_objects_in_image] Detected ${detections.length} objects`
     );
 
-    // Convert normalized coordinates to pixel coordinates
+    // Validate and filter detections with valid normalized coordinates
     const processedDetections = detections
       .map((detection: any) => {
         if (
@@ -288,39 +428,21 @@ export async function detect_objects_in_image(
 
         const [normY1, normX1, normY2, normX2] = detection.normalized_box_2d;
 
-        const absY1 = Math.round((normY1 / 1000) * imageHeight);
-        const absX1 = Math.round((normX1 / 1000) * imageWidth);
-        const absY2 = Math.round((normY2 / 1000) * imageHeight);
-        const absX2 = Math.round((normX2 / 1000) * imageWidth);
-
-        // Ensure coordinates are valid (min < max)
-        const xMin = Math.min(absX1, absX2);
-        const xMax = Math.max(absX1, absX2);
-        const yMin = Math.min(absY1, absY2);
-        const yMax = Math.max(absY1, absY2);
-
-        // Clamp to image boundaries
-        const clampedXMin = Math.max(0, Math.min(xMin, imageWidth));
-        const clampedXMax = Math.max(0, Math.min(xMax, imageWidth));
-        const clampedYMin = Math.max(0, Math.min(yMin, imageHeight));
-        const clampedYMax = Math.max(0, Math.min(yMax, imageHeight));
-
-        // Only add if box has valid area
-        if (clampedXMax > clampedXMin && clampedYMax > clampedYMin) {
-          const boxInPx = [clampedXMin, clampedYMin, clampedXMax, clampedYMax];
-
-          return {
-            object: detection.object,
-            label: detection.label,
-            normalized_box_2d: detection.normalized_box_2d,
-            box_2d_in_px: boxInPx as [number, number, number, number],
-          };
-        } else {
+        // Validate coordinate ranges (should be 0-1000)
+        if (normY1 < 0 || normX1 < 0 || normY2 > 1000 || normX2 > 1000 ||
+            normY1 >= normY2 || normX1 >= normX2) {
           console.warn(
-            `[detect_objects_in_image] Skipping invalid box for '${detection.object}': [${absY1}, ${absX1}, ${absY2}, ${absX2}]`
+            `[detect_objects_in_image] Skipping detection with invalid coordinate ranges: ${detection.object} [${normY1}, ${normX1}, ${normY2}, ${normX2}]`
           );
           return null;
         }
+
+        // Return simplified detection object
+        return {
+          object: detection.object,
+          label: detection.label,
+          normalized_box_2d: detection.normalized_box_2d,
+        };
       })
       .filter(Boolean) as DetectedObject[];
 
@@ -341,10 +463,31 @@ export async function detect_objects_in_image(
       `[detect_objects_in_image] Annotated image size: ${annotatedImageSize} bytes`
     );
 
+    // Generate human-readable text summary with percentage coordinates
+    const imageMetadata = {
+      width: imageWidth,
+      height: imageHeight,
+      size_bytes: originalImageBuffer.length,
+      format: outputFormat
+    };
+    const summary = generateDetectionSummary(
+      processedDetections,
+      imageMetadata,
+      'AI Vision Model', // Use generic model name since result.model doesn't exist
+      config.IMAGE_PROVIDER
+    );
+
+    console.log(
+      `[detect_objects_in_image] Generated text summary (${summary.length} characters)`
+    );
+
     // 3-step workflow for image file handling
     if (args.outputFilePath) {
       // Step 1: Explicit outputFilePath provided → Save to exact path
-      await annotator.saveToExplicitPath(args.outputFilePath, annotatedImageBuffer);
+      await annotator.saveToExplicitPath(
+        args.outputFilePath,
+        annotatedImageBuffer
+      );
       console.log(
         `[detect_objects_in_image] Annotated image saved to: ${args.outputFilePath}`
       );
@@ -352,7 +495,7 @@ export async function detect_objects_in_image(
       const response: DetectionWithFile = {
         detections: processedDetections,
         file: {
-          path: args.outputFilePath,
+          path: path.resolve(args.outputFilePath),
           size_bytes: annotatedImageSize,
           format: outputFormat,
         },
@@ -361,6 +504,7 @@ export async function detect_objects_in_image(
           height: imageHeight,
           original_size: originalImageBuffer.length,
         },
+        summary: summary,
       };
 
       return response;
@@ -388,6 +532,7 @@ export async function detect_objects_in_image(
           height: imageHeight,
           original_size: originalImageBuffer.length,
         },
+        summary: summary,
       };
 
       return response;
@@ -412,6 +557,7 @@ export async function detect_objects_in_image(
           height: imageHeight,
           original_size: originalImageBuffer.length,
         },
+        summary: summary,
       };
 
       return response;

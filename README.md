@@ -338,20 +338,31 @@ Detects objects in an image using AI vision models and generates annotated image
 
 **Parameters:**
 - `imageSource` (string): URL, base64 data, or file path to the image
-- `prompt` (string, optional): Custom detection prompt. If not provided, uses a general object detection prompt
-- `filePath` (string, optional): Explicit output path for the annotated image
-- `outputFormat` (string, optional): Output format for the annotated image. Default is PNG. Supported formats: PNG, JPG, WebP
+- `prompt` (string): Custom detection prompt describing what to detect or recognize in the image
+- `outputFilePath` (string, optional): Explicit output path for the annotated image
+
+**Configuration:**
+This function uses optimized default parameters for object detection and does not accept runtime `options` parameter. To customize the AI parameters (temperature, topP, topK, maxTokens), use environment variables:
+
+```bash
+# Recommended settings for object detection (these are now the defaults)
+export TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0     # Deterministic responses
+export TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE=0.95          # Nucleus sampling
+export TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE=30            # Vocabulary selection
+export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JSON
+```
 
 **File Handling Logic:**
-1. **Explicit filePath provided** → Saves to the exact path specified
+1. **Explicit outputFilePath provided** → Saves to the exact path specified
 2. **Large files (≥2MB)** → Automatically saves to temporary directory
 3. **Small files (<2MB)** → Returns inline as base64 encoded data
 
 **Response Types:**
-- Returns `file` object when explicit filePath is provided
+- Returns `file` object when explicit outputFilePath is provided
 - Returns `tempFile` object when large files are auto-saved to temp
 - Returns `image` object with base64 data for small files
 - Always includes `detections` array with detected objects and coordinates
+- Includes `summary` with percentage-based coordinates for browser automation
 
 **Examples:**
 
@@ -367,8 +378,7 @@ Detects objects in an image using AI vision models and generates annotated image
 ```json
 {
   "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
-  "filePath": "C:\\Users\\username\\Documents\\annotated_image.png",
-  "outputFormat": "png"
+  "outputFilePath": "C:\\Users\\username\\Documents\\annotated_image.png"
 }
 ```
 
@@ -376,13 +386,59 @@ Detects objects in an image using AI vision models and generates annotated image
 ```json
 {
   "imageSource": "data:image/jpeg;base64,/9j/4AAQSkZJRgAB...",
-  "prompt": "Detect and label all electronic devices in this image",
-  "outputFormat": "jpg"
+  "prompt": "Detect and label all electronic devices in this image"
 }
 ```
 
+### Analysis Options
 
-## Configuration
+Most analysis functions (`analyze_image`, `compare_images`, `analyze_video`) support the following optional parameters in the `options` object:
+
+**Note:** `detect_objects_in_image` uses optimized defaults and is configured via environment variables only.
+
+- **`temperature`** (number, 0.0–2.0): Controls response creativity and randomness
+  - `0.0` = Deterministic, consistent responses (recommended for object detection)
+  - `0.1-0.3` = Precise, focused responses (good for technical analysis)
+  - `0.7-1.0` = Balanced creativity and accuracy (default: 0.8)
+  - `1.5-2.0` = Highly creative, varied responses (experimental use)
+
+- **`topP`** (number, 0.0–1.0): Controls response diversity via nucleus sampling
+  - `0.1-0.3` = Very focused, predictable responses
+  - `0.5-0.7` = Moderately focused responses
+  - `0.9-1.0` = More diverse, creative responses (default: 0.95)
+  - Lower values = more focused; Higher values = more diverse
+
+- **`topK`** (number, 1–100): Limits vocabulary to top K most likely tokens
+  - `1-5` = Very limited vocabulary, highly focused
+  - `10-30` = Balanced vocabulary selection (default: 30)
+  - `50-100` = Broader vocabulary, more creative
+  - Lower values = more focused; Higher values = more creative
+
+- **`maxTokens`** (number, 1–8192): Maximum response length in tokens
+  - `100-500` = Short, concise responses
+  - `1000-2000` = Standard detailed responses (default: 1000)
+  - `3000-8192` = Long, comprehensive responses (recommended for object detection: 3000+)
+  - 1 token ≈ 0.75 words in English
+
+**Example Usage:**
+```json
+{
+  "imageSource": "path/to/image.jpg",
+  "prompt": "Analyze this image",
+  "options": {
+    "temperature": 0.1,
+    "topP": 0.9,
+    "topK": 30,
+    "maxTokens": 2000
+  }
+}
+```
+
+**Recommended Settings by Use Case:**
+- **Object Detection**: `temperature: 0.0, topP: 1.0, topK: 1, maxTokens: 3000+`
+- **Technical Analysis**: `temperature: 0.1-0.3, topP: 0.7-0.9, topK: 20-40`
+- **Creative Description**: `temperature: 0.7-1.0, topP: 0.95, topK: 50+`
+- **Precise Comparison**: `temperature: 0.2-0.5, topP: 0.8-0.9, topK: 30-50`
 
 ### Environment Variables
 | Variable | Required | Description | Default |
@@ -434,10 +490,10 @@ Detects objects in an image using AI vision models and generates annotated image
 | `TOP_P_FOR_COMPARE_IMAGES` | No | Top-p for compare_images function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
 | `TOP_K_FOR_COMPARE_IMAGES` | No | Top-k for compare_images function (1–100) | Uses `TOP_K_FOR_IMAGE` |
 | `MAX_TOKENS_FOR_COMPARE_IMAGES` | No | Max tokens for compare_images function | Uses `MAX_TOKENS_FOR_IMAGE` |
-| `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Temperature for detect_objects_in_image function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
-| `TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-p for detect_objects_in_image function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
-| `TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-k for detect_objects_in_image function (1–100) | Uses `TOP_K_FOR_IMAGE` |
-| `MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Max tokens for detect_objects_in_image function | Uses `MAX_TOKENS_FOR_IMAGE` |
+| `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Temperature for detect_objects_in_image function (0.0–2.0) | `0.0` |
+| `TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-p for detect_objects_in_image function (0.0–1.0) | `0.95` |
+| `TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-k for detect_objects_in_image function (1–100) | `30` |
+| `MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Max tokens for detect_objects_in_image function | `8192` |
 | `TEMPERATURE_FOR_ANALYZE_VIDEO` | No | Temperature for analyze_video function (0.0–2.0) | Uses `TEMPERATURE_FOR_VIDEO` |
 | `TOP_P_FOR_ANALYZE_VIDEO` | No | Top-p for analyze_video function (0.0–1.0) | Uses `TOP_P_FOR_VIDEO` |
 | `TOP_K_FOR_ANALYZE_VIDEO` | No | Top-k for analyze_video function (1–100) | Uses `TOP_K_FOR_VIDEO` |

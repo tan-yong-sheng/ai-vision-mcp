@@ -45,13 +45,25 @@ export async function analyze_image(
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: config.TEMPERATURE_FOR_ANALYZE_IMAGE ?? config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
-      topP: config.TOP_P_FOR_ANALYZE_IMAGE ?? config.TOP_P_FOR_IMAGE ?? config.TOP_P,
-      topK: config.TOP_K_FOR_ANALYZE_IMAGE ?? config.TOP_K_FOR_IMAGE ?? config.TOP_K,
-      maxTokens: config.MAX_TOKENS_FOR_ANALYZE_IMAGE ?? config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
+      temperature:
+        config.TEMPERATURE_FOR_ANALYZE_IMAGE ??
+        config.TEMPERATURE_FOR_IMAGE ??
+        config.TEMPERATURE,
+      topP:
+        config.TOP_P_FOR_ANALYZE_IMAGE ??
+        config.TOP_P_FOR_IMAGE ??
+        config.TOP_P,
+      topK:
+        config.TOP_K_FOR_ANALYZE_IMAGE ??
+        config.TOP_K_FOR_IMAGE ??
+        config.TOP_K,
+      maxTokens:
+        config.MAX_TOKENS_FOR_ANALYZE_IMAGE ??
+        config.MAX_TOKENS_FOR_IMAGE ??
+        config.MAX_TOKENS,
       taskType: 'image',
       functionName: FUNCTION_NAMES.ANALYZE_IMAGE,
-      ...args.options,  // User options override defaults
+      ...args.options, // User options override defaults
     };
 
     // Analyze the image

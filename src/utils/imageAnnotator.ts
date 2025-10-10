@@ -13,10 +13,9 @@ import type { DetectedObject } from '../types/ObjectDetection.js';
 export interface AnnotationOptions {
   lineColor?: string;
   lineWidth?: number;
-  pointColor?: string;
-  pointRadius?: number;
   labelColor?: string;
   labelHeight?: number;
+  // REMOVED: pointColor and pointRadius (corner circles no longer used)
 }
 
 export class ImageAnnotator {
@@ -26,10 +25,9 @@ export class ImageAnnotator {
     this.options = {
       lineColor: options.lineColor || 'red',
       lineWidth: options.lineWidth || 3,
-      pointColor: options.pointColor || 'blue',
-      pointRadius: options.pointRadius || 4,
       labelColor: options.labelColor || 'red',
       labelHeight: options.labelHeight || 20,
+      // REMOVED: pointColor and pointRadius initialization (corner circles no longer used)
     };
   }
 
@@ -51,12 +49,18 @@ export class ImageAnnotator {
     for (let idx = 0; idx < detections.length; idx++) {
       const detection = detections[idx];
 
-      // Skip if no pixel coordinates available
-      if (!detection.box_2d_in_px) {
+      // Use normalized_box_2d coordinates (converted to pixels)
+      if (!detection.normalized_box_2d || detection.normalized_box_2d.length !== 4) {
+        console.warn(`[ImageAnnotator] Skipping detection without valid normalized_box_2d: ${detection.object}`);
         continue;
       }
 
-      const [x1, y1, x2, y2] = detection.box_2d_in_px;
+      // Convert normalized coordinates to pixels
+      const [normY1, normX1, normY2, normX2] = detection.normalized_box_2d;
+      const x1 = Math.round((normX1 / 1000) * imageWidth);   // left edge
+      const y1 = Math.round((normY1 / 1000) * imageHeight);  // top edge
+      const x2 = Math.round((normX2 / 1000) * imageWidth);   // right edge
+      const y2 = Math.round((normY2 / 1000) * imageHeight);  // bottom edge
 
       // Create rectangle overlay (bounding box)
       const rectOverlay = await this.createRectangleOverlay(
@@ -73,28 +77,8 @@ export class ImageAnnotator {
         top: 0,
       });
 
-      // Create corner points
-      const cornerPoints = [
-        { x: x1, y: y1 },
-        { x: x1, y: y2 },
-        { x: x2, y: y1 },
-        { x: x2, y: y2 },
-      ];
-
-      for (const point of cornerPoints) {
-        const cornerOverlay = await this.createCircleOverlay(
-          imageWidth,
-          imageHeight,
-          point.x,
-          point.y,
-          this.options.pointRadius
-        );
-        overlays.push({
-          input: cornerOverlay,
-          left: 0,
-          top: 0,
-        });
-      }
+      // REMOVED: Corner circles (were causing "double boxing" visual clutter)
+      // The 4 corner circles made it appear like buttons were boxed multiple times
 
       // Create text label
       const text = `${detection.object} - ${detection.label}`;
@@ -160,41 +144,7 @@ export class ImageAnnotator {
     return rectangleBuffer;
   }
 
-  /**
-   * Create a circle overlay using SVG
-   * Adapted from gemini_object_detection.js createCircleOverlay function
-   */
-  private async createCircleOverlay(
-    imageWidth: number,
-    imageHeight: number,
-    centerX: number,
-    centerY: number,
-    radius: number
-  ): Promise<Buffer> {
-    const circleBuffer = await sharp({
-      create: {
-        width: imageWidth,
-        height: imageHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      },
-    })
-      .composite([
-        {
-          input: Buffer.from(
-            `<svg width="${imageWidth}" height="${imageHeight}">
-        <circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="${this.options.pointColor}"/>
-      </svg>`
-          ),
-          left: 0,
-          top: 0,
-        },
-      ])
-      .png()
-      .toBuffer();
-
-    return circleBuffer;
-  }
+  // REMOVED: createCircleOverlay method (no longer needed since corner circles removed)
 
   /**
    * Create a text overlay using Sharp
