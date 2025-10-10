@@ -52,22 +52,6 @@ export interface DetectionWithTempFile {
     path: string;
     size_bytes: number;
     format: string;
-    cleanup_note: string;
-  };
-  image_metadata: {
-    width: number;
-    height: number;
-    original_size: number;
-  };
-  summary: string; // Human-readable summary with percentage coordinates
-}
-
-export interface DetectionWithInlineImage {
-  detections: DetectedObject[];
-  image?: {
-    data: string;
-    mimeType: string;
-    size_bytes: number;
   };
   image_metadata: {
     width: number;
@@ -80,5 +64,4 @@ export interface DetectionWithInlineImage {
 // Union type for all possible response types
 export type ObjectDetectionResponse =
   | DetectionWithFile
-  | DetectionWithTempFile
-  | DetectionWithInlineImage;
+  | DetectionWithTempFile;

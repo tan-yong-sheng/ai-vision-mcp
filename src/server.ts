@@ -299,7 +299,7 @@ server.registerTool(
   {
     title: 'Detect Objects in Image',
     description:
-      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling rule as follows: explicit filePath → exact path, large files (≥2MB) → temp directory, small files → inline base64. Uses optimized default parameters for object detection.',
+      'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling: explicit filePath → exact path, otherwise → temp directory. Uses optimized default parameters for object detection.',
     inputSchema: {
       imageSource: z
         .string()
@@ -350,7 +350,7 @@ server.registerTool(
                   detections: result.detections,
                   file: result.file,
                   image_metadata: result.image_metadata,
-                  note: 'Annotated image saved to specified path.',
+                  summary: result.summary,
                 },
                 null,
                 2
@@ -358,8 +358,8 @@ server.registerTool(
             },
           ],
         };
-      } else if ('tempFile' in result) {
-        // Case 2: Large file auto-saved to temp
+      } else {
+        // Case 2: Auto-saved to temp directory
         return {
           content: [
             {
@@ -369,41 +369,13 @@ server.registerTool(
                   detections: result.detections,
                   tempFile: result.tempFile,
                   image_metadata: result.image_metadata,
-                  note: 'Large annotated image automatically saved to temporary directory.',
+                  summary: result.summary,
                 },
                 null,
                 2
               ),
             },
           ],
-        };
-      } else {
-        // Case 3: Small image returned inline
-        const responseContent = [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                detections: result.detections,
-                image_metadata: result.image_metadata,
-                note: 'Annotated image returned inline (base64 encoded).',
-              },
-              null,
-              2
-            ),
-          },
-        ];
-
-        // Add inline image if available
-        if (result.image) {
-          responseContent.push({
-            type: 'text' as const,
-            text: `data:${result.image.mimeType};base64,${result.image.data}`,
-          });
-        }
-
-        return {
-          content: responseContent,
         };
       }
     } catch (error) {

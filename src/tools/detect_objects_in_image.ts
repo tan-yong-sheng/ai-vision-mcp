@@ -16,35 +16,42 @@ import type {
   DetectedObject,
   DetectionWithFile,
   DetectionWithTempFile,
-  DetectionWithInlineImage,
 } from '../types/ObjectDetection.js';
 import { ImageAnnotator } from '../utils/imageAnnotator.js';
 import sharp from 'sharp';
 
-// 2MB threshold for inline vs temp file
-const INLINE_THRESHOLD = 2 * 1024 * 1024; // 2MB
-
-// System instruction for object detection (provides format and requirements)
+// System instruction for object detection with web context awareness
 const DETECTION_SYSTEM_INSTRUCTION = `
-You are a precise visual detection assistant.
+You are a visual detection assistant that names detected objects based on image context.
 
-Your task is to detect all visible objects in the image and return results as a JSON array.
-For each detected object, include:
-- Output a JSON array of objects, where each entry has:
-  {
-    "object": "<short name of the detected object>",
-    "label": "<short category or descriptive label>",
-    "normalized_box_2d": [ymin, xmin, ymax, xmax],  // normalized coordinates (0-1000)
-  }
+STEP 1 - DETECT CONTEXT:
+Determine whether the image represents a webpage.
 
-Bounding box requirements:
-- Each box must tightly enclose the object's visible area without shadows, whitespace, or background.
-- Minimize box overlap when objects are clearly separated.
-- When objects physically overlap, boxes should still accurately encompass each object's visible region.
-- Ensure ymin < ymax and xmin < xmax for all bounding boxes.
+Consider it a webpage if you detect multiple web indicators such as:
+- Browser UI (tabs, address bar, navigation buttons)
+- Web-style layouts (menus, grids, form layouts)
+- HTML controls (inputs, buttons, dropdowns)
+- Web fonts or text rendering
+- Visible URL or webpage content
 
-If an object is present multiple times, label them according to unique traits (e.g., color, size, or position).
-Return only valid JSON — no code fencing, no text outside the JSON.
+STEP 2 - NAME ELEMENTS:
+- If the image appears to be a webpage → use HTML element names  
+  (e.g., button, input, a, nav, header, section, h1–h6, p, img, video)
+- Otherwise → use general object names based on visual meaning.
+
+STEP 3 - OUTPUT FORMAT:
+Return a valid JSON array (no text outside JSON) with:
+{
+  "object": "<name based on context>",
+  "label": "<short description>",
+  "normalized_box_2d": [ymin, xmin, ymax, xmax] // normalized (0-1000)
+}
+
+Bounding box rules:
+- Tightly fit visible area (exclude shadows/whitespace)
+- Avoid overlap when separable
+- Maintain ymin < ymax and xmin < xmax
+- Differentiate duplicates by traits (e.g., color, position)
 `;
 
 // Detection schema equivalent to the one in gemini_object_detection.js
@@ -113,7 +120,56 @@ const createDetectionSchema = (provider: string) => {
 export type { ObjectDetectionArgs } from '../types/ObjectDetection.js';
 
 /**
- * Generate human-readable text summary with percentage coordinates
+ * Generate CSS selector suggestions based on detected object type
+ */
+function suggestCSSSelectors(detection: DetectedObject): string[] {
+  const selectors = [];
+  const { object, label } = detection;
+
+  // HTML element-specific selectors for web contexts
+  if (object.startsWith('input[type=')) {
+    const inputType = object.match(/type="([^"]+)"/)?.[1];
+    if (inputType) {
+      selectors.push(`input[type="${inputType}"]`);
+      // Add name-based selector if label suggests a name
+      const nameHint = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      if (nameHint) {
+        selectors.push(`input[name="${nameHint}"]`);
+      }
+    }
+  } else if (object === 'button') {
+    selectors.push('button[type="submit"]');
+    if (label) {
+      selectors.push(`button:has-text("${label.replace(/\s+button$/i, '')}")`);
+    }
+  } else if (object === 'select') {
+    selectors.push('select');
+    const nameHint = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (nameHint) {
+      selectors.push(`select[name="${nameHint}"]`);
+    }
+  } else if (object === 'a') {
+    selectors.push('a');
+    if (label) {
+      selectors.push(`a:has-text("${label}")`);
+    }
+  } else if (object.startsWith('h') && /^h[1-6]$/.test(object)) {
+    selectors.push(object);
+    if (label) {
+      selectors.push(`${object}:has-text("${label}")`);
+    }
+  } else if (['nav', 'header', 'footer', 'main', 'section', 'article'].includes(object)) {
+    selectors.push(object);
+  } else {
+    // Generic fallback for non-HTML elements
+    selectors.push(object);
+  }
+
+  return selectors.slice(0, 2); // Return top 2 suggestions
+}
+
+/**
+ * Generate hybrid summary with CSS selectors and minimal coordinates
  */
 function generateDetectionSummary(
   detections: DetectedObject[],
@@ -127,15 +183,29 @@ function generateDetectionSummary(
   summary.push(`🖼️ IMAGE ANALYSIS COMPLETE\n`);
   summary.push(`📏 Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`);
   summary.push(`🤖 Detection Model: ${model} (${provider})`);
-  summary.push(`📊 Elements Found: ${detections.length} objects detected\n`);
+  summary.push(`📊 Elements Found: ${detections.length} elements detected\n`);
 
-  // Critical automation warning
-  summary.push(`⚠️  IMPORTANT FOR BROWSER AUTOMATION:`);
-  summary.push(`- All coordinates are relative to the source image size (${imageMetadata.width}×${imageMetadata.height})`);
-  summary.push(`- Use percentage coordinates for viewport-independent automation`);
-  summary.push(`- Convert percentages to pixels: (percentage / 100) × viewport_dimension\n`);
+  // Context-aware guidance based on detected elements
+  const webElements = ['button', 'input', 'select', 'textarea', 'nav', 'header', 'footer', 'main', 'section', 'article', 'a', 'form', 'label', 'fieldset'];
+  const hasWebElements = detections.some(d =>
+    webElements.some(webEl => d.object === webEl || d.object.startsWith(webEl + '['))
+  );
 
-  // Element details
+  if (hasWebElements) {
+    // Show web automation guidance for web interfaces
+    summary.push(`⚠️ FOR WEB AUTOMATION:`);
+    summary.push(`- **RECOMMENDED**: Use CSS selectors for reliable automation (primary approach)`);
+    summary.push(`- **REFERENCE ONLY**: Percentage coordinates for spatial context (secondary reference)`);
+    summary.push(`- **AVOID**: Direct coordinate-based clicking for automation`);
+    summary.push(`- **Technical Note**: Raw coordinates use normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`);
+  } else {
+    // Show general object detection guidance for non-web content
+    summary.push(`⚠️ OBJECT DETECTION RESULTS:`);
+    summary.push(`- **SPATIAL REFERENCE**: Coordinates show relative positioning within image`);
+    summary.push(`- **COORDINATE FORMAT**: normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`);
+  }
+
+  // Element details with hybrid format
   summary.push(`## 🔍 DETECTED ELEMENTS:\n`);
 
   detections.forEach((detection, index) => {
@@ -147,44 +217,36 @@ function generateDetectionSummary(
     const widthPercent = (xmax - xmin) / 10; // 13.0%
     const heightPercent = (ymax - ymin) / 10; // 4.5%
 
-    // Calculate pixel details from normalized coordinates
+    // Calculate pixel coordinates
     const pixelBox = {
       x: Math.round((xmin / 1000) * imageMetadata.width),
       y: Math.round((ymin / 1000) * imageMetadata.height),
       width: Math.round(((xmax - xmin) / 1000) * imageMetadata.width),
-      height: Math.round(((ymax - ymin) / 1000) * imageMetadata.height)
+      height: Math.round(((ymax - ymin) / 1000) * imageMetadata.height),
+      centerX: Math.round(((xmin + xmax) / 2 / 1000) * imageMetadata.width),
+      centerY: Math.round(((ymin + ymax) / 2 / 1000) * imageMetadata.height)
     };
 
+    // Element header
     summary.push(`### ${index + 1}. ${detection.object} - ${detection.label}`);
-    summary.push(`- **Position**: ${centerX.toFixed(1)}% across, ${centerY.toFixed(1)}% down from top-left`);
-    summary.push(`- **Size**: ${widthPercent.toFixed(1)}% × ${heightPercent.toFixed(1)}% of screen`);
-    summary.push(`- **Bounding Box**: Top ${(ymin/10).toFixed(1)}%, Left ${(xmin/10).toFixed(1)}%, Bottom ${(ymax/10).toFixed(1)}%, Right ${(xmax/10).toFixed(1)}%`);
-    summary.push(`- **Click Target**: (${centerX.toFixed(1)}%, ${centerY.toFixed(1)}%) → Use for automation`);
-    summary.push(`- **Pixel Details**: ${pixelBox.width}×${pixelBox.height} pixels at (${pixelBox.x}, ${pixelBox.y}) *[calculated from normalized coordinates]*\n`);
+
+    // Only show automation guidance for web elements
+    const isWebElement = webElements.some(webEl =>
+      detection.object === webEl || detection.object.startsWith(webEl + '[')
+    );
+
+    if (isWebElement) {
+      // Generate CSS selector suggestions for web elements
+      const selectors = suggestCSSSelectors(detection);
+      summary.push(`- **Automation**: ${selectors.map(s => `\`${s}\``).join(' or ')}`);
+    }
+
+    // Always show position for spatial reference
+    summary.push(`- **Position**: ${centerX.toFixed(1)}% across, ${centerY.toFixed(1)}% down (${widthPercent.toFixed(1)}% × ${heightPercent.toFixed(1)}% size)`);
+
+    // Always show pixel information
+    summary.push(`- **Pixels**: ${pixelBox.width}×${pixelBox.height} at (${pixelBox.x}, ${pixelBox.y}), center (${pixelBox.centerX}, ${pixelBox.centerY})\n`);
   });
-
-  // Automation guidance
-  summary.push(`## 🤖 AUTOMATION GUIDANCE:\n`);
-  summary.push(`**For Puppeteer/Playwright:**`);
-  summary.push(`\`\`\`javascript`);
-  if (detections.length > 0) {
-    const firstDetection = detections[0];
-    const [ymin, xmin, ymax, xmax] = firstDetection.normalized_box_2d;
-    const centerX = (xmin + xmax) / 2 / 10;
-    const centerY = (ymin + ymax) / 2 / 10;
-
-    summary.push(`// Example: Click ${firstDetection.object}`);
-    summary.push(`const viewport = page.viewport();`);
-    summary.push(`const clickX = (${centerX.toFixed(1)} / 100) * viewport.width;  // ${centerX.toFixed(1)}% across`);
-    summary.push(`const clickY = (${centerY.toFixed(1)} / 100) * viewport.height; // ${centerY.toFixed(1)}% down`);
-    summary.push(`await page.mouse.click(clickX, clickY);`);
-  } else {
-    summary.push(`// Convert percentage coordinates to viewport pixels:`);
-    summary.push(`const clickX = (percentageX / 100) * page.viewport().width;`);
-    summary.push(`const clickY = (percentageY / 100) * page.viewport().height;`);
-    summary.push(`await page.mouse.click(clickX, clickY);`);
-  }
-  summary.push(`\`\`\``);
 
   return summary.join('\n');
 }
@@ -481,7 +543,7 @@ export async function detect_objects_in_image(
       `[detect_objects_in_image] Generated text summary (${summary.length} characters)`
     );
 
-    // 3-step workflow for image file handling
+    // 2-step workflow for image file handling
     if (args.outputFilePath) {
       // Step 1: Explicit outputFilePath provided → Save to exact path
       await annotator.saveToExplicitPath(
@@ -508,14 +570,14 @@ export async function detect_objects_in_image(
       };
 
       return response;
-    } else if (annotatedImageSize >= INLINE_THRESHOLD) {
-      // Step 2: Large file (≥2MB) → Auto-save to temp directory
+    } else {
+      // Step 2: No explicit path → Auto-save to temp directory (all files)
       const tempPath = await annotator.saveToTempFile(
         annotatedImageBuffer,
         outputFormat
       );
       console.log(
-        `[detect_objects_in_image] Large image saved to temp: ${tempPath}`
+        `[detect_objects_in_image] Image saved to temp: ${tempPath}`
       );
 
       const response: DetectionWithTempFile = {
@@ -524,33 +586,6 @@ export async function detect_objects_in_image(
           path: tempPath,
           size_bytes: annotatedImageSize,
           format: outputFormat,
-          cleanup_note:
-            'This is a temporary file that may be cleaned up automatically.',
-        },
-        image_metadata: {
-          width: imageWidth,
-          height: imageHeight,
-          original_size: originalImageBuffer.length,
-        },
-        summary: summary,
-      };
-
-      return response;
-    } else {
-      // Step 3: Small file (<2MB) → Return inline base64
-      const base64Image = annotatedImageBuffer.toString('base64');
-      const mimeType = `image/${outputFormat}`;
-
-      console.log(
-        `[detect_objects_in_image] Returning inline image (${annotatedImageSize} bytes)`
-      );
-
-      const response: DetectionWithInlineImage = {
-        detections: processedDetections,
-        image: {
-          data: base64Image,
-          mimeType: mimeType,
-          size_bytes: annotatedImageSize,
         },
         image_metadata: {
           width: imageWidth,
