@@ -133,7 +133,10 @@ function suggestCSSSelectors(detection: DetectedObject): string[] {
     if (inputType) {
       selectors.push(`input[type="${inputType}"]`);
       // Add name-based selector if label suggests a name
-      const nameHint = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      const nameHint = label
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
       if (nameHint) {
         selectors.push(`input[name="${nameHint}"]`);
       }
@@ -145,7 +148,10 @@ function suggestCSSSelectors(detection: DetectedObject): string[] {
     }
   } else if (object === 'select') {
     selectors.push('select');
-    const nameHint = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const nameHint = label
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
     if (nameHint) {
       selectors.push(`select[name="${nameHint}"]`);
     }
@@ -159,7 +165,9 @@ function suggestCSSSelectors(detection: DetectedObject): string[] {
     if (label) {
       selectors.push(`${object}:has-text("${label}")`);
     }
-  } else if (['nav', 'header', 'footer', 'main', 'section', 'article'].includes(object)) {
+  } else if (
+    ['nav', 'header', 'footer', 'main', 'section', 'article'].includes(object)
+  ) {
     selectors.push(object);
   } else {
     // Generic fallback for non-HTML elements
@@ -174,7 +182,12 @@ function suggestCSSSelectors(detection: DetectedObject): string[] {
  */
 function generateDetectionSummary(
   detections: DetectedObject[],
-  imageMetadata: { width: number; height: number; size_bytes: number; format: string },
+  imageMetadata: {
+    width: number;
+    height: number;
+    size_bytes: number;
+    format: string;
+  },
   model: string,
   provider: string
 ): string {
@@ -182,28 +195,59 @@ function generateDetectionSummary(
 
   // Header with image context
   summary.push(`🖼️ IMAGE ANALYSIS COMPLETE\n`);
-  summary.push(`📏 Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`);
+  summary.push(
+    `📏 Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`
+  );
   summary.push(`🤖 Detection Model: ${model} (${provider})`);
   summary.push(`📊 Elements Found: ${detections.length} elements detected\n`);
 
   // Context-aware guidance based on detected elements
-  const webElements = ['button', 'input', 'select', 'textarea', 'nav', 'header', 'footer', 'main', 'section', 'article', 'a', 'form', 'label', 'fieldset'];
+  const webElements = [
+    'button',
+    'input',
+    'select',
+    'textarea',
+    'nav',
+    'header',
+    'footer',
+    'main',
+    'section',
+    'article',
+    'a',
+    'form',
+    'label',
+    'fieldset',
+  ];
   const hasWebElements = detections.some(d =>
-    webElements.some(webEl => d.object === webEl || d.object.startsWith(webEl + '['))
+    webElements.some(
+      webEl => d.object === webEl || d.object.startsWith(webEl + '[')
+    )
   );
 
   if (hasWebElements) {
     // Show web automation guidance for web interfaces
     summary.push(`⚠️ FOR WEB AUTOMATION:`);
-    summary.push(`- **RECOMMENDED**: Use CSS selectors for reliable automation (primary approach)`);
-    summary.push(`- **REFERENCE ONLY**: Percentage coordinates for spatial context (secondary reference)`);
-    summary.push(`- **AVOID**: Direct coordinate-based clicking for automation`);
-    summary.push(`- **Technical Note**: Raw coordinates use normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`);
+    summary.push(
+      `- **RECOMMENDED**: Use CSS selectors for reliable automation (primary approach)`
+    );
+    summary.push(
+      `- **REFERENCE ONLY**: Percentage coordinates for spatial context (secondary reference)`
+    );
+    summary.push(
+      `- **AVOID**: Direct coordinate-based clicking for automation`
+    );
+    summary.push(
+      `- **Technical Note**: Raw coordinates use normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`
+    );
   } else {
     // Show general object detection guidance for non-web content
     summary.push(`⚠️ OBJECT DETECTION RESULTS:`);
-    summary.push(`- **SPATIAL REFERENCE**: Coordinates show relative positioning within image`);
-    summary.push(`- **COORDINATE FORMAT**: normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`);
+    summary.push(
+      `- **SPATIAL REFERENCE**: Coordinates show relative positioning within image`
+    );
+    summary.push(
+      `- **COORDINATE FORMAT**: normalized_box_2d format [ymin, xmin, ymax, xmax] on 0-1000 scale\n`
+    );
   }
 
   // Element details with hybrid format
@@ -213,8 +257,8 @@ function generateDetectionSummary(
     const [ymin, xmin, ymax, xmax] = detection.normalized_box_2d;
 
     // Convert normalized to percentage (0-1000 → 0-100)
-    const centerX = (xmin + xmax) / 2 / 10;  // 78.5%
-    const centerY = (ymin + ymax) / 2 / 10;  // 26.7%
+    const centerX = (xmin + xmax) / 2 / 10; // 78.5%
+    const centerY = (ymin + ymax) / 2 / 10; // 26.7%
     const widthPercent = (xmax - xmin) / 10; // 13.0%
     const heightPercent = (ymax - ymin) / 10; // 4.5%
 
@@ -225,28 +269,35 @@ function generateDetectionSummary(
       width: Math.round(((xmax - xmin) / 1000) * imageMetadata.width),
       height: Math.round(((ymax - ymin) / 1000) * imageMetadata.height),
       centerX: Math.round(((xmin + xmax) / 2 / 1000) * imageMetadata.width),
-      centerY: Math.round(((ymin + ymax) / 2 / 1000) * imageMetadata.height)
+      centerY: Math.round(((ymin + ymax) / 2 / 1000) * imageMetadata.height),
     };
 
     // Element header
     summary.push(`### ${index + 1}. ${detection.object} - ${detection.label}`);
 
     // Only show automation guidance for web elements
-    const isWebElement = webElements.some(webEl =>
-      detection.object === webEl || detection.object.startsWith(webEl + '[')
+    const isWebElement = webElements.some(
+      webEl =>
+        detection.object === webEl || detection.object.startsWith(webEl + '[')
     );
 
     if (isWebElement) {
       // Generate CSS selector suggestions for web elements
       const selectors = suggestCSSSelectors(detection);
-      summary.push(`- **Automation**: ${selectors.map(s => `\`${s}\``).join(' or ')}`);
+      summary.push(
+        `- **Automation**: ${selectors.map(s => `\`${s}\``).join(' or ')}`
+      );
     }
 
     // Always show position for spatial reference
-    summary.push(`- **Position**: ${centerX.toFixed(1)}% across, ${centerY.toFixed(1)}% down (${widthPercent.toFixed(1)}% × ${heightPercent.toFixed(1)}% size)`);
+    summary.push(
+      `- **Position**: ${centerX.toFixed(1)}% across, ${centerY.toFixed(1)}% down (${widthPercent.toFixed(1)}% × ${heightPercent.toFixed(1)}% size)`
+    );
 
     // Always show pixel information
-    summary.push(`- **Pixels**: ${pixelBox.width}×${pixelBox.height} at (${pixelBox.x}, ${pixelBox.y}), center (${pixelBox.centerX}, ${pixelBox.centerY})\n`);
+    summary.push(
+      `- **Pixels**: ${pixelBox.width}×${pixelBox.height} at (${pixelBox.x}, ${pixelBox.y}), center (${pixelBox.centerX}, ${pixelBox.centerY})\n`
+    );
   });
 
   return summary.join('\n');
@@ -431,7 +482,8 @@ export async function detect_objects_in_image(
           const lastCompleteObjectIndex = cleanedText.lastIndexOf('},');
           if (lastCompleteObjectIndex > 0) {
             // Truncate at the last complete object and close the array
-            fixedText = cleanedText.substring(0, lastCompleteObjectIndex + 1) + '\n]';
+            fixedText =
+              cleanedText.substring(0, lastCompleteObjectIndex + 1) + '\n]';
             console.log(
               `[detect_objects_in_image] Fixed text ends with: "${fixedText.slice(-100)}"`
             );
@@ -492,8 +544,14 @@ export async function detect_objects_in_image(
         const [normY1, normX1, normY2, normX2] = detection.normalized_box_2d;
 
         // Validate coordinate ranges (should be 0-1000)
-        if (normY1 < 0 || normX1 < 0 || normY2 > 1000 || normX2 > 1000 ||
-            normY1 >= normY2 || normX1 >= normX2) {
+        if (
+          normY1 < 0 ||
+          normX1 < 0 ||
+          normY2 > 1000 ||
+          normX2 > 1000 ||
+          normY1 >= normY2 ||
+          normX1 >= normX2
+        ) {
           console.warn(
             `[detect_objects_in_image] Skipping detection with invalid coordinate ranges: ${detection.object} [${normY1}, ${normX1}, ${normY2}, ${normX2}]`
           );
@@ -531,7 +589,7 @@ export async function detect_objects_in_image(
       width: imageWidth,
       height: imageHeight,
       size_bytes: originalImageBuffer.length,
-      format: outputFormat
+      format: outputFormat,
     };
     const summary = generateDetectionSummary(
       processedDetections,
@@ -590,9 +648,7 @@ export async function detect_objects_in_image(
         annotatedImageBuffer,
         outputFormat
       );
-      console.log(
-        `[detect_objects_in_image] Image saved to temp: ${tempPath}`
-      );
+      console.log(`[detect_objects_in_image] Image saved to temp: ${tempPath}`);
 
       const response: DetectionWithTempFile = {
         detections: processedDetections,

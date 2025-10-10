@@ -51,11 +51,15 @@ export class VertexAIProvider extends BaseVisionProvider {
     // Add authentication if credentials are provided
     if (config.credentials) {
       clientConfig.googleAuthOptions = {
-        keyFile: config.credentials
+        keyFile: config.credentials,
       };
-      console.log(`[VertexAI Provider] Using service account credentials: ${config.credentials}`);
+      console.log(
+        `[VertexAI Provider] Using service account credentials: ${config.credentials}`
+      );
     } else {
-      console.warn('[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)');
+      console.warn(
+        '[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)'
+      );
     }
 
     this.client = new GoogleGenAI(clientConfig);
@@ -73,7 +77,10 @@ export class VertexAIProvider extends BaseVisionProvider {
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
-      const model = this.resolveModelForFunction('image', options?.functionName);
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
@@ -162,7 +169,10 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Add the prompt as the last part
       imageParts.push({ text: prompt });
 
-      const model = this.resolveModelForFunction('image', options?.functionName);
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
@@ -243,7 +253,10 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
       }
 
-      const model = this.resolveModelForFunction('video', options?.functionName);
+      const model = this.resolveModelForFunction(
+        'video',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
@@ -546,7 +559,9 @@ export class VertexAIProvider extends BaseVisionProvider {
     console.log(`  - Project ID: ${this.config.projectId}`);
     console.log(`  - Location: ${this.config.location}`);
     console.log(`  - Endpoint: ${this.config.endpoint}`);
-    console.log(`  - Authentication: ${this.config.credentials ? 'Service Account' : 'Application Default Credentials'}`);
+    console.log(
+      `  - Authentication: ${this.config.credentials ? 'Service Account' : 'Application Default Credentials'}`
+    );
     console.log(`  - Image Model URL: ${imageModelUrl}`);
     console.log(`  - Video Model URL: ${videoModelUrl}`);
   }

@@ -50,17 +50,22 @@ export class ImageAnnotator {
       const detection = detections[idx];
 
       // Use normalized_box_2d coordinates (converted to pixels)
-      if (!detection.normalized_box_2d || detection.normalized_box_2d.length !== 4) {
-        console.warn(`[ImageAnnotator] Skipping detection without valid normalized_box_2d: ${detection.object}`);
+      if (
+        !detection.normalized_box_2d ||
+        detection.normalized_box_2d.length !== 4
+      ) {
+        console.warn(
+          `[ImageAnnotator] Skipping detection without valid normalized_box_2d: ${detection.object}`
+        );
         continue;
       }
 
       // Convert normalized coordinates to pixels
       const [normY1, normX1, normY2, normX2] = detection.normalized_box_2d;
-      const x1 = Math.round((normX1 / 1000) * imageWidth);   // left edge
-      const y1 = Math.round((normY1 / 1000) * imageHeight);  // top edge
-      const x2 = Math.round((normX2 / 1000) * imageWidth);   // right edge
-      const y2 = Math.round((normY2 / 1000) * imageHeight);  // bottom edge
+      const x1 = Math.round((normX1 / 1000) * imageWidth); // left edge
+      const y1 = Math.round((normY1 / 1000) * imageHeight); // top edge
+      const x2 = Math.round((normX2 / 1000) * imageWidth); // right edge
+      const y2 = Math.round((normY2 / 1000) * imageHeight); // bottom edge
 
       // Create rectangle overlay (bounding box)
       const rectOverlay = await this.createRectangleOverlay(

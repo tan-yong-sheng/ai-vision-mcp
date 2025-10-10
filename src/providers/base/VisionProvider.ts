@@ -443,7 +443,10 @@ export abstract class BaseVisionProvider implements VisionProvider {
   protected getThinkingBudgetForModel(model: string): number | undefined {
     // Only apply thinking budget to specific Gemini model variants
     // This works for both direct Gemini API and Vertex AI when using Gemini models
-    if (model.includes('gemini-2.5-flash-lite') || model.includes('gemini-2.5-flash')) {
+    if (
+      model.includes('gemini-2.5-flash-lite') ||
+      model.includes('gemini-2.5-flash')
+    ) {
       // For flash models, use minimal thinking budget for faster response
       return 0;
     } else if (model.includes('gemini-2.5-pro')) {

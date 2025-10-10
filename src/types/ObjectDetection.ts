@@ -80,6 +80,4 @@ export interface DetectionWithTempFile {
 }
 
 // Union type for all possible response types
-export type ObjectDetectionResponse =
-  | DetectionWithFile
-  | DetectionWithTempFile;
+export type ObjectDetectionResponse = DetectionWithFile | DetectionWithTempFile;
