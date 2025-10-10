@@ -48,3 +48,8 @@ coverage-integration/
 # Temporary files
 *.tmp
 *.temp
+
+# mcp-related
+mcp-publisher.exe
+.mcpregistry_github_token
+.mcpregistry_registry_token
