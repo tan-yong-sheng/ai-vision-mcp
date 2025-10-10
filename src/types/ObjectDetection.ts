@@ -30,6 +30,22 @@ export interface ObjectDetectionArgs {
   options?: AnalysisOptions; // Optional API configuration parameters
 }
 
+// Enhanced metadata interface for object detection responses
+export interface ObjectDetectionMetadata {
+  model: string; // "gemini-2.5-flash-lite"
+  provider: string; // "google" | "vertex_ai"
+  usage?: {
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+  };
+  processingTime: number; // milliseconds
+  fileType?: string; // "image/png"
+  fileSize?: number; // bytes
+  modelVersion?: string; // "gemini-2.5-flash-lite"
+  responseId?: string; // "abc123..."
+}
+
 // MCP response types for different output scenarios
 export interface DetectionWithFile {
   detections: DetectedObject[];
@@ -44,6 +60,7 @@ export interface DetectionWithFile {
     original_size: number;
   };
   summary: string; // Human-readable summary with percentage coordinates
+  metadata: ObjectDetectionMetadata; // Enhanced metadata
 }
 
 export interface DetectionWithTempFile {
@@ -59,6 +76,7 @@ export interface DetectionWithTempFile {
     original_size: number;
   };
   summary: string; // Human-readable summary with percentage coordinates
+  metadata: ObjectDetectionMetadata; // Enhanced metadata
 }
 
 // Union type for all possible response types

@@ -195,7 +195,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -205,7 +205,9 @@ export class GeminiProvider extends BaseVisionProvider {
           : undefined,
         processingDuration + analysisDuration,
         content.fileData?.mimeType || content.inlineData?.mimeType,
-        fileSize
+        fileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
@@ -358,7 +360,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -368,7 +370,9 @@ export class GeminiProvider extends BaseVisionProvider {
           : undefined,
         totalProcessingDuration + analysisDuration,
         'image/multiple',
-        totalFileSize
+        totalFileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image comparison');
@@ -478,7 +482,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.videoModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -487,7 +491,10 @@ export class GeminiProvider extends BaseVisionProvider {
             }
           : undefined,
         uploadDuration + analysisDuration,
-        content.fileData?.mimeType
+        content.fileData?.mimeType,
+        undefined, // fileSize not available for video
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'video analysis');

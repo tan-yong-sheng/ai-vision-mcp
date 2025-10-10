@@ -86,7 +86,9 @@ export abstract class BaseVisionProvider implements VisionProvider {
     },
     processingTime?: number,
     fileType?: string,
-    fileSize?: number
+    fileSize?: number,
+    modelVersion?: string,
+    responseId?: string
   ): AnalysisResult {
     return {
       text,
@@ -97,6 +99,8 @@ export abstract class BaseVisionProvider implements VisionProvider {
         processingTime,
         fileType,
         fileSize,
+        modelVersion,
+        responseId,
       },
     };
   }

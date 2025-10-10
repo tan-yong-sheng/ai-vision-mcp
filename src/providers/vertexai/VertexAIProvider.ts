@@ -63,10 +63,12 @@ export class VertexAIProvider extends BaseVisionProvider {
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
+      const model = this.resolveModelForFunction('image', options?.functionName);
+
       const { result: response, duration } = await this.measureAsync(
         async () => {
           return await this.client.models.generateContent({
-            model: this.resolveModelForFunction('image', options?.functionName),
+            model,
             contents: [
               {
                 role: 'user',
@@ -95,7 +97,7 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -108,7 +110,9 @@ export class VertexAIProvider extends BaseVisionProvider {
           : undefined,
         duration,
         mimeType,
-        imageData.length
+        imageData.length,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
@@ -148,10 +152,12 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Add the prompt as the last part
       imageParts.push({ text: prompt });
 
+      const model = this.resolveModelForFunction('image', options?.functionName);
+
       const { result: response, duration } = await this.measureAsync(
         async () => {
           return await this.client.models.generateContent({
-            model: this.resolveModelForFunction('image', options?.functionName),
+            model,
             contents: [
               {
                 role: 'user',
@@ -172,7 +178,7 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -185,7 +191,9 @@ export class VertexAIProvider extends BaseVisionProvider {
           : undefined,
         duration,
         'image/multiple',
-        totalFileSize
+        totalFileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image comparison');
@@ -225,10 +233,12 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
       }
 
+      const model = this.resolveModelForFunction('video', options?.functionName);
+
       const { result: response, duration } = await this.measureAsync(
         async () => {
           return await this.client.models.generateContent({
-            model: this.resolveModelForFunction('video', options?.functionName),
+            model,
             contents: [
               {
                 role: 'user',
@@ -257,7 +267,7 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.videoModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -269,7 +279,10 @@ export class VertexAIProvider extends BaseVisionProvider {
             }
           : undefined,
         duration,
-        'video/mp4'
+        'video/mp4',
+        undefined, // fileSize not available for video
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'video analysis');

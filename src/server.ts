@@ -351,6 +351,7 @@ server.registerTool(
                   file: result.file,
                   image_metadata: result.image_metadata,
                   summary: result.summary,
+                  metadata: result.metadata,
                 },
                 null,
                 2
@@ -370,6 +371,7 @@ server.registerTool(
                   tempFile: result.tempFile,
                   image_metadata: result.image_metadata,
                   summary: result.summary,
+                  metadata: result.metadata,
                 },
                 null,
                 2

@@ -16,6 +16,7 @@ import type {
   DetectedObject,
   DetectionWithFile,
   DetectionWithTempFile,
+  ObjectDetectionMetadata,
 } from '../types/ObjectDetection.js';
 import { ImageAnnotator } from '../utils/imageAnnotator.js';
 import sharp from 'sharp';
@@ -304,11 +305,11 @@ export async function detect_objects_in_image(
     }
 
     // Get image dimensions using Sharp
-    const metadata = await sharp(originalImageBuffer).metadata();
+    const sharpMetadata = await sharp(originalImageBuffer).metadata();
     // eslint-disable-next-line prefer-const
-    imageWidth = metadata.width || 0;
+    imageWidth = sharpMetadata.width || 0;
     // eslint-disable-next-line prefer-const
-    imageHeight = metadata.height || 0;
+    imageHeight = sharpMetadata.height || 0;
 
     if (imageWidth === 0 || imageHeight === 0) {
       throw new VisionError(
@@ -519,7 +520,7 @@ export async function detect_objects_in_image(
 
     const annotatedImageSize = annotatedImageBuffer.length;
     // Determine output format from original image
-    const outputFormat = metadata.format || 'png';
+    const outputFormat = sharpMetadata.format || 'png';
 
     console.log(
       `[detect_objects_in_image] Annotated image size: ${annotatedImageSize} bytes`
@@ -542,6 +543,18 @@ export async function detect_objects_in_image(
     console.log(
       `[detect_objects_in_image] Generated text summary (${summary.length} characters)`
     );
+
+    // Create enhanced metadata from result
+    const detectionMetadata: ObjectDetectionMetadata = {
+      model: result.metadata?.model || 'unknown',
+      provider: result.metadata?.provider || config.IMAGE_PROVIDER,
+      usage: result.metadata?.usage,
+      processingTime: result.metadata?.processingTime || 0,
+      fileType: 'image/' + outputFormat,
+      fileSize: originalImageBuffer.length,
+      modelVersion: result.metadata?.modelVersion,
+      responseId: result.metadata?.responseId,
+    };
 
     // 2-step workflow for image file handling
     if (args.outputFilePath) {
@@ -567,6 +580,7 @@ export async function detect_objects_in_image(
           original_size: originalImageBuffer.length,
         },
         summary: summary,
+        metadata: detectionMetadata,
       };
 
       return response;
@@ -593,6 +607,7 @@ export async function detect_objects_in_image(
           original_size: originalImageBuffer.length,
         },
         summary: summary,
+        metadata: detectionMetadata,
       };
 
       return response;

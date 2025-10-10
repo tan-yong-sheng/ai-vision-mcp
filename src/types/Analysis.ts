@@ -32,6 +32,8 @@ export interface AnalysisMetadata {
   processingTime?: number;
   fileType?: string;
   fileSize?: number;
+  modelVersion?: string; // "gemini-2.5-flash-lite"
+  responseId?: string; // "abc123..."
 }
 
 export interface UsageMetadata {
