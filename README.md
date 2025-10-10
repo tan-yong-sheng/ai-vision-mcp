@@ -319,13 +319,11 @@ export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JS
 
 **File Handling Logic:**
 1. **Explicit outputFilePath provided** → Saves to the exact path specified
-2. **Large files (≥2MB)** → Automatically saves to temporary directory
-3. **Small files (<2MB)** → Returns inline as base64 encoded data
+2. **If not explicit outputFilePath** → Automatically saves to temporary directory
 
 **Response Types:**
 - Returns `file` object when explicit outputFilePath is provided
-- Returns `tempFile` object when large files are auto-saved to temp
-- Returns `image` object with base64 data for small files
+- Returns `tempFile` object when explicit outputFilePath is not provided so the image file output is auto-saved to temporary folder
 - Always includes `detections` array with detected objects and coordinates
 - Includes `summary` with percentage-based coordinates for browser automation
 

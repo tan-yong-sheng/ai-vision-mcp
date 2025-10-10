@@ -273,8 +273,8 @@ The `detect_objects_in_image` tool includes specialized logic that doesn't belon
 - Draw bounding box annotations using Sharp (lines 328-334)
 - Handle 3-step file output logic:
   * Explicit outputFilePath → save to exact path (lines 345-366)
-  * Large files (≥2MB) → auto-save to temp (lines 367-393)
-  * Small files (<2MB) → return inline base64 (lines 394-418)
+  * If not explicit outputFilePath → auto-save to temp (lines 367-393)
+
 ```
 
 **5. Extensibility Through Composition**
