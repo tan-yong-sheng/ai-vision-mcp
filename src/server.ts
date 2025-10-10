@@ -196,7 +196,7 @@ server.registerTool(
         ),
       prompt: z
         .string()
-        .describe('The prompt describing how you want to compare the images.'),
+        .describe('The prompt describing how you want to compare the images. If the task involves **front-end or UI consistency**, specify what aspects to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, or visual hierarchy differences. It is especially important to compare shared sections like the **navbar**, **header**, **footer**, and **main content areas** to detect layout shifts or inconsistent component styles. For **other use cases**, describe the intended comparison goal — for example, detecting visual differences, content changes, design variations, or quality degradation.'),
       options: z
         .object({
           temperature: z
