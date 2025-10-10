@@ -8,7 +8,7 @@ Task to do:
 
 4. Detect the dress wear: https://ichef.bbci.co.uk/images/ic/480xn/p0529h01.jpg
 
-5. Detect all buttons in this webpage: C:\Users\tys\Downloads\export\static\output\annotated_output.png
+5. Detect all buttons in this webpage: "C:\Users\tys\Downloads\export\static\input\tanyongsheng_screenshot.png"
 
 6. what this video is about: https://www.youtube.com/watch?v=9hE5-98ZeCg
 

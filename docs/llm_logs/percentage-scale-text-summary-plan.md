@@ -208,7 +208,6 @@ If the hybrid approach proves successful, consider:
 - **Smart Selector Intelligence**: AI-powered CSS selector suggestions based on visual analysis and common patterns
 - **Accessibility Integration**: Include ARIA attributes and accessibility hints in selector recommendations
 - **Framework-Specific Guidance**: Tailored selector recommendations for different testing frameworks (Playwright, Puppeteer, Cypress)
-- **Element Confidence Scoring**: Visual reliability indicators for automation targets
 
 ## Implementation Timeline
 

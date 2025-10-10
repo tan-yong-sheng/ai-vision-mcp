@@ -37,7 +37,7 @@ Consider it a webpage if you detect multiple web indicators such as:
 
 STEP 2 - NAME ELEMENTS:
 - If the image appears to be a webpage → use HTML element names  
-  (e.g., button, input, a, nav, header, section, h1–h6, p, img, video)
+  (e.g., button, input, a, nav, header, section, h1-h6, p, img, video)
 - Otherwise → use general object names based on visual meaning.
 
 STEP 3 - OUTPUT FORMAT:

@@ -19,7 +19,7 @@ A powerful Model Context Protocol (MCP) server that provides AI-powered image an
 
 You could choose either to use [`google` provider](https://aistudio.google.com/welcome) or [`vertex_ai` provider](https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart). For simplicity, `google` provider is recommended.
 
-Below are the environment variables required to set, depending to the provider you have selected.
+Below are the environment variables you need to set based on your selected provider. (Note: It’s recommended to set the timeout configuration to more than 5 minutes for your MCP client).
 
 (i) **Using Google AI Studio Provider**
 
@@ -297,42 +297,7 @@ Compares multiple images using AI and returns a detailed comparison analysis.
 }
 ```
 
-
-### 3) `analyze_video`
-
-Analyzes a video using AI and returns a detailed description.
-
-**Parameters:**
-- `videoSource` (string): YouTube URL, GCS URI, or local file path to the video
-- `prompt` (string): Question or instruction for the AI
-- `options` (object, optional): Analysis options including temperature and max tokens
-
-**Supported video sources:**
-- YouTube URLs (e.g., `https://www.youtube.com/watch?v=...`)
-- Local file paths (e.g., `C:\Users\username\Downloads\video.mp4`)
-
-**Examples:**
-
-1. **Analyze video from YouTube URL:**
-```json
-{
-  "videoSource": "https://www.youtube.com/watch?v=9hE5-98ZeCg",
-  "prompt": "What is this video about? Describe what you see in detail."
-}
-```
-
-2. **Analyze local video file:**
-```json
-{
-  "videoSource": "C:\\Users\\username\\Downloads\\video.mp4",
-  "prompt": "What is this video about? Describe what you see in detail."
-}
-```
-
-**Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
-
-
-### 4) `detect_objects_in_image`
+### 3) `detect_objects_in_image`
 
 Detects objects in an image using AI vision models and generates annotated images with bounding boxes. Returns detected objects with coordinates and either saves the annotated image to a file, temporary directory, or returns it inline (base64 encoded) depending on size.
 
@@ -390,55 +355,40 @@ export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JS
 }
 ```
 
-### Analysis Options
 
-Most analysis functions (`analyze_image`, `compare_images`, `analyze_video`) support the following optional parameters in the `options` object:
+### 4) `analyze_video`
 
-**Note:** `detect_objects_in_image` uses optimized defaults and is configured via environment variables only.
+Analyzes a video using AI and returns a detailed description.
 
-- **`temperature`** (number, 0.0–2.0): Controls response creativity and randomness
-  - `0.0` = Deterministic, consistent responses (recommended for object detection)
-  - `0.1-0.3` = Precise, focused responses (good for technical analysis)
-  - `0.7-1.0` = Balanced creativity and accuracy (default: 0.8)
-  - `1.5-2.0` = Highly creative, varied responses (experimental use)
+**Parameters:**
+- `videoSource` (string): YouTube URL, GCS URI, or local file path to the video
+- `prompt` (string): Question or instruction for the AI
+- `options` (object, optional): Analysis options including temperature and max tokens
 
-- **`topP`** (number, 0.0–1.0): Controls response diversity via nucleus sampling
-  - `0.1-0.3` = Very focused, predictable responses
-  - `0.5-0.7` = Moderately focused responses
-  - `0.9-1.0` = More diverse, creative responses (default: 0.95)
-  - Lower values = more focused; Higher values = more diverse
+**Supported video sources:**
+- YouTube URLs (e.g., `https://www.youtube.com/watch?v=...`)
+- Local file paths (e.g., `C:\Users\username\Downloads\video.mp4`)
 
-- **`topK`** (number, 1–100): Limits vocabulary to top K most likely tokens
-  - `1-5` = Very limited vocabulary, highly focused
-  - `10-30` = Balanced vocabulary selection (default: 30)
-  - `50-100` = Broader vocabulary, more creative
-  - Lower values = more focused; Higher values = more creative
+**Examples:**
 
-- **`maxTokens`** (number, 1–8192): Maximum response length in tokens
-  - `100-500` = Short, concise responses
-  - `1000-2000` = Standard detailed responses (default: 1000)
-  - `3000-8192` = Long, comprehensive responses (recommended for object detection: 3000+)
-  - 1 token ≈ 0.75 words in English
-
-**Example Usage:**
+1. **Analyze video from YouTube URL:**
 ```json
 {
-  "imageSource": "path/to/image.jpg",
-  "prompt": "Analyze this image",
-  "options": {
-    "temperature": 0.1,
-    "topP": 0.9,
-    "topK": 30,
-    "maxTokens": 2000
-  }
+  "videoSource": "https://www.youtube.com/watch?v=9hE5-98ZeCg",
+  "prompt": "What is this video about? Describe what you see in detail."
 }
 ```
 
-**Recommended Settings by Use Case:**
-- **Object Detection**: `temperature: 0.0, topP: 1.0, topK: 1, maxTokens: 3000+`
-- **Technical Analysis**: `temperature: 0.1-0.3, topP: 0.7-0.9, topK: 20-40`
-- **Creative Description**: `temperature: 0.7-1.0, topP: 0.95, topK: 50+`
-- **Precise Comparison**: `temperature: 0.2-0.5, topP: 0.8-0.9, topK: 30-50`
+2. **Analyze local video file:**
+```json
+{
+  "videoSource": "C:\\Users\\username\\Downloads\\video.mp4",
+  "prompt": "What is this video about? Describe what you see in detail."
+}
+```
+
+**Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
+
 
 ### Environment Variables
 | Variable | Required | Description | Default |
