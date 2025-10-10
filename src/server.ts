@@ -81,7 +81,7 @@ server.registerTool(
       prompt: z
         .string()
         .describe(
-          'The prompt describing what you want to know about the image. If the task is **front-end code replication**, the prompt you provide must be: "Describe in detail the layout structure, color style, main components, and interactive elements of the website in this image to facilitate subsequent code generation by the model." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to analyze, extract, or understand from the image.'
+          'The prompt describing how you want to compare the images. If the task is **front-end or UI comparison**, the prompt you provide must be: "Compare the given screenshots and describe differences in layout structure, component arrangement, color scheme, typography, and visual hierarchy. Pay attention to common sections such as the navbar, header, footer, and main content areas to identify style or layout inconsistencies." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to compare, identify, or analyze between the images.'
         ),
       options: z
         .object({
@@ -190,13 +190,12 @@ server.registerTool(
       imageSources: z
         .array(z.string())
         .min(2)
-        .max(4)
         .describe(
-          'Array of image sources (URLs, base64 data, or file paths) - minimum 2, maximum 4 images'
+          'Array of image sources (URLs, base64 data, or file paths) - minimum 2 images. Maximum determined by MAX_IMAGES_FOR_COMPARISON environment variable (default: 4)'
         ),
       prompt: z
         .string()
-        .describe('The prompt describing how you want to compare the images. If the task involves **front-end or UI consistency**, specify what aspects to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, or visual hierarchy differences. It is especially important to compare shared sections like the **navbar**, **header**, **footer**, and **main content areas** to detect layout shifts or inconsistent component styles. For **other use cases**, describe the intended comparison goal — for example, detecting visual differences, content changes, design variations, or quality degradation.'),
+        .describe('The prompt describing how you want to compare the images. If the task is **front-end or UI consistency**, the prompt you provide must specify what to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, and visual hierarchy. Pay special attention to shared sections like the **navbar**, **header**, **footer**, and **main content areas** to identify layout shifts or inconsistent styles between versions. \ For **other tasks**, the prompt you provide must clearly describe what aspects to compare or analyze — such as visual differences, content changes, design variations, or quality degradation.'),
       options: z
         .object({
           temperature: z
@@ -235,14 +234,36 @@ server.registerTool(
   },
   async ({ imageSources, prompt, options }) => {
     try {
+      // Initialize services on-demand to get config
+      const { config, imageProvider, imageFileService } = getServices();
+
+      // Dynamic validation using config
+      const maxImages = config.MAX_IMAGES_FOR_COMPARISON || 4;
+      if (imageSources.length > maxImages) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  error: true,
+                  message: `Maximum ${maxImages} images allowed for comparison, received ${imageSources.length}. Configure MAX_IMAGES_FOR_COMPARISON environment variable to change this limit.`,
+                  tool: 'compare_images',
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const validatedArgs = {
         imageSources,
         prompt,
         options,
       };
-
-      // Initialize services on-demand
-      const { config, imageProvider, imageFileService } = getServices();
 
       const result = await compare_images(
         validatedArgs,
