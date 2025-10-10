@@ -4,12 +4,14 @@ Task to do:
 
 2. what this image is about: "C:\Users\tys\Downloads\rqo6ns_1024x1024.jpg"
 
-3. compare the images: https://img.freepik.com/free-photo/beautiful-girl-stands-park_8353-5084.jpg?semt=ais_hybrid&w=740&q=80 and https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500
+3. compare the images: "C:\Users\tys\Downloads\rqo6ns_1024x1024.jpg" and https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500
 
-4. Detect the dress wear: https://ichef.bbci.co.uk/images/ic/480xn/p0529h01.jpg
+4. compare the images: https://img.freepik.com/free-photo/beautiful-girl-stands-park_8353-5084.jpg?semt=ais_hybrid&w=740&q=80 and https://images.pexels.com/photos/1391498/pexels-photo-1391498.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500
 
-5. Detect all buttons in this webpage: "C:\Users\tys\Downloads\export\static\input\tanyongsheng_screenshot.png"
+5. Detect the dress wear: https://ichef.bbci.co.uk/images/ic/480xn/p0529h01.jpg
 
-6. what this video is about: https://www.youtube.com/watch?v=9hE5-98ZeCg
+6. Detect all buttons in this webpage: "C:\Users\tys\Downloads\export\static\input\tanyongsheng_screenshot.png"
 
-7. what this video is about: "C:\Users\tys\Downloads\test.mp4"
+7. what this video is about: https://www.youtube.com/watch?v=9hE5-98ZeCg
+
+8. what this video is about: "C:\Users\tys\Downloads\test.mp4"

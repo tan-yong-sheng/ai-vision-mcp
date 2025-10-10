@@ -137,7 +137,7 @@ The server implements a sophisticated 4-level configuration priority system:
 - Structured output schemas for object detection
 
 **Tool-specific behaviors:**
-- `detect_objects_in_image`: Returns annotated images with bounding boxes, 3-step file handling (explicit path → temp file → inline base64), uses structured JSON output with coordinates
+- `detect_objects_in_image`: Returns annotated images with bounding boxes, 3-step file handling (explicit path → temp file), uses structured JSON output with coordinates
 - `compare_images`: Supports 2-4 images with mixed source types, batch processing optimization
 - `analyze_image`: Special prompt handling for frontend code replication tasks, intelligent file processing based on size
 - `analyze_video`: YouTube URL and local file support, GCS integration for Vertex AI, duration and size validation

@@ -299,7 +299,7 @@ Compares multiple images using AI and returns a detailed comparison analysis.
 
 ### 3) `detect_objects_in_image`
 
-Detects objects in an image using AI vision models and generates annotated images with bounding boxes. Returns detected objects with coordinates and either saves the annotated image to a file, temporary directory, or returns it inline (base64 encoded) depending on size.
+Detects objects in an image using AI vision models and generates annotated images with bounding boxes. Returns detected objects with coordinates and either saves the annotated image to a file or temporary directory.
 
 **Parameters:**
 - `imageSource` (string): URL, base64 data, or file path to the image
