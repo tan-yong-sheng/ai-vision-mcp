@@ -10,7 +10,6 @@
 - add MAX_TOKENS, TOP_P, TOP_K, TEMPERATURE configurable as environment variable for each function
 - add MAX_TOKENS, since above set the standard for TOP_P, TOP_K, TEMPERATURE...
 - add ANALYZE_IMAGE_MODEL, COMPARE_IMAGES_MODEL , ANALYZE_VIDEO_MODEL environment variable...
-- actually could we use @google/genai in vertex ai library so that we can add native support for VERTEX_ENDPOINT to be switched to another proxy provider
 
 **URGENT**
 - ..

@@ -309,12 +309,12 @@ Detects objects in an image using AI vision models and generates annotated image
 **Configuration:**
 This function uses optimized default parameters for object detection and does not accept runtime `options` parameter. To customize the AI parameters (temperature, topP, topK, maxTokens), use environment variables:
 
-```bash
-# Recommended settings for object detection (these are now the defaults)
-export TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0     # Deterministic responses
-export TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE=0.95          # Nucleus sampling
-export TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE=30            # Vocabulary selection
-export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JSON
+```
+# Recommended environment variable settings for object detection (these are now the defaults)
+TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0     # Deterministic responses
+TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE=0.95          # Nucleus sampling
+TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE=30            # Vocabulary selection
+MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JSON
 ```
 
 **File Handling Logic:**
@@ -388,137 +388,75 @@ Analyzes a video using AI and returns a detailed description.
 **Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
 
 
-### Environment Variables
-| Variable | Required | Description | Default |
-|-----------|-----------|-------------|---------|
-| **Provider Selection** ||||
-| `IMAGE_PROVIDER` | Yes | Provider for image analysis | `google`,`vertex_ai` |
-| `VIDEO_PROVIDER` | Yes | Provider for video analysis | `google`,`vertex_ai` |
-| **Model Selection** ||||
-| `IMAGE_MODEL` | No | Model for image analysis | `gemini-2.5-flash-lite` |
-| `VIDEO_MODEL` | No | Model for video analysis | `gemini-2.5-flash` |
-| **Function-specific Model Selection** ||||
-| `ANALYZE_IMAGE_MODEL` | No | Model for analyze_image function | Uses `IMAGE_MODEL` |
-| `COMPARE_IMAGES_MODEL` | No | Model for compare_images function | Uses `IMAGE_MODEL` |
-| `DETECT_OBJECTS_IN_IMAGE_MODEL` | No | Model for detect_objects_in_image function | Uses `IMAGE_MODEL` |
-| `ANALYZE_VIDEO_MODEL` | No | Model for analyze_video function | Uses `VIDEO_MODEL` |
-| **Google Gemini API** ||||
-| `GEMINI_API_KEY` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `google` | Google Gemini API key | Required for Gemini |
-| `GEMINI_BASE_URL` | No | Gemini API base URL | `https://generativelanguage.googleapis.com` |
-| **Vertex AI** ||||
-| `VERTEX_CREDENTIALS` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | Path to GCP service account JSON | Required for Vertex AI |
-| `VERTEX_PROJECT_ID` | Auto | Google Cloud project ID | Auto-derived from credentials |
-| `VERTEX_LOCATION` | No | Vertex AI region | `us-central1` |
-| `VERTEX_ENDPOINT` | No | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
-| **Google Cloud Storage (Vertex AI)** ||||
-| `GCS_BUCKET_NAME` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | GCS bucket name for Vertex AI uploads | Required for Vertex AI |
-| `GCS_CREDENTIALS` | No | Path to GCS credentials | Defaults to `VERTEX_CREDENTIALS` |
-| `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
-| `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
-| **API Configuration** ||||
-| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.8` |
-| `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
-| `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
-| `MAX_TOKENS` | No | Maximum tokens for analysis (1–8192) | `1000` |
-| **Task-type level Configuration** |||||
-| `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
-| `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
-| `TOP_K_FOR_IMAGE` | No | Image-specific top-k (1–100) | Uses `TOP_K` |
-| `TEMPERATURE_FOR_VIDEO` | No | Video-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
-| `TOP_P_FOR_VIDEO` | No | Video-specific top-p (0.0–1.0) | Uses `TOP_P` |
-| `TOP_K_FOR_VIDEO` | No | Video-specific top-k (1–100) | Uses `TOP_K` |
-| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKENS` |
-| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKENS` |
-| **Function-specific Configuration** |||||
-| `TEMPERATURE_FOR_ANALYZE_IMAGE` | No | Temperature for analyze_image function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
-| `TOP_P_FOR_ANALYZE_IMAGE` | No | Top-p for analyze_image function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
-| `TOP_K_FOR_ANALYZE_IMAGE` | No | Top-k for analyze_image function (1–100) | Uses `TOP_K_FOR_IMAGE` |
-| `MAX_TOKENS_FOR_ANALYZE_IMAGE` | No | Max tokens for analyze_image function | Uses `MAX_TOKENS_FOR_IMAGE` |
-| `TEMPERATURE_FOR_COMPARE_IMAGES` | No | Temperature for compare_images function (0.0–2.0) | Uses `TEMPERATURE_FOR_IMAGE` |
-| `TOP_P_FOR_COMPARE_IMAGES` | No | Top-p for compare_images function (0.0–1.0) | Uses `TOP_P_FOR_IMAGE` |
-| `TOP_K_FOR_COMPARE_IMAGES` | No | Top-k for compare_images function (1–100) | Uses `TOP_K_FOR_IMAGE` |
-| `MAX_TOKENS_FOR_COMPARE_IMAGES` | No | Max tokens for compare_images function | Uses `MAX_TOKENS_FOR_IMAGE` |
-| `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Temperature for detect_objects_in_image function (0.0–2.0) | `0.0` |
-| `TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-p for detect_objects_in_image function (0.0–1.0) | `0.95` |
-| `TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Top-k for detect_objects_in_image function (1–100) | `30` |
-| `MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE` | No | Max tokens for detect_objects_in_image function | `8192` |
-| `TEMPERATURE_FOR_ANALYZE_VIDEO` | No | Temperature for analyze_video function (0.0–2.0) | Uses `TEMPERATURE_FOR_VIDEO` |
-| `TOP_P_FOR_ANALYZE_VIDEO` | No | Top-p for analyze_video function (0.0–1.0) | Uses `TOP_P_FOR_VIDEO` |
-| `TOP_K_FOR_ANALYZE_VIDEO` | No | Top-k for analyze_video function (1–100) | Uses `TOP_K_FOR_VIDEO` |
-| `MAX_TOKENS_FOR_ANALYZE_VIDEO` | No | Max tokens for analyze_video function | Uses `MAX_TOKENS_FOR_VIDEO` |
-| **File Processing** ||||
-| `MAX_IMAGE_SIZE` | No | Maximum image size in bytes | `20971520` (20 MB) |
-| `MAX_VIDEO_SIZE` | No | Maximum video size in bytes | `2147483648` (2 GB) |
-| `MAX_VIDEO_DURATION` | No | Maximum video duration (seconds) | `3600` (1 hour) |
-| `MAX_IMAGES_FOR_COMPARISON` | No | Maximum number of images for comparison, used by compare_images() mcp function | `4` |
-| `ALLOWED_IMAGE_FORMATS` | No | Comma-separated image formats | `png,jpg,jpeg,webp,gif,bmp,tiff` |
-| `ALLOWED_VIDEO_FORMATS` | No | Comma-separated video formats | `mp4,mov,avi,mkv,webm,flv,wmv,3gp` |
-| **Development** ||||
-| `LOG_LEVEL` | No | Logging level | `info` |
-| `NODE_ENV` | No | Environment mode | `development` |
-| `GEMINI_FILES_API_THRESHOLD` | No | Size threshold for Gemini Files API (bytes) | `10485760` (10 MB) |
-| `VERTEX_AI_FILES_API_THRESHOLD` | No | Size threshold for Vertex AI uploads (bytes) | `0` |
+## Environment Configuration
 
+For basic setup, you only need to configure the provider selection and required credentials:
 
-<details>
-<summary>More on Environment Variable Logic (Optional to learn) </summary>
-
-The MCP server uses a four-level configuration priority system for AI parameters (highest to lowest):
-
-1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
-2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
-3. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-4. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
-5. **System defaults** - Built-in fallback values
-
-For model selection, the server uses a three-level hierarchy (highest to lowest):
-
-1. **Function-specific models** - `ANALYZE_IMAGE_MODEL`, `COMPARE_IMAGES_MODEL`, `ANALYZE_VIDEO_MODEL`
-2. **Task-specific models** - `IMAGE_MODEL`, `VIDEO_MODEL`
-3. **System defaults** - Built-in fallback models (`gemini-2.5-flash-lite`, `gemini-2.5-flash`)
-
-**Example Usage:**
+### Google AI Studio Provider (Recommended)
 ```bash
-# AI Parameters configuration
-TEMPERATURE=0.3
-MAX_TOKENS=600
-
-# Task-specific overrides
-TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
-MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
-
-# Function-specific overrides
-TEMPERATURE_FOR_ANALYZE_IMAGE=0.05     # Very precise for single image analysis
-TEMPERATURE_FOR_COMPARE_IMAGES=0.2     # More creative for comparisons
-MAX_TOKENS_FOR_COMPARE_IMAGES=1500      # Longer responses for image comparisons
-TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0   # Deterministic for object detection
-MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192   # Higher token limit for structured output
-TEMPERATURE_FOR_ANALYZE_VIDEO=0.1      # Precise video analysis
-
-# Model selection configuration
-ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"          # Fast, cost-effective for single image analysis
-COMPARE_IMAGES_MODEL="gemini-2.5-flash-lite"
-DETECT_OBJECTS_IN_IMAGE_MODEL="gemini-2.5-flash-lite"  # Structured output capable model
-ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"           # Most capable for video analysis
-
-# Task-specific models (existing pattern still works)
-IMAGE_MODEL="gemini-2.5-flash"
-VIDEO_MODEL="gemini-2.5-flash-pro"
-
-# Resolution order for analyze_image:
-# 1. ANALYZE_IMAGE_MODEL
-# 2. IMAGE_MODEL
-# 3. System default ("gemini-2.5-flash-lite")
-
-# Resolution order for detect_objects_in_image:
-# 1. DETECT_OBJECTS_IN_IMAGE_MODEL
-# 2. IMAGE_MODEL
-# 3. System default ("gemini-2.5-flash-lite")
-
-# LLM can still override at runtime via tool parameters
+export IMAGE_PROVIDER="google"
+export VIDEO_PROVIDER="google"
+export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
-This allows you to set sensible defaults while maintaining granular control per task type and per function, with a clean and maintainable 3-level hierarchy.
+### Vertex AI Provider (Production)
+```bash
+export IMAGE_PROVIDER="vertex_ai"
+export VIDEO_PROVIDER="vertex_ai"
+export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export GCS_BUCKET_NAME="your-gcs-bucket"
+```
+
+### 📖 **Detailed Configuration Guide**
+
+For comprehensive environment variable documentation, including:
+- Complete configuration reference (60+ environment variables)
+- Function-specific optimization examples
+- Advanced configuration patterns
+- Troubleshooting guidance
+
+👉 **[See Environment Variable Guide](docs/environment-variable-guide.md)**
+
+### Configuration Priority Overview
+
+The server uses a hierarchical configuration system where more specific settings override general ones:
+
+1. **LLM-assigned values** (runtime parameters in tool calls)
+2. **Function-specific variables** (`TEMPERATURE_FOR_ANALYZE_IMAGE`, etc.)
+3. **Task-specific variables** (`TEMPERATURE_FOR_IMAGE`, etc.)
+4. **Universal variables** (`TEMPERATURE`, etc.)
+5. **System defaults**
+
+<details>
+<summary><strong>Quick Configuration Examples</strong></summary>
+
+**Basic Optimization:**
+```bash
+# General settings
+export TEMPERATURE=0.7
+export MAX_TOKENS=1500
+
+# Task-specific optimization
+export TEMPERATURE_FOR_IMAGE=0.2     # More precise for images
+export TEMPERATURE_FOR_VIDEO=0.5     # More creative for videos
+```
+
+**Function-specific Optimization:**
+```bash
+# Optimize individual functions
+export TEMPERATURE_FOR_ANALYZE_IMAGE=0.1
+export TEMPERATURE_FOR_COMPARE_IMAGES=0.3
+export TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0  # Deterministic
+export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192   # High token limit
+```
+
+**Model Selection:**
+```bash
+# Choose models per function
+export ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"
+export COMPARE_IMAGES_MODEL="gemini-2.5-flash"
+export ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"
+```
 </details>
 
 ## Development

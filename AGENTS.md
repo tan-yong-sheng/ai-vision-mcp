@@ -103,11 +103,12 @@ The server implements a sophisticated 4-level configuration priority system:
 4. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
 
 **Provider Factory** (`src/providers/factory/ProviderFactory.ts`):
-- Factory pattern for creating AI provider instances with validation
+- Factory pattern for creating AI provider instances with validation (`VisionProviderFactory`)
 - Supports two providers: `google` (Gemini API) and `vertex_ai` (Vertex AI)
-- Automatic provider detection from model names
-- Configuration validation before provider creation
-- Dynamic provider registration support
+- `createProviderWithValidation()` method ensures configuration validation before provider creation
+- Automatic provider initialization via `initializeDefaultProviders()` on module load
+- Configuration requirement validation and error handling with provider context
+- Dynamic provider registration support through `registerProvider()` method
 
 **Configuration Service** (`src/services/ConfigService.ts`):
 - Singleton pattern for configuration management via `ConfigService.getInstance()`
@@ -122,10 +123,12 @@ The server implements a sophisticated 4-level configuration priority system:
 - These files must stay synchronized - any new config field in Config.ts requires corresponding validation rules in validation.ts
 
 **Key Services**:
-- `FileService` - Handles file uploads, validation, and processing with support for URLs, local files, and base64
-- `ConfigService` - Manages environment variables and settings
-- Vision providers in `src/providers/` - AI model implementations
-- Storage strategies in `src/storage/` and `src/file-upload/` - File handling
+- `FileService` - Handles file uploads, validation, and processing with support for URLs, local files, and base64, includes cross-platform path handling
+- `ConfigService` - Singleton pattern for environment variables and settings with validation
+- Vision providers in `src/providers/` - AI model implementations with consistent interfaces
+- Storage strategies in `src/storage/` - Google Cloud Storage integration
+- File upload strategies in `src/file-upload/` - Provider-specific upload handling
+- Image annotation utilities in `src/utils/` - Sharp-based image processing for object detection
 
 ### MCP Tools Implementation
 
@@ -137,9 +140,9 @@ The server implements a sophisticated 4-level configuration priority system:
 - Structured output schemas for object detection
 
 **Tool-specific behaviors:**
-- `detect_objects_in_image`: Returns annotated images with bounding boxes, 3-step file handling (explicit path → temp file), uses structured JSON output with coordinates
+- `detect_objects_in_image`: Returns annotated images with bounding boxes, 2-step file handling (explicit path → temp file), uses structured JSON output with coordinates, includes CSS selector suggestions for web elements
 - `compare_images`: Supports 2-4 images with mixed source types, batch processing optimization
-- `analyze_image`: Special prompt handling for frontend code replication tasks, intelligent file processing based on size
+- `analyze_image`: Special prompt handling for frontend UI comparison tasks, intelligent file processing based on size
 - `analyze_video`: YouTube URL and local file support, GCS integration for Vertex AI, duration and size validation
 
 ### Provider Implementation
@@ -147,14 +150,15 @@ The server implements a sophisticated 4-level configuration priority system:
 **Gemini Provider** (`src/providers/gemini/`):
 - Direct Google Gemini API integration using `@google/genai`
 - Files API for larger uploads (>10MB via `GEMINI_FILES_API_THRESHOLD`)
-- Base64 encoding for smaller files
-- Structured output support for object detection
+- Base64 encoding for smaller files (inline data)
+- Structured output support for object detection with response schemas
+- Native support for both `google` and `vertex_ai` providers using same SDK
 
 **Vertex AI Provider** (`src/providers/vertexai/`):
-- Google Cloud Vertex AI integration
+- Google Cloud Vertex AI integration using `@google/genai` SDK
 - Requires GCS bucket for all file uploads (configured via `VERTEX_AI_FILES_API_THRESHOLD`)
 - Service account authentication with auto project ID extraction
-- Streaming support considerations
+- Uses same underlying SDK as Gemini provider for consistency
 
 ### File Processing Flow
 

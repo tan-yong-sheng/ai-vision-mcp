@@ -6,10 +6,11 @@ Vision MCP server that provides AI-powered image and video analysis using Google
 
 ### 1.1 Current Implementation
 
-- **Provider**: Google Gemini for both image and video analysis
-- **Storage**: Google Cloud storage
-- **Architecture**: Modular design for future provider expansion
-- **Protocol**: Stateless MCP implementation
+- **Providers**: Google Gemini and Vertex AI with `@google/genai` SDK
+- **Storage**: Google Cloud Storage integration (required for Vertex AI, optional for Gemini)
+- **Architecture**: Modular design with factory pattern for provider expansion
+- **Protocol**: Stateless MCP implementation with 4 primary tools
+- **File Processing**: Cross-platform support (Windows/Unix) with intelligent upload strategies
 
 ### 1.2 Future Expansion
 
@@ -19,96 +20,53 @@ Architecture supports easy addition of new providers through:
 
 ## 2. Environment Variables Configuration
 
-### 2.1 Required Configuration
+### 2.1 Environment Variables
 
+For comprehensive environment variable documentation, including:
+
+- **Complete Configuration Reference**: 60+ environment variables with descriptions and defaults
+- **Configuration Priority System**: 4-level hierarchy for AI parameters and 3-level for model selection
+- **Quick Setup Examples**: Basic, production, and function-specific configurations
+- **Advanced Optimization**: Performance tuning and cost optimization strategies
+- **Troubleshooting Guide**: Common issues and solutions
+
+👉 **[See Environment Variable Guide](environment-variable-guide.md)**
+
+### 2.2 Quick Setup Reference
+
+For basic configuration, see the essential variables below:
+
+**Required Configuration:**
 ```bash
-#===============================================
-# PROVIDER SELECTION
-#===============================================
+# Provider selection
 IMAGE_PROVIDER=google|vertex_ai
 VIDEO_PROVIDER=google|vertex_ai
 
-#===============================================
-# GEMINI API CONFIGURATION (AI Studio)
-#===============================================
+# Google AI Studio (if using google provider)
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 
-#===============================================
-# VERTEX AI CONFIGURATION
-#===============================================
+# Vertex AI (if using vertex_ai provider)
 VERTEX_CREDENTIALS=path/to/service-account.json
-VERTEX_PROJECT_ID=your-gcp-project-id  # Optional: Auto-derived from credentials
-VERTEX_LOCATION=us-central1
-VERTEX_ENDPOINT=https://aiplatform.googleapis.com
-
-#===============================================
-# GOOGLE CLOUD STORAGE CONFIGURATION (Required for Vertex AI)
-#===============================================
 GCS_BUCKET_NAME=your-vision-files-bucket
-# The following are optional and auto-derived from VERTEX_CREDENTIALS:
-# GCS_PROJECT_ID - Auto-derived from VERTEX_CREDENTIALS
-# GCS_CREDENTIALS - Defaults to VERTEX_CREDENTIALS
-# GCS_REGION - Defaults to VERTEX_LOCATION
 ```
 
-### 2.2 Optional Configuration
-
+**Key Optional Variables:**
 ```bash
-#===============================================
-# UNIVERSAL API PARAMETERS
-#===============================================
+# AI parameters (hierarchical configuration)
 TEMPERATURE=0.8
-TOP_P=0.95
-TOP_K=30
 MAX_TOKENS=1000
 
-#===============================================
-# TASK-SPECIFIC API PARAMETERS (Optional)
-#===============================================
-# Image-specific parameters (override universal settings)
-TEMPERATURE_FOR_IMAGE=0.8
-TOP_P_FOR_IMAGE=0.95
-TOP_K_FOR_IMAGE=30
-MAX_TOKENS_FOR_IMAGE=500
+# Task-specific overrides
+TEMPERATURE_FOR_IMAGE=0.2
+TEMPERATURE_FOR_VIDEO=0.5
 
-# Video-specific parameters (override universal settings)
-TEMPERATURE_FOR_VIDEO=0.8
-TOP_P_FOR_VIDEO=0.95
-TOP_K_FOR_VIDEO=30
-MAX_TOKENS_FOR_VIDEO=2000
+# Function-specific overrides
+TEMPERATURE_FOR_ANALYZE_IMAGE=0.1
+TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0
 
-#===============================================
-# FILE PROCESSING CONFIGURATION
-#===============================================
-MAX_IMAGE_SIZE=20MB
-MAX_VIDEO_SIZE=2GB
-ALLOWED_IMAGE_FORMATS=png,jpg,jpeg,webp,gif,bmp,tiff
-ALLOWED_VIDEO_FORMATS=mp4,mov,avi,mkv,webm,flv,wmv,3gp
-MAX_VIDEO_DURATION=3600  # seconds (1 hour)
-MAX_IMAGES_FOR_COMPARISON=4  # maximum images per comparison
-
-#===============================================
-# FILE UPLOAD CONFIGURATION
-#===============================================
-# File upload thresholds (files larger than this will use storage)
-GEMINI_FILES_API_THRESHOLD=10MB
-VERTEX_AI_FILES_API_THRESHOLD=0  # Vertex AI requires Google Cloud Storage for all files
-
-# NOTE: File upload strategy is automatically determined by provider:
-# - Google AI Studio: Uses inlineData for images, Files API for large files/videos
-# - Vertex AI: Uses Google Cloud Storage with gs:// URIs for all files
-# - Credentials are automatically shared between Vertex AI and GCS
-
-#===============================================
-# LOGGING CONFIGURATION
-#===============================================
-LOG_LEVEL=info|debug|warn|error
-
-#===============================================
-# DEVELOPMENT CONFIGURATION
-#===============================================
-NODE_ENV=development|production
+# Model selection
+IMAGE_MODEL=gemini-2.5-flash-lite
+VIDEO_MODEL=gemini-2.5-flash
 ```
 
 ### 2.3 Parameter Priority Resolution
@@ -268,12 +226,14 @@ The `detect_objects_in_image` tool includes specialized logic that doesn't belon
 
 ```typescript
 // Tool layer responsibilities (src/tools/detect_objects_in_image.ts):
-- Parse and validate JSON detection results (lines 221-269)
-- Convert normalized coordinates (0-1000) to pixel coordinates (lines 276-325)
-- Draw bounding box annotations using Sharp (lines 328-334)
-- Handle 3-step file output logic:
-  * Explicit outputFilePath → save to exact path (lines 345-366)
-  * If not explicit outputFilePath → auto-save to temp (lines 367-393)
+- Parse and validate JSON detection results with robust error handling
+- Convert normalized coordinates (0-1000) to pixel coordinates
+- Draw bounding box annotations using Sharp library
+- Handle 2-step file output logic:
+  * Explicit outputFilePath → save to exact path
+  * If not explicit outputFilePath → auto-save to temp or skip on permission error
+- Generate CSS selector suggestions for detected web elements
+- Create hybrid summary with coordinates and automation guidance
 
 ```
 
@@ -424,24 +384,69 @@ await provider.analyzeImage(imageSource, prompt, options);
 ### 3.6 Provider Factory
 
 ```typescript
-class ProviderFactory {
+export class VisionProviderFactory {
   private static providers = new Map<string, () => VisionProvider>();
 
+  /**
+   * Register a new provider with the factory
+   */
   static registerProvider(name: string, factory: () => VisionProvider): void {
     this.providers.set(name, factory);
   }
 
-  static createProvider(config: Config, type: 'image' | 'video'): VisionProvider {
-    const providerName = config[`${type.toUpperCase()}_PROVIDER`] || 'google';
-    const factory = this.providers.get(providerName);
+  /**
+   * Create provider with configuration validation
+   */
+  static createProviderWithValidation(
+    config: Config,
+    type: 'image' | 'video'
+  ): VisionProvider {
+    const providerName = (config as any)[`${type.toUpperCase()}_PROVIDER`] || 'google';
 
+    // Validate configuration before creating provider
+    this.validateProviderConfig(config, providerName);
+
+    // Create the provider through factory
+    const factory = this.providers.get(providerName);
     if (!factory) {
-      throw new Error(`Unsupported provider: ${providerName}`);
+      throw new ConfigurationError(`Unsupported provider: ${providerName}`);
     }
 
-    const provider = factory();
-    provider.setModel(config.IMAGE_MODEL, config.VIDEO_MODEL);
-    return provider;
+    try {
+      const provider = factory();
+
+      // Set default models if not configured
+      const defaultModels = this.getDefaultModels(providerName);
+      provider.setModel(
+        config.IMAGE_MODEL || defaultModels.image,
+        config.VIDEO_MODEL || defaultModels.video
+      );
+
+      return provider;
+    } catch (error) {
+      throw new ProviderError(
+        `Failed to create ${providerName} provider: ${error instanceof Error ? error.message : String(error)}`,
+        providerName,
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  /**
+   * Validate provider configuration
+   */
+  static validateProviderConfig(config: Config, providerName: string): void {
+    const requirements = this.getProviderConfigRequirements(providerName);
+    const missing = requirements.filter(req => {
+      const value = config[req as keyof Config];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+
+    if (missing.length > 0) {
+      throw new ConfigurationError(
+        `Missing required configuration for ${providerName}: ${missing.join(', ')}`
+      );
+    }
   }
 ```
 
