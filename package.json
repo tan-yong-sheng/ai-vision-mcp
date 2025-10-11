@@ -1,6 +1,6 @@
 {
   "name": "ai-vision-mcp",
-  "version": "0.0.4-beta",
+  "version": "0.0.5",
   "description": "Vision MCP server that provides AI-powered image and video analysis using Google Gemini and Vertex AI",
   "main": "dist/index.js",
   "type": "module",
@@ -16,7 +16,6 @@
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags",
-    "validate-server": "ajv validate -s https://registry.modelcontextprotocol.org/schemas/server-schema.json -d server.json",
     "publish-registry": "mcp-publisher publish",
     "publish-registry:dry-run": "mcp-publisher publish --dry-run"
   },
@@ -60,7 +59,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-        "@types/glob": "^8.1.0",
+    "@types/glob": "^8.1.0",
     "@types/html-to-text": "^9.0.4",
     "@types/http-cache-semantics": "^4.0.4",
     "@types/long": "^4.0.2",
@@ -71,7 +70,6 @@
     "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "ajv-cli": "^5.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.4",

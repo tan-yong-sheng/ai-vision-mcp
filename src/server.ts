@@ -19,7 +19,7 @@ import { VisionError } from './types/Errors.js';
 // Create MCP server
 const server = new McpServer({
   name: 'ai-vision-mcp',
-  version: '0.0.4',
+  version: '0.0.5',
 });
 
 // Helper function to initialize services (lazy loading)
