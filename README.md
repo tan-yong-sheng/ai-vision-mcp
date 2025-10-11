@@ -112,13 +112,13 @@ claude mcp add ai-vision-mcp \
 ```
 
 
-Note: Increase the MCP tool timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
+Note: Increase the MCP startup timeout to 1 minutes and MCP tool execution timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
 
 ```json
 {
   "env": {
-    "MCP_TIMEOUT": "20000", // Give the MCP server 20s to start.
-    "MCP_TOOL_TIMEOUT": "300000" // Allow each tool calls before timeout.
+    "MCP_TIMEOUT": "60000",
+    "MCP_TOOL_TIMEOUT": "300000"
   }
 }
 ```
