@@ -44,6 +44,7 @@ export interface ObjectDetectionMetadata {
   fileSize?: number; // bytes
   modelVersion?: string; // "gemini-2.5-flash-lite"
   responseId?: string; // "abc123..."
+  fileSaveStatus?: 'saved' | 'skipped_due_to_permissions'; // File save status
 }
 
 // MCP response types for different output scenarios
@@ -79,5 +80,16 @@ export interface DetectionWithTempFile {
   metadata: ObjectDetectionMetadata; // Enhanced metadata
 }
 
+export interface DetectionOnly {
+  detections: DetectedObject[];
+  image_metadata: {
+    width: number;
+    height: number;
+    original_size: number;
+  };
+  summary: string; // Human-readable summary with percentage coordinates
+  metadata: ObjectDetectionMetadata; // Enhanced metadata
+}
+
 // Union type for all possible response types
-export type ObjectDetectionResponse = DetectionWithFile | DetectionWithTempFile;
+export type ObjectDetectionResponse = DetectionWithFile | DetectionWithTempFile | DetectionOnly;

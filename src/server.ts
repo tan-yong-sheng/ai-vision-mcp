@@ -380,7 +380,7 @@ server.registerTool(
             },
           ],
         };
-      } else {
+      } else if ('tempFile' in result) {
         // Case 2: Auto-saved to temp directory
         return {
           content: [
@@ -390,6 +390,25 @@ server.registerTool(
                 {
                   detections: result.detections,
                   tempFile: result.tempFile,
+                  image_metadata: result.image_metadata,
+                  summary: result.summary,
+                  metadata: result.metadata,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } else {
+        // Case 3: File saving skipped due to permission error
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  detections: result.detections,
                   image_metadata: result.image_metadata,
                   summary: result.summary,
                   metadata: result.metadata,

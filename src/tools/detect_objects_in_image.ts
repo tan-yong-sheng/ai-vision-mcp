@@ -16,6 +16,7 @@ import type {
   DetectedObject,
   DetectionWithFile,
   DetectionWithTempFile,
+  DetectionOnly,
   ObjectDetectionMetadata,
 } from '../types/ObjectDetection.js';
 import { ImageAnnotator } from '../utils/imageAnnotator.js';
@@ -612,6 +613,7 @@ export async function detect_objects_in_image(
       fileSize: originalImageBuffer.length,
       modelVersion: result.metadata?.modelVersion,
       responseId: result.metadata?.responseId,
+      fileSaveStatus: 'saved', // Default, will be overridden if file save fails
     };
 
     // 2-step workflow for image file handling
@@ -643,30 +645,51 @@ export async function detect_objects_in_image(
 
       return response;
     } else {
-      // Step 2: No explicit path → Auto-save to temp directory (all files)
-      const tempPath = await annotator.saveToTempFile(
+      // Step 2: No explicit path → Try temp file, skip on permission error
+      const saveResult = await annotator.saveToTempFileOrSkip(
         annotatedImageBuffer,
         outputFormat
       );
-      console.log(`[detect_objects_in_image] Image saved to temp: ${tempPath}`);
 
-      const response: DetectionWithTempFile = {
-        detections: processedDetections,
-        tempFile: {
-          path: tempPath,
-          size_bytes: annotatedImageSize,
-          format: outputFormat,
-        },
-        image_metadata: {
-          width: imageWidth,
-          height: imageHeight,
-          original_size: originalImageBuffer.length,
-        },
-        summary: summary,
-        metadata: detectionMetadata,
-      };
+      if (saveResult.method === 'temp_file') {
+        // Success: Return temp file response
+        console.log(`[detect_objects_in_image] Image saved to temp: ${saveResult.path}`);
 
-      return response;
+        const response: DetectionWithTempFile = {
+          detections: processedDetections,
+          tempFile: {
+            path: saveResult.path,
+            size_bytes: annotatedImageSize,
+            format: outputFormat,
+          },
+          image_metadata: {
+            width: imageWidth,
+            height: imageHeight,
+            original_size: originalImageBuffer.length,
+          },
+          summary: summary,
+          metadata: detectionMetadata,
+        };
+        return response;
+      } else {
+        // Permission error: Return detection data only with updated metadata
+        console.warn(`[detect_objects_in_image] Returning detection results without file output due to permission error.`);
+
+        const response: DetectionOnly = {
+          detections: processedDetections,
+          image_metadata: {
+            width: imageWidth,
+            height: imageHeight,
+            original_size: originalImageBuffer.length,
+          },
+          summary: summary,
+          metadata: {
+            ...detectionMetadata,
+            fileSaveStatus: 'skipped_due_to_permissions',
+          },
+        };
+        return response;
+      }
     }
   } catch (error) {
     console.error('Error in detect_objects_in_image tool:', error);

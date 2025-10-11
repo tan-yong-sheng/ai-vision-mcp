@@ -49,7 +49,7 @@ coverage-integration/
 *.tmp
 *.temp
 
-# mcp-related
+# mcp-related configuration
 mcp-publisher.exe
 .mcpregistry_github_token
 .mcpregistry_registry_token

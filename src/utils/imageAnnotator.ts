@@ -224,6 +224,28 @@ export class ImageAnnotator {
   }
 
   /**
+   * Save buffer to temp file, or gracefully skip if permission denied
+   */
+  async saveToTempFileOrSkip(
+    buffer: Buffer,
+    extension: string = 'png'
+  ): Promise<{ path: string; method: 'temp_file' } | { method: 'skipped' }> {
+    try {
+      const tempDir = os.tmpdir();
+      const randomId = crypto.randomBytes(8).toString('hex');
+      const filename = `ai-vision-mcp-${randomId}.${extension}`;
+      const tempPath = path.join(tempDir, filename);
+
+      await fs.writeFile(tempPath, buffer);
+      return { path: tempPath, method: 'temp_file' };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(`[ImageAnnotator] Skipped temp file creation due to permission error: ${errorMessage}. Detection results will be returned without file output.`);
+      return { method: 'skipped' };
+    }
+  }
+
+  /**
    * Save buffer to explicit path, ensuring directory exists
    */
   async saveToExplicitPath(filePath: string, buffer: Buffer): Promise<void> {
