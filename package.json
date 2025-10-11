@@ -1,6 +1,6 @@
 {
   "name": "ai-vision-mcp",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Vision MCP server that provides AI-powered image and video analysis using Google Gemini and Vertex AI",
   "main": "dist/index.js",
   "type": "module",
