@@ -29,7 +29,7 @@
     "vertex-ai",
     "google-ai"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Tan Yong Sheng <tys203831@gmail.com>",
   "license": "MIT",
   "bin": {
     "ai-vision-mcp": "dist/index.js"
@@ -48,7 +48,6 @@
   },
   "homepage": "https://github.com/tan-yong-sheng/ai-vision-mcp#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.901.0",
     "@google-cloud/storage": "^7.17.1",
     "@google/genai": "^1.24.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
