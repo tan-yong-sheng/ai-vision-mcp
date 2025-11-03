@@ -5,6 +5,10 @@
 import { z } from 'zod';
 import type { Config } from '../types/Config.js';
 import type { AnalysisOptions } from '../types/Analysis.js';
+import {
+  FUNCTION_NAMES,
+  type FunctionName,
+} from '../constants/FunctionNames.js';
 
 // Provider selection schemas
 const ProviderSchema = z.enum(['google', 'vertex_ai']);
@@ -45,8 +49,12 @@ export const ConfigSchema = z.object({
   // Model configuration
   IMAGE_MODEL: z.string().min(1).optional(),
   VIDEO_MODEL: z.string().min(1).optional(),
-  FALLBACK_IMAGE_MODEL: z.string().min(1).optional(),
-  FALLBACK_VIDEO_MODEL: z.string().min(1).optional(),
+
+  // Function-specific model configuration
+  ANALYZE_IMAGE_MODEL: z.string().min(1).optional(),
+  COMPARE_IMAGES_MODEL: z.string().min(1).optional(),
+  DETECT_OBJECTS_IN_IMAGE_MODEL: z.string().min(1).optional(),
+  ANALYZE_VIDEO_MODEL: z.string().min(1).optional(),
 
   // Gemini API configuration
   GEMINI_API_KEY: z.string().min(1).optional(),
@@ -73,20 +81,58 @@ export const ConfigSchema = z.object({
   GCS_REGION: z.string().min(1).optional().default('us-central1'),
 
   // Universal API parameters
-  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.2),
+  TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),
   TOP_P: z.coerce.number().min(0).max(1).optional().default(0.95),
   TOP_K: z.coerce.number().int().min(1).max(100).optional().default(30),
-  MAX_TOKEN: z.coerce.number().int().min(1).max(8192).optional().default(800),
+  MAX_TOKENS: z.coerce.number().int().min(1).max(8192).optional().default(1000),
 
   // Task-specific API parameters
   TEMPERATURE_FOR_IMAGE: z.number().min(0).max(2).optional(),
   TOP_P_FOR_IMAGE: z.number().min(0).max(1).optional(),
   TOP_K_FOR_IMAGE: z.number().int().positive().optional(),
-  MAX_TOKENS_FOR_IMAGE: z.number().int().positive().optional().default(500),
+  MAX_TOKENS_FOR_IMAGE: z.number().int().positive().optional(),
   TEMPERATURE_FOR_VIDEO: z.number().min(0).max(2).optional(),
   TOP_P_FOR_VIDEO: z.number().min(0).max(1).optional(),
   TOP_K_FOR_VIDEO: z.number().int().positive().optional(),
-  MAX_TOKENS_FOR_VIDEO: z.number().int().positive().optional().default(2000),
+  MAX_TOKENS_FOR_VIDEO: z.number().int().positive().optional(),
+
+  // Function-specific API parameters
+  TEMPERATURE_FOR_ANALYZE_IMAGE: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_ANALYZE_IMAGE: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_ANALYZE_IMAGE: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_ANALYZE_IMAGE: z.number().int().positive().optional(),
+  TEMPERATURE_FOR_COMPARE_IMAGES: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_COMPARE_IMAGES: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_COMPARE_IMAGES: z.number().int().positive().optional(),
+  TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: z
+    .number()
+    .min(0)
+    .max(2)
+    .optional()
+    .default(0),
+  TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .default(0.95),
+  TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(30),
+  MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(8192),
+  TEMPERATURE_FOR_ANALYZE_VIDEO: z.number().min(0).max(2).optional(),
+  TOP_P_FOR_ANALYZE_VIDEO: z.number().min(0).max(1).optional(),
+  TOP_K_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),
+  MAX_TOKENS_FOR_ANALYZE_VIDEO: z.number().int().positive().optional(),
 
   // File processing configuration
   MAX_IMAGE_SIZE: z.coerce
@@ -115,6 +161,12 @@ export const ConfigSchema = z.object({
     .positive()
     .optional()
     .default(3600), // 1 hour
+  MAX_IMAGES_FOR_COMPARISON: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(4), // Maximum 4 images for comparison
 
   // File upload configuration
   GEMINI_FILES_API_THRESHOLD: z.coerce
@@ -138,6 +190,10 @@ export const AnalysisOptionsSchema = z.object({
   topP: z.number().min(0).max(1).optional(),
   maxTokens: z.number().int().positive().optional(),
   stopSequences: z.array(z.string()).optional(),
+  taskType: z.enum(['image', 'video']).optional(),
+  functionName: z
+    .enum(Object.values(FUNCTION_NAMES) as [FunctionName, ...FunctionName[]])
+    .optional(),
 });
 
 // MCP tool argument schemas

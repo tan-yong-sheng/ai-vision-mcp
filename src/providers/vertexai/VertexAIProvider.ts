@@ -2,9 +2,10 @@
  * Vertex AI provider implementation
  */
 
-import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
+import { FUNCTION_NAMES } from '../../constants/FunctionNames.js';
 import type {
   VertexAIConfig,
   AnalysisOptions,
@@ -22,7 +23,7 @@ import {
 } from '../../types/Errors.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
-  private client: VertexAI;
+  private client: GoogleGenAI;
   private config: VertexAIConfig;
 
   constructor(config: VertexAIConfig) {
@@ -35,13 +36,33 @@ export class VertexAIProvider extends BaseVisionProvider {
     // Validate endpoint format
     this.validateEndpoint(endpoint);
 
-    this.client = new VertexAI({
+    // Initialize GoogleGenAI client with Vertex AI configuration
+    const clientConfig: any = {
+      vertexai: true,
       project: config.projectId,
       location: config.location,
-      googleAuthOptions: {
-        keyFilename: config.credentials,
-      },
-    });
+    };
+
+    // Add custom base URL if not using default Google endpoint
+    if (endpoint !== 'https://aiplatform.googleapis.com') {
+      clientConfig.baseUrl = endpoint;
+    }
+
+    // Add authentication if credentials are provided
+    if (config.credentials) {
+      clientConfig.googleAuthOptions = {
+        keyFile: config.credentials,
+      };
+      console.log(
+        `[VertexAI Provider] Using service account credentials: ${config.credentials}`
+      );
+    } else {
+      console.warn(
+        '[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)'
+      );
+    }
+
+    this.client = new GoogleGenAI(clientConfig);
 
     // Log debug information
     this.logDebugInfo();
@@ -56,13 +77,15 @@ export class VertexAIProvider extends BaseVisionProvider {
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
-      const model = this.client.getGenerativeModel({
-        model: this.imageModel,
-      });
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model,
             contents: [
               {
                 role: 'user',
@@ -77,24 +100,21 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            generationConfig: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokensForImage),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -107,7 +127,9 @@ export class VertexAIProvider extends BaseVisionProvider {
           : undefined,
         duration,
         mimeType,
-        imageData.length
+        imageData.length,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
@@ -147,37 +169,36 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Add the prompt as the last part
       imageParts.push({ text: prompt });
 
-      const model = this.client.getGenerativeModel({
-        model: this.imageModel,
-      });
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model,
             contents: [
               {
                 role: 'user',
                 parts: imageParts,
               },
             ],
-            generationConfig: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokens),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -190,7 +211,9 @@ export class VertexAIProvider extends BaseVisionProvider {
           : undefined,
         duration,
         'image/multiple',
-        totalFileSize
+        totalFileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image comparison');
@@ -230,13 +253,15 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
       }
 
-      const model = this.client.getGenerativeModel({
-        model: this.videoModel,
-      });
+      const model = this.resolveModelForFunction(
+        'video',
+        options?.functionName
+      );
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
-          return await model.generateContent({
+          return await this.client.models.generateContent({
+            model,
             contents: [
               {
                 role: 'user',
@@ -251,24 +276,21 @@ export class VertexAIProvider extends BaseVisionProvider {
                 ],
               },
             ],
-            generationConfig: {
-              temperature: this.resolveTemperature('video', options?.temperature),
-              topP: this.resolveTopP('video', options?.topP),
-              topK: this.resolveTopK('video', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('video', options?.maxTokensForVideo),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'video',
+              options?.functionName,
+              options
+            ),
           });
         }
       );
 
-      const text =
-        response.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const usage = response.response.usageMetadata;
+      const text = response.text || '';
+      const usage = response.usageMetadata;
 
       return this.createAnalysisResult(
         text,
-        this.videoModel,
+        model,
         usage &&
           usage.promptTokenCount &&
           usage.candidatesTokenCount &&
@@ -280,7 +302,10 @@ export class VertexAIProvider extends BaseVisionProvider {
             }
           : undefined,
         duration,
-        'video/mp4'
+        'video/mp4',
+        undefined, // fileSize not available for video
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'video analysis');
@@ -376,11 +401,12 @@ export class VertexAIProvider extends BaseVisionProvider {
   async healthCheck(): Promise<HealthStatus> {
     try {
       const { duration } = await this.measureAsync(async () => {
-        const model = this.client.getGenerativeModel({
-          model: this.imageModel,
-        });
         // Simple test with minimal content
-        await model.generateContent({
+        await this.client.models.generateContent({
+          model: this.resolveModelForFunction(
+            'image',
+            FUNCTION_NAMES.ANALYZE_IMAGE
+          ),
           contents: [
             {
               role: 'user',
@@ -512,9 +538,12 @@ export class VertexAIProvider extends BaseVisionProvider {
   }
 
   private validateEndpoint(endpoint: string): void {
-    if (!endpoint.startsWith('https://aiplatform.googleapis.com')) {
+    // Validate that it's a valid URL format
+    try {
+      new URL(endpoint);
+    } catch (error) {
       throw new ProviderError(
-        `Invalid Vertex AI endpoint: ${endpoint}. Expected endpoint to start with 'https://aiplatform.googleapis.com'`,
+        `Invalid Vertex AI endpoint format: ${endpoint}. Must be a valid URL.`,
         'vertex_ai',
         undefined,
         400
@@ -530,6 +559,9 @@ export class VertexAIProvider extends BaseVisionProvider {
     console.log(`  - Project ID: ${this.config.projectId}`);
     console.log(`  - Location: ${this.config.location}`);
     console.log(`  - Endpoint: ${this.config.endpoint}`);
+    console.log(
+      `  - Authentication: ${this.config.credentials ? 'Service Account' : 'Application Default Credentials'}`
+    );
     console.log(`  - Image Model URL: ${imageModelUrl}`);
     console.log(`  - Video Model URL: ${videoModelUrl}`);
   }

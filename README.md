@@ -13,14 +13,13 @@ A powerful Model Context Protocol (MCP) server that provides AI-powered image an
 - **TypeScript**: Full TypeScript support with strict type checking
 
 
-
 ## Quick Start
 
 ### Pre-requisites
 
 You could choose either to use [`google` provider](https://aistudio.google.com/welcome) or [`vertex_ai` provider](https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart). For simplicity, `google` provider is recommended.
 
-Below are the environment variables required to set, depending to the provider you have selected.
+Below are the environment variables you need to set based on your selected provider. (Note: It’s recommended to set the timeout configuration to more than 5 minutes for your MCP client).
 
 (i) **Using Google AI Studio Provider**
 
@@ -46,7 +45,7 @@ Refer to [the guideline here](docs/provider/vertex-ai-setup-guide.md) on how to 
 
 ### Installation
 
-Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, etc.
+Below are the installation guide for this MCP on different MCP clients, such as Claude Desktop, Claude Code, Cursor, Cline, etc.
 
 <details>
 <summary>Claude Desktop</summary>
@@ -113,13 +112,13 @@ claude mcp add ai-vision-mcp \
 ```
 
 
-Note: Increase the MCP tool timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
+Note: Increase the MCP startup timeout to 1 minutes and MCP tool execution timeout to about 5 minutes by updating `~\.claude\settings.json` as follows:
 
 ```json
 {
   "env": {
-    "MCP_TIMEOUT": "20000", // Give the MCP server 20s to start.
-    "MCP_TOOL_TIMEOUT": "300000" // Allow each tool calls before timeout.
+    "MCP_TIMEOUT": "60000",
+    "MCP_TOOL_TIMEOUT": "300000"
   }
 }
 ```
@@ -234,7 +233,7 @@ npx ai-vision-mcp
 
 ## MCP Tools
 
-The server provides three main MCP tools:
+The server provides four main MCP tools:
 
 ### 1) `analyze_image`
 
@@ -298,8 +297,64 @@ Compares multiple images using AI and returns a detailed comparison analysis.
 }
 ```
 
+### 3) `detect_objects_in_image`
 
-### 3) `analyze_video`
+Detects objects in an image using AI vision models and generates annotated images with bounding boxes. Returns detected objects with coordinates and either saves the annotated image to a file or temporary directory.
+
+**Parameters:**
+- `imageSource` (string): URL, base64 data, or file path to the image
+- `prompt` (string): Custom detection prompt describing what to detect or recognize in the image
+- `outputFilePath` (string, optional): Explicit output path for the annotated image
+
+**Configuration:**
+This function uses optimized default parameters for object detection and does not accept runtime `options` parameter. To customize the AI parameters (temperature, topP, topK, maxTokens), use environment variables:
+
+```
+# Recommended environment variable settings for object detection (these are now the defaults)
+TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0     # Deterministic responses
+TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE=0.95          # Nucleus sampling
+TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE=30            # Vocabulary selection
+MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JSON
+```
+
+**File Handling Logic:**
+1. **Explicit outputFilePath provided** → Saves to the exact path specified
+2. **If not explicit outputFilePath** → Automatically saves to temporary directory
+
+**Response Types:**
+- Returns `file` object when explicit outputFilePath is provided
+- Returns `tempFile` object when explicit outputFilePath is not provided so the image file output is auto-saved to temporary folder
+- Always includes `detections` array with detected objects and coordinates
+- Includes `summary` with percentage-based coordinates for browser automation
+
+**Examples:**
+
+1. **Basic object detection:**
+```json
+{
+  "imageSource": "https://example.com/image.jpg",
+  "prompt": "Detect all objects in this image"
+}
+```
+
+2. **Save annotated image to specific path:**
+```json
+{
+  "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
+  "outputFilePath": "C:\\Users\\username\\Documents\\annotated_image.png"
+}
+```
+
+3. **Custom detection prompt:**
+```json
+{
+  "imageSource": "data:image/jpeg;base64,/9j/4AAQSkZJRgAB...",
+  "prompt": "Detect and label all electronic devices in this image"
+}
+```
+
+
+### 4) `analyze_video`
 
 Analyzes a video using AI and returns a detailed description.
 
@@ -330,87 +385,78 @@ Analyzes a video using AI and returns a detailed description.
 }
 ```
 
-
 **Note:** Only YouTube URLs are supported for public video URLs. Other public video URLs are not currently supported.
 
-## Configuration
 
-### Environment Variables
-| Variable | Required | Description | Default |
-|-----------|-----------|-------------|---------|
-| **Provider Selection** ||||
-| `IMAGE_PROVIDER` | Yes | Provider for image analysis | `google`,`vertex_ai` |
-| `VIDEO_PROVIDER` | Yes | Provider for video analysis | `google`,`vertex_ai` |
-| **Model Selection** ||||
-| `IMAGE_MODEL` | No | Model for image analysis | `gemini-2.5-flash-lite` |
-| `VIDEO_MODEL` | No | Model for video analysis | `gemini-2.5-flash` |
-| `FALLBACK_IMAGE_MODEL` | No | Fallback Model for image analysis | `gemini-2.5-flash-lite` |
-| `FALLBACK_VIDEO_MODEL` | No | Fallback Model for video analysis | `gemini-2.5-flash` |
-| **Google Gemini API** ||||
-| `GEMINI_API_KEY` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `google` | Google Gemini API key | Required for Gemini |
-| `GEMINI_BASE_URL` | No | Gemini API base URL | `https://generativelanguage.googleapis.com` |
-| **Vertex AI** ||||
-| `VERTEX_CREDENTIALS` | Yes if `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | Path to GCP service account JSON | Required for Vertex AI |
-| `VERTEX_PROJECT_ID` | Auto | Google Cloud project ID | Auto-derived from credentials |
-| `VERTEX_LOCATION` | No | Vertex AI region | `us-central1` |
-| `VERTEX_ENDPOINT` | No | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
-| **Google Cloud Storage (Vertex AI)** ||||
-| `GCS_BUCKET_NAME` | If `IMAGE_PROVIDER` or `VIDEO_PROVIDER` = `vertex_ai` | GCS bucket name for Vertex AI uploads | Required for Vertex AI |
-| `GCS_CREDENTIALS` | No | Path to GCS credentials | Defaults to `VERTEX_CREDENTIALS` |
-| `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
-| `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
-| **API Configuration** ||||
-| `TEMPERATURE` | No | AI response temperature (0.0–2.0) | `0.2` |
-| `TOP_P` | No | Top-p sampling parameter (0.0–1.0) | `0.95` |
-| `TOP_K` | No | Top-k sampling parameter (1–100) | `30` |
-| `MAX_TOKEN` | No | Maximum tokens for analysis (1–8192) | `800` |
-| `TEMPERATURE_FOR_IMAGE` | No | Image-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
-| `TOP_P_FOR_IMAGE` | No | Image-specific top-p (0.0–1.0) | Uses `TOP_P` |
-| `TOP_K_FOR_IMAGE` | No | Image-specific top-k (1–100) | Uses `TOP_K` |
-| `TEMPERATURE_FOR_VIDEO` | No | Video-specific temperature (0.0–2.0) | Uses `TEMPERATURE` |
-| `TOP_P_FOR_VIDEO` | No | Video-specific top-p (0.0–1.0) | Uses `TOP_P` |
-| `TOP_K_FOR_VIDEO` | No | Video-specific top-k (1–100) | Uses `TOP_K` |
-| `MAX_TOKENS_FOR_IMAGE` | No | Maximum tokens for image analysis | Uses `MAX_TOKEN` |
-| `MAX_TOKENS_FOR_VIDEO` | No | Maximum tokens for video analysis | Uses `MAX_TOKEN` |
-| **File Processing** ||||
-| `MAX_IMAGE_SIZE` | No | Maximum image size in bytes | `20971520` (20 MB) |
-| `MAX_VIDEO_SIZE` | No | Maximum video size in bytes | `2147483648` (2 GB) |
-| `MAX_VIDEO_DURATION` | No | Maximum video duration (seconds) | `3600` (1 hour) |
-| `MAX_IMAGES_FOR_COMPARISON` | No | Maximum number of images for comparison, used by compare_images() mcp function | `4` |
-| `ALLOWED_IMAGE_FORMATS` | No | Comma-separated image formats | `png,jpg,jpeg,webp,gif,bmp,tiff` |
-| `ALLOWED_VIDEO_FORMATS` | No | Comma-separated video formats | `mp4,mov,avi,mkv,webm,flv,wmv,3gp` |
-| **Development** ||||
-| `LOG_LEVEL` | No | Logging level | `info` |
-| `NODE_ENV` | No | Environment mode | `development` |
-| `GEMINI_FILES_API_THRESHOLD` | No | Size threshold for Gemini Files API (bytes) | `10485760` (10 MB) |
-| `VERTEX_AI_FILES_API_THRESHOLD` | No | Size threshold for Vertex AI uploads (bytes) | `0` |
+## Environment Configuration
 
+For basic setup, you only need to configure the provider selection and required credentials:
 
-<details>
-<summary>More on Environment Variable Logic (Optional to learn) </summary>
-
-The environment variables follow a layered priority system that determines which values take effect during runtime.
-
-**Priority Order (highest to lowest):**
-1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
-2. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-3. **Universal variables** - `TEMPERATURE`, `MAX_TOKEN`, etc.
-4. **System defaults** - Built-in fallback values
-
-**Example Usage:**
+### Google AI Studio Provider (Recommended)
 ```bash
-# Universal configuration
-TEMPERATURE=0.3
-MAX_TOKEN=600
-
-# Task-specific overrides
-TEMPERATURE_FOR_IMAGE=0.1  # More precise for image analysis
-MAX_TOKENS_FOR_VIDEO=1200   # Longer responses for video content
-
-# LLM can still override at runtime via tool parameters
+export IMAGE_PROVIDER="google"
+export VIDEO_PROVIDER="google"
+export GEMINI_API_KEY="your-gemini-api-key"
 ```
 
-This allows you to set sensible defaults while maintaining granular control per task type.
+### Vertex AI Provider (Production)
+```bash
+export IMAGE_PROVIDER="vertex_ai"
+export VIDEO_PROVIDER="vertex_ai"
+export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export GCS_BUCKET_NAME="your-gcs-bucket"
+```
+
+### 📖 **Detailed Configuration Guide**
+
+For comprehensive environment variable documentation, including:
+- Complete configuration reference (60+ environment variables)
+- Function-specific optimization examples
+- Advanced configuration patterns
+- Troubleshooting guidance
+
+👉 **[See Environment Variable Guide](docs/environment-variable-guide.md)**
+
+### Configuration Priority Overview
+
+The server uses a hierarchical configuration system where more specific settings override general ones:
+
+1. **LLM-assigned values** (runtime parameters in tool calls)
+2. **Function-specific variables** (`TEMPERATURE_FOR_ANALYZE_IMAGE`, etc.)
+3. **Task-specific variables** (`TEMPERATURE_FOR_IMAGE`, etc.)
+4. **Universal variables** (`TEMPERATURE`, etc.)
+5. **System defaults**
+
+<details>
+<summary><strong>Quick Configuration Examples</strong></summary>
+
+**Basic Optimization:**
+```bash
+# General settings
+export TEMPERATURE=0.7
+export MAX_TOKENS=1500
+
+# Task-specific optimization
+export TEMPERATURE_FOR_IMAGE=0.2     # More precise for images
+export TEMPERATURE_FOR_VIDEO=0.5     # More creative for videos
+```
+
+**Function-specific Optimization:**
+```bash
+# Optimize individual functions
+export TEMPERATURE_FOR_ANALYZE_IMAGE=0.1
+export TEMPERATURE_FOR_COMPARE_IMAGES=0.3
+export TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0  # Deterministic
+export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192   # High token limit
+```
+
+**Model Selection:**
+```bash
+# Choose models per function
+export ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"
+export COMPARE_IMAGES_MODEL="gemini-2.5-flash"
+export ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"
+```
 </details>
 
 ## Development

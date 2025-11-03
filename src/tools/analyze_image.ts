@@ -8,6 +8,7 @@ import type { VisionProvider } from '../types/Providers.js';
 import { FileService } from '../services/FileService.js';
 import type { Config } from '../types/Config.js';
 import { VisionError } from '../types/Errors.js';
+import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
 
 export interface AnalyzeImageArgs {
   imageSource: string; // Can be URL, base64 data, or local file path
@@ -44,12 +45,25 @@ export async function analyze_image(
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
-      temperature: config.TEMPERATURE,
-      topP: config.TOP_P,
-      topK: config.TOP_K,
-      maxTokens: config.MAX_TOKEN,
+      temperature:
+        config.TEMPERATURE_FOR_ANALYZE_IMAGE ??
+        config.TEMPERATURE_FOR_IMAGE ??
+        config.TEMPERATURE,
+      topP:
+        config.TOP_P_FOR_ANALYZE_IMAGE ??
+        config.TOP_P_FOR_IMAGE ??
+        config.TOP_P,
+      topK:
+        config.TOP_K_FOR_ANALYZE_IMAGE ??
+        config.TOP_K_FOR_IMAGE ??
+        config.TOP_K,
+      maxTokens:
+        config.MAX_TOKENS_FOR_ANALYZE_IMAGE ??
+        config.MAX_TOKENS_FOR_IMAGE ??
+        config.MAX_TOKENS,
       taskType: 'image',
-      ...args.options,
+      functionName: FUNCTION_NAMES.ANALYZE_IMAGE,
+      ...args.options, // User options override defaults
     };
 
     // Analyze the image

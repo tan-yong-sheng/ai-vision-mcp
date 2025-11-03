@@ -2,17 +2,22 @@
  * Analysis types for vision providers
  */
 
+import { type FunctionName } from '../constants/FunctionNames.js';
+
 export type TaskType = 'image' | 'video';
 
 export interface AnalysisOptions {
   temperature?: number | undefined;
   topP?: number | undefined;
   topK?: number | undefined;
-  maxTokens?: number | undefined; // Keep for backward compatibility
+  maxTokens?: number | undefined;
   maxTokensForImage?: number | undefined;
   maxTokensForVideo?: number | undefined;
   stopSequences?: string[] | undefined;
   taskType?: TaskType;
+  functionName?: FunctionName;
+  responseSchema?: any; // Structured output schema for object detection
+  systemInstruction?: string | undefined; // System instruction to guide model behavior
 }
 
 export interface AnalysisResult {
@@ -27,6 +32,8 @@ export interface AnalysisMetadata {
   processingTime?: number;
   fileType?: string;
   fileSize?: number;
+  modelVersion?: string; // "gemini-2.5-flash-lite"
+  responseId?: string; // "abc123..."
 }
 
 export interface UsageMetadata {

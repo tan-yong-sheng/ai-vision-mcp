@@ -16,7 +16,9 @@
       "mcp__ai-vision-mcp__analyze_image",
       "Bash(cat .env)",
       "mcp__ai-vision-mcp__analyze_video",
-      "mcp__ai-vision-mcp__compare_images"
+      "mcp__ai-vision-mcp__compare_images",
+      "mcp__claude-context__index_codebase",
+      "mcp__claude-context__search_code"
     ],
     "deny": [],
     "ask": []

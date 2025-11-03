@@ -14,6 +14,10 @@ import type {
   DevelopmentConfig,
 } from '../types/Config.js';
 import { ConfigurationError } from '../types/Errors.js';
+import {
+  type FunctionName,
+  FUNCTION_NAMES,
+} from '../constants/FunctionNames.js';
 import { validateConfig, formatZodError } from '../utils/validation.js';
 import { extractProjectIdFromCredentials } from '../utils/credentialsParser.js';
 
@@ -62,11 +66,12 @@ export class ConfigService {
         IMAGE_MODEL: process.env.IMAGE_MODEL,
         VIDEO_MODEL: process.env.VIDEO_MODEL,
 
-        // Fallback model configuration
-        FALLBACK_IMAGE_MODEL:
-          process.env.FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-lite',
-        FALLBACK_VIDEO_MODEL:
-          process.env.FALLBACK_VIDEO_MODEL || 'gemini-2.5-flash',
+        // Function-specific model configuration
+        ANALYZE_IMAGE_MODEL: process.env.ANALYZE_IMAGE_MODEL,
+        COMPARE_IMAGES_MODEL: process.env.COMPARE_IMAGES_MODEL,
+        DETECT_OBJECTS_IN_IMAGE_MODEL:
+          process.env.DETECT_OBJECTS_IN_IMAGE_MODEL,
+        ANALYZE_VIDEO_MODEL: process.env.ANALYZE_VIDEO_MODEL,
 
         // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
@@ -77,12 +82,12 @@ export class ConfigService {
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
           ? parseFloat(process.env.TEMPERATURE)
-          : 0.2,
+          : 0.8,
         TOP_P: process.env.TOP_P ? parseFloat(process.env.TOP_P) : 0.95,
         TOP_K: process.env.TOP_K ? parseInt(process.env.TOP_K, 10) : 30,
-        MAX_TOKEN: process.env.MAX_TOKEN
-          ? parseInt(process.env.MAX_TOKEN, 10)
-          : 800,
+        MAX_TOKENS: process.env.MAX_TOKENS
+          ? parseInt(process.env.MAX_TOKENS, 10)
+          : 1000,
 
         // Task-specific API parameters
         TEMPERATURE_FOR_IMAGE: process.env.TEMPERATURE_FOR_IMAGE
@@ -108,6 +113,61 @@ export class ConfigService {
           : undefined,
         MAX_TOKENS_FOR_VIDEO: process.env.MAX_TOKENS_FOR_VIDEO
           ? parseInt(process.env.MAX_TOKENS_FOR_VIDEO, 10)
+          : undefined,
+
+        // Function-specific API parameters
+        TEMPERATURE_FOR_ANALYZE_IMAGE: process.env.TEMPERATURE_FOR_ANALYZE_IMAGE
+          ? parseFloat(process.env.TEMPERATURE_FOR_ANALYZE_IMAGE)
+          : undefined,
+        TOP_P_FOR_ANALYZE_IMAGE: process.env.TOP_P_FOR_ANALYZE_IMAGE
+          ? parseFloat(process.env.TOP_P_FOR_ANALYZE_IMAGE)
+          : undefined,
+        TOP_K_FOR_ANALYZE_IMAGE: process.env.TOP_K_FOR_ANALYZE_IMAGE
+          ? parseInt(process.env.TOP_K_FOR_ANALYZE_IMAGE, 10)
+          : undefined,
+        MAX_TOKENS_FOR_ANALYZE_IMAGE: process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE
+          ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_IMAGE, 10)
+          : undefined,
+        TEMPERATURE_FOR_COMPARE_IMAGES: process.env
+          .TEMPERATURE_FOR_COMPARE_IMAGES
+          ? parseFloat(process.env.TEMPERATURE_FOR_COMPARE_IMAGES)
+          : undefined,
+        TOP_P_FOR_COMPARE_IMAGES: process.env.TOP_P_FOR_COMPARE_IMAGES
+          ? parseFloat(process.env.TOP_P_FOR_COMPARE_IMAGES)
+          : undefined,
+        TOP_K_FOR_COMPARE_IMAGES: process.env.TOP_K_FOR_COMPARE_IMAGES
+          ? parseInt(process.env.TOP_K_FOR_COMPARE_IMAGES, 10)
+          : undefined,
+        MAX_TOKENS_FOR_COMPARE_IMAGES: process.env.MAX_TOKENS_FOR_COMPARE_IMAGES
+          ? parseInt(process.env.MAX_TOKENS_FOR_COMPARE_IMAGES, 10)
+          : undefined,
+        TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseFloat(process.env.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE)
+          : 0, // Default to 0 for deterministic object detection
+        TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseFloat(process.env.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE)
+          : undefined,
+        TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseInt(process.env.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE, 10)
+          : undefined,
+        MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE: process.env
+          .MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE
+          ? parseInt(process.env.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE, 10)
+          : undefined,
+        TEMPERATURE_FOR_ANALYZE_VIDEO: process.env.TEMPERATURE_FOR_ANALYZE_VIDEO
+          ? parseFloat(process.env.TEMPERATURE_FOR_ANALYZE_VIDEO)
+          : undefined,
+        TOP_P_FOR_ANALYZE_VIDEO: process.env.TOP_P_FOR_ANALYZE_VIDEO
+          ? parseFloat(process.env.TOP_P_FOR_ANALYZE_VIDEO)
+          : undefined,
+        TOP_K_FOR_ANALYZE_VIDEO: process.env.TOP_K_FOR_ANALYZE_VIDEO
+          ? parseInt(process.env.TOP_K_FOR_ANALYZE_VIDEO, 10)
+          : undefined,
+        MAX_TOKENS_FOR_ANALYZE_VIDEO: process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO
+          ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO, 10)
           : undefined,
 
         // File processing configuration
@@ -144,7 +204,7 @@ export class ConfigService {
           ? parseInt(process.env.MAX_VIDEO_DURATION, 10)
           : 3600,
         MAX_IMAGES_FOR_COMPARISON: process.env.MAX_IMAGES_FOR_COMPARISON
-          ? parseInt(process.env.MAX_IMAGES_FOR_COMPARISON, 10)
+          ? parseInt(process.env.MAX_IMAGES_FOR_COMPARISON, 4)
           : 4,
 
         // File upload configuration
@@ -262,8 +322,8 @@ export class ConfigService {
     return {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
-      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
-      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
+      imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
     } as GeminiConfig;
   }
 
@@ -281,8 +341,8 @@ export class ConfigService {
       endpoint:
         this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
       credentials: this.config.VERTEX_CREDENTIALS,
-      imageModel: this.config.IMAGE_MODEL || this.config.FALLBACK_IMAGE_MODEL!,
-      videoModel: this.config.VIDEO_MODEL || this.config.FALLBACK_VIDEO_MODEL!,
+      imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
     };
   }
 
@@ -312,7 +372,7 @@ export class ConfigService {
       temperature: this.config.TEMPERATURE!,
       topP: this.config.TOP_P!,
       topK: this.config.TOP_K!,
-      maxToken: this.config.MAX_TOKEN!,
+      maxTokens: this.config.MAX_TOKENS!,
       temperatureForImage: this.config.TEMPERATURE_FOR_IMAGE,
       topPForImage: this.config.TOP_P_FOR_IMAGE,
       topKForImage: this.config.TOP_K_FOR_IMAGE,
@@ -321,10 +381,37 @@ export class ConfigService {
       topPForVideo: this.config.TOP_P_FOR_VIDEO,
       topKForVideo: this.config.TOP_K_FOR_VIDEO,
       maxTokensForVideo: this.config.MAX_TOKENS_FOR_VIDEO!,
+      temperatureForAnalyzeImage: this.config.TEMPERATURE_FOR_ANALYZE_IMAGE,
+      topPForAnalyzeImage: this.config.TOP_P_FOR_ANALYZE_IMAGE,
+      topKForAnalyzeImage: this.config.TOP_K_FOR_ANALYZE_IMAGE,
+      maxTokensForAnalyzeImage: this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE,
+      temperatureForCompareImages: this.config.TEMPERATURE_FOR_COMPARE_IMAGES,
+      topPForCompareImages: this.config.TOP_P_FOR_COMPARE_IMAGES,
+      topKForCompareImages: this.config.TOP_K_FOR_COMPARE_IMAGES,
+      maxTokensForCompareImages: this.config.MAX_TOKENS_FOR_COMPARE_IMAGES,
+      temperatureForDetectObjectsInImage:
+        this.config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE,
+      topPForDetectObjectsInImage:
+        this.config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE,
+      topKForDetectObjectsInImage:
+        this.config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE,
+      maxTokensForDetectObjectsInImage:
+        this.config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE,
+      temperatureForAnalyzeVideo: this.config.TEMPERATURE_FOR_ANALYZE_VIDEO,
+      topPForAnalyzeVideo: this.config.TOP_P_FOR_ANALYZE_VIDEO,
+      topKForAnalyzeVideo: this.config.TOP_K_FOR_ANALYZE_VIDEO,
+      maxTokensForAnalyzeVideo: this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO,
+      // Model configuration
+      analyzeImageModel: this.config.ANALYZE_IMAGE_MODEL,
+      compareImagesModel: this.config.COMPARE_IMAGES_MODEL,
+      detectObjectsInImageModel: this.config.DETECT_OBJECTS_IN_IMAGE_MODEL,
+      analyzeVideoModel: this.config.ANALYZE_VIDEO_MODEL,
     };
   }
 
-  public getTemperatureForTask(taskType: 'image' | 'video'): number | undefined {
+  public getTemperatureForTask(
+    taskType: 'image' | 'video'
+  ): number | undefined {
     switch (taskType) {
       case 'image':
         return this.config.TEMPERATURE_FOR_IMAGE;
@@ -363,6 +450,87 @@ export class ConfigService {
         return this.config.MAX_TOKENS_FOR_IMAGE;
       case 'video':
         return this.config.MAX_TOKENS_FOR_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  // Function-specific configuration getter methods
+  public getTemperatureForFunction(
+    functionName: FunctionName
+  ): number | undefined {
+    switch (functionName) {
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
+        return this.config.TEMPERATURE_FOR_ANALYZE_IMAGE;
+      case FUNCTION_NAMES.COMPARE_IMAGES:
+        return this.config.TEMPERATURE_FOR_COMPARE_IMAGES;
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
+        return this.config.TEMPERATURE_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopPForFunction(functionName: FunctionName): number | undefined {
+    switch (functionName) {
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
+        return this.config.TOP_P_FOR_ANALYZE_IMAGE;
+      case FUNCTION_NAMES.COMPARE_IMAGES:
+        return this.config.TOP_P_FOR_COMPARE_IMAGES;
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TOP_P_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
+        return this.config.TOP_P_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getTopKForFunction(functionName: FunctionName): number | undefined {
+    switch (functionName) {
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
+        return this.config.TOP_K_FOR_ANALYZE_IMAGE;
+      case FUNCTION_NAMES.COMPARE_IMAGES:
+        return this.config.TOP_K_FOR_COMPARE_IMAGES;
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.TOP_K_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
+        return this.config.TOP_K_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  public getMaxTokensForFunction(
+    functionName: FunctionName
+  ): number | undefined {
+    switch (functionName) {
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
+        return this.config.MAX_TOKENS_FOR_ANALYZE_IMAGE;
+      case FUNCTION_NAMES.COMPARE_IMAGES:
+        return this.config.MAX_TOKENS_FOR_COMPARE_IMAGES;
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
+        return this.config.MAX_TOKENS_FOR_ANALYZE_VIDEO;
+      default:
+        return undefined;
+    }
+  }
+
+  // Function-specific model getter methods
+  public getModelForFunction(functionName: FunctionName): string | undefined {
+    switch (functionName) {
+      case FUNCTION_NAMES.ANALYZE_IMAGE:
+        return this.config.ANALYZE_IMAGE_MODEL;
+      case FUNCTION_NAMES.COMPARE_IMAGES:
+        return this.config.COMPARE_IMAGES_MODEL;
+      case FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE:
+        return this.config.DETECT_OBJECTS_IN_IMAGE_MODEL;
+      case FUNCTION_NAMES.ANALYZE_VIDEO:
+        return this.config.ANALYZE_VIDEO_MODEL;
       default:
         return undefined;
     }

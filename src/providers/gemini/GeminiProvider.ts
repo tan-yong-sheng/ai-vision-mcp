@@ -2,9 +2,10 @@
  * Gemini API provider implementation
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, setDefaultBaseUrls } from '@google/genai';
 import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
+import { FUNCTION_NAMES } from '../../constants/FunctionNames.js';
 import type {
   GeminiConfig,
   AnalysisOptions,
@@ -31,8 +32,29 @@ export class GeminiProvider extends BaseVisionProvider {
   constructor(config: GeminiConfig) {
     super('gemini', config.imageModel, config.videoModel);
     this.config = config;
+
+    // Validate endpoint format
+    this.validateEndpoint(config.baseUrl);
+
+    // Set global base URL before creating the client
+    setDefaultBaseUrls({ geminiUrl: config.baseUrl });
+
     this.client = new GoogleGenAI({ apiKey: config.apiKey });
     this.baseUrl = config.baseUrl;
+  }
+
+  private validateEndpoint(endpoint: string): void {
+    // Validate that it's a valid URL format
+    try {
+      new URL(endpoint);
+    } catch (error) {
+      throw new ProviderError(
+        `Invalid Gemini endpoint format: ${endpoint}. Must be a valid URL.`,
+        'gemini',
+        undefined,
+        400
+      );
+    }
   }
 
   async analyzeImage(
@@ -128,7 +150,7 @@ export class GeminiProvider extends BaseVisionProvider {
         // Handle Files API references - for newer SDK, we can use file references directly
         let fileUri: string;
         if (imageSource.startsWith('files/')) {
-          fileUri = `https://generativelanguage.googleapis.com/v1beta/files/${imageSource.replace('files/', '')}`;
+          fileUri = this.buildFileUri(imageSource);
         } else {
           fileUri = imageSource;
         }
@@ -150,20 +172,21 @@ export class GeminiProvider extends BaseVisionProvider {
         );
       }
 
-      const model = this.imageModel;
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
-            config: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokensForImage),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         });
 
@@ -172,7 +195,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -182,7 +205,9 @@ export class GeminiProvider extends BaseVisionProvider {
           : undefined,
         processingDuration + analysisDuration,
         content.fileData?.mimeType || content.inlineData?.mimeType,
-        fileSize
+        fileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image analysis');
@@ -276,7 +301,7 @@ export class GeminiProvider extends BaseVisionProvider {
           // Handle Files API references
           let fileUri: string;
           if (imageSource.startsWith('files/')) {
-            fileUri = `https://generativelanguage.googleapis.com/v1beta/files/${imageSource.replace('files/', '')}`;
+            fileUri = this.buildFileUri(imageSource);
           } else {
             fileUri = imageSource;
           }
@@ -312,20 +337,21 @@ export class GeminiProvider extends BaseVisionProvider {
         `[GeminiProvider] All ${imageSources.length} images processed, sending to Gemini API`
       );
 
-      const model = this.imageModel;
+      const model = this.resolveModelForFunction(
+        'image',
+        options?.functionName
+      );
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
             model,
             contents: contentParts,
-            config: {
-              temperature: this.resolveTemperature('image', options?.temperature),
-              topP: this.resolveTopP('image', options?.topP),
-              topK: this.resolveTopK('image', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('image', options?.maxTokens),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'image',
+              options?.functionName,
+              options
+            ),
           });
         });
 
@@ -334,7 +360,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.imageModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -344,7 +370,9 @@ export class GeminiProvider extends BaseVisionProvider {
           : undefined,
         totalProcessingDuration + analysisDuration,
         'image/multiple',
-        totalFileSize
+        totalFileSize,
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'image comparison');
@@ -367,7 +395,7 @@ export class GeminiProvider extends BaseVisionProvider {
         // Use existing file reference - check this FIRST before other http checks
         // videoSource could be either "files/3lahndmttgdq" or full Google API URL
         const fileUri = videoSource.startsWith('files/')
-          ? `https://generativelanguage.googleapis.com/v1beta/${videoSource}`
+          ? this.buildVideoUri(videoSource)
           : videoSource;
 
         content = {
@@ -431,20 +459,21 @@ export class GeminiProvider extends BaseVisionProvider {
         throw new Error('Invalid video source format');
       }
 
-      const model = this.videoModel;
+      const model = this.resolveModelForFunction(
+        'video',
+        options?.functionName
+      );
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
             model,
             contents: [content, { text: prompt }],
-            config: {
-              temperature: this.resolveTemperature('video', options?.temperature),
-              topP: this.resolveTopP('video', options?.topP),
-              topK: this.resolveTopK('video', options?.topK),
-              maxOutputTokens: this.resolveMaxTokens('video', options?.maxTokensForVideo),
-              candidateCount: 1,
-            },
+            config: this.buildConfigWithOptions(
+              'video',
+              options?.functionName,
+              options
+            ),
           });
         });
 
@@ -453,7 +482,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       return this.createAnalysisResult(
         text,
-        this.videoModel,
+        model,
         usage
           ? {
               promptTokenCount: usage.promptTokenCount || 0,
@@ -462,7 +491,10 @@ export class GeminiProvider extends BaseVisionProvider {
             }
           : undefined,
         uploadDuration + analysisDuration,
-        content.fileData?.mimeType
+        content.fileData?.mimeType,
+        undefined, // fileSize not available for video
+        response.modelVersion,
+        response.responseId
       );
     } catch (error) {
       throw this.handleError(error, 'video analysis');
@@ -595,7 +627,10 @@ export class GeminiProvider extends BaseVisionProvider {
       const { duration } = await this.measureAsync(async () => {
         // Simple test with minimal content
         await this.client.models.generateContent({
-          model: this.imageModel,
+          model: this.resolveModelForFunction(
+            'image',
+            FUNCTION_NAMES.ANALYZE_IMAGE
+          ),
           contents: [{ text: 'Hello' }],
         });
       });
@@ -611,6 +646,23 @@ export class GeminiProvider extends BaseVisionProvider {
   }
 
   // Private helper methods
+
+  private buildFileUri(fileId: string): string {
+    // Remove any leading 'files/' prefix if present
+    const cleanFileId = fileId.startsWith('files/')
+      ? fileId.replace('files/', '')
+      : fileId;
+    return `${this.baseUrl}/v1beta/files/${cleanFileId}`;
+  }
+
+  private buildVideoUri(videoSource: string): string {
+    // If it's already a full URL, return as-is
+    if (videoSource.startsWith('http')) {
+      return videoSource;
+    }
+    // Otherwise, assume it's a file ID and construct the URI
+    return `${this.baseUrl}/v1beta/${videoSource}`;
+  }
 
   private async uploadToGeminiFiles(
     buffer: Buffer,

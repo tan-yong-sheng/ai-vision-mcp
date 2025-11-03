@@ -1,6 +1,6 @@
 {
   "name": "ai-vision-mcp",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Vision MCP server that provides AI-powered image and video analysis using Google Gemini and Vertex AI",
   "main": "dist/index.js",
   "type": "module",
@@ -17,7 +17,9 @@
     "prepublishOnly": "npm run lint",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "publish-registry": "mcp-publisher publish",
+    "publish-registry:dry-run": "mcp-publisher publish --dry-run"
   },
   "keywords": [
     "mcp",
@@ -29,7 +31,7 @@
     "vertex-ai",
     "google-ai"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Tan Yong Sheng <tys203831@gmail.com>",
   "license": "MIT",
   "bin": {
     "ai-vision-mcp": "dist/index.js"
@@ -48,10 +50,8 @@
   },
   "homepage": "https://github.com/tan-yong-sheng/ai-vision-mcp#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.901.0",
     "@google-cloud/storage": "^7.17.1",
-    "@google-cloud/vertexai": "^1.0.0",
-    "@google/genai": "^1.0.0",
+    "@google/genai": "^1.24.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@raydium-io/raydium-sdk": "^1.3.1-beta.58",
     "@solana/spl-token": "^0.4.14",
@@ -61,11 +61,19 @@
     "dotenv": "^16.4.5",
     "mime-types": "^2.1.35",
     "node-fetch": "^3.3.2",
+    "sharp": "^0.33.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/html-to-text": "^9.0.4",
+    "@types/http-cache-semantics": "^4.0.4",
+    "@types/long": "^4.0.2",
     "@types/mime-types": "^2.1.4",
     "@types/node": "^20.14.0",
+    "@types/phoenix": "^1.6.6",
+    "@types/ws": "^8.18.1",
+    "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.0",
