@@ -33,8 +33,8 @@ describe('Integration Tests', () => {
 
     const setup = await setupMCPClient({
       GEMINI_API_KEY: apiKey,
-      IMAGE_MODEL: 'gemini-2.5-flash-lite',
-      VIDEO_MODEL: 'gemini-2.5-flash',
+      // Respect IMAGE_MODEL/VIDEO_MODEL from the environment (e.g. GitHub secrets)
+      // by not overriding them here.
     });
     client = setup.client;
     server = setup.server;
