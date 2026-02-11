@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rebuild sharp for Linux
+        run: npm rebuild sharp --platform=linux --arch=x64
+
       - name: Run linter
         run: npm run lint
 
