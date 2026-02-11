@@ -63,29 +63,43 @@ logger.attachServer(server);
 // Helper function to initialize services (lazy loading)
 function getServices() {
   try {
+    void logger.info({ msg: 'getServices() called - initializing...' }, 'server');
+
     // Initialize configuration
+    void logger.info({ msg: 'Getting ConfigService instance...' }, 'server');
     const configService = ConfigService.getInstance();
+    void logger.info({ msg: 'ConfigService instance obtained' }, 'server');
+
+    void logger.info({ msg: 'Getting config...' }, 'server');
     const config = configService.getConfig();
+    void logger.info({ msg: 'Config obtained', provider: config.IMAGE_PROVIDER }, 'server');
 
     // Verify providers are registered
+    void logger.info({ msg: 'Checking available providers...' }, 'server');
     const availableProviders = VisionProviderFactory.getSupportedProviders();
+    void logger.info({ msg: 'Available providers', providers: availableProviders }, 'server');
+
     if (availableProviders.length === 0) {
       throw new Error('No providers registered. VisionProviderFactory.initializeDefaultProviders() may have failed.');
     }
 
-    void logger.info({ msg: 'Available providers', providers: availableProviders }, 'server');
-
     // Create providers using factory
+    void logger.info({ msg: 'Creating image provider...' }, 'server');
     const imageProvider = VisionProviderFactory.createProviderWithValidation(
       config,
       'image'
     );
+    void logger.info({ msg: 'Image provider created' }, 'server');
+
+    void logger.info({ msg: 'Creating video provider...' }, 'server');
     const videoProvider = VisionProviderFactory.createProviderWithValidation(
       config,
       'video'
     );
+    void logger.info({ msg: 'Video provider created' }, 'server');
 
     // Create file services for handling file uploads
+    void logger.info({ msg: 'Creating file services...' }, 'server');
     const imageFileService = new FileService(
       configService,
       'image',
@@ -96,7 +110,9 @@ function getServices() {
       'video',
       videoProvider as any
     );
+    void logger.info({ msg: 'File services created' }, 'server');
 
+    void logger.info({ msg: 'getServices() completed successfully' }, 'server');
     return {
       config,
       configService,
