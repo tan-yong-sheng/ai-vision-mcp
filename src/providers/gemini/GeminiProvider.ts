@@ -23,6 +23,7 @@ import {
   FileNotFoundError,
   NetworkError,
 } from '../../types/Errors.js';
+import { RetryHandler } from '../../utils/retry.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -58,6 +59,36 @@ export class GeminiProvider extends BaseVisionProvider {
   }
 
   async analyzeImage(
+    imageSource: string,
+    prompt: string,
+    options?: AnalysisOptions
+  ): Promise<AnalysisResult> {
+    try {
+      const { result: analysisResult } = await RetryHandler.withRetry(
+        async () => {
+          return await this.analyzeImageOnce(imageSource, prompt, options);
+        },
+        {
+          // Prefer a couple quick retries for transient rate limits/network.
+          maxRetries: 2,
+          baseDelay: 1500,
+          maxDelay: 20000,
+          retryableErrors: ['RATE_LIMIT_EXCEEDED', 'NETWORK_ERROR'],
+          onRetry: (attempt, err) => {
+            console.error(
+              `[GeminiProvider] Retry analyzeImage attempt ${attempt}: ${err.message}`
+            );
+          },
+        }
+      );
+
+      return analysisResult;
+    } catch (error) {
+      throw this.handleError(error, 'image analysis');
+    }
+  }
+
+  private async analyzeImageOnce(
     imageSource: string,
     prompt: string,
     options?: AnalysisOptions
