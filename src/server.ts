@@ -621,7 +621,7 @@ process.on('SIGTERM', async () => {
 });
 
 // Start server
-async function main() {
+export async function runMcpServer(): Promise<void> {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
@@ -633,4 +633,7 @@ async function main() {
   }
 }
 
-main();
+// Only run MCP server if this file is executed directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runMcpServer();
+}

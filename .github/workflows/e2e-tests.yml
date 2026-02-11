@@ -1,0 +1,249 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_cli_tests:
+        description: 'Run CLI E2E tests'
+        required: true
+        default: true
+        type: boolean
+      run_integration_tests:
+        description: 'Run Integration tests (real API calls)'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ============================================================================
+  # Phase 1: Protocol & Validation Tests (Always Run)
+  # ============================================================================
+  protocol-validation:
+    name: Protocol & Validation Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run protocol tests
+        run: npm run test:e2e:protocol
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: test-api-key-for-e2e-tests
+
+      - name: Run validation tests
+        run: vitest run tests/e2e/validation.test.ts
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: test-api-key-for-e2e-tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protocol-validation-results
+          path: |
+            test-results/
+          retention-days: 7
+
+  # ============================================================================
+  # Phase 2: Check if API tests should run
+  # ============================================================================
+  check-api-tests:
+    name: Check API Test Conditions
+    runs-on: ubuntu-latest
+    needs: protocol-validation
+    outputs:
+      should_run_api_tests: ${{ steps.check.outputs.run_tests }}
+
+    steps:
+      - name: Check conditions
+        id: check
+        run: |
+          RUN_TESTS="false"
+
+          # Condition 1: Manual trigger with checkbox enabled
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.run_cli_tests }}" == "true" || "${{ inputs.run_integration_tests }}" == "true" ]]; then
+              RUN_TESTS="true"
+              echo "Triggered by workflow_dispatch with API tests enabled"
+            fi
+          fi
+
+          # Condition 2: PR has 'e2e-tests' label
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+            if echo "$LABELS" | grep -q "e2e-tests"; then
+              RUN_TESTS="true"
+              echo "PR has 'e2e-tests' label"
+            fi
+          fi
+
+          # Condition 3: Commit message contains [e2e]
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if echo "$COMMIT_MSG" | grep -q "\[e2e\]"; then
+            RUN_TESTS="true"
+            echo "Commit message contains [e2e]"
+          fi
+
+          # Condition 4: Push to main with specific file changes
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Check if CLI or provider files changed
+            if git diff --name-only HEAD~1 | grep -E "^(src/cli/|src/tools/|tests/e2e/)"; then
+              RUN_TESTS="true"
+              echo "Main branch push with CLI/tool/test changes"
+            fi
+          fi
+
+          echo "run_tests=$RUN_TESTS" >> $GITHUB_OUTPUT
+          echo "Should run API tests: $RUN_TESTS"
+
+  # ============================================================================
+  # Phase 3: CLI E2E Tests (Conditional)
+  # ============================================================================
+  e2e-cli:
+    name: CLI E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: check-api-tests
+    if: needs.check-api-tests.outputs.should_run_api_tests == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run CLI E2E tests
+        run: npm run test:e2e:cli
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.0-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-2.0-flash-lite' }}
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-test-results
+          path: |
+            test-results/
+            tmp/
+          retention-days: 7
+
+  # ============================================================================
+  # Phase 4: Integration Tests (Conditional)
+  # ============================================================================
+  e2e-integration:
+    name: Integration Tests (Real API)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check-api-tests
+    if: |
+      needs.check-api-tests.outputs.should_run_api_tests == 'true' &&
+      (github.event.inputs.run_integration_tests != 'false' || github.event_name != 'workflow_dispatch')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run integration tests
+        run: vitest run tests/e2e/integration.test.ts
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.0-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-2.0-flash-lite' }}
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            test-results/
+          retention-days: 7
+
+  # ============================================================================
+  # Summary Job
+  # ============================================================================
+  e2e-summary:
+    name: E2E Test Summary
+    runs-on: ubuntu-latest
+    needs: [protocol-validation, e2e-cli, e2e-integration]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate summary
+        run: |
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Protocol & Validation | ${{ needs.protocol-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLI | ${{ needs.e2e-cli.result == 'success' && '✅ Passed' || needs.e2e-cli.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | ${{ needs.e2e-integration.result == 'success' && '✅ Passed' || needs.e2e-integration.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Show skip reason
+          if [[ "${{ needs.e2e-cli.result }}" == "skipped" ]]; then
+            echo "ℹ️ API tests were skipped. To run them:" >> $GITHUB_STEP_SUMMARY
+            echo "- Add 'e2e-tests' label to this PR" >> $GITHUB_STEP_SUMMARY
+            echo "- Include '[e2e]' in commit message" >> $GITHUB_STEP_SUMMARY
+            echo "- Run workflow manually with 'Run workflow' button" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "Artifacts are available for download." >> $GITHUB_STEP_SUMMARY

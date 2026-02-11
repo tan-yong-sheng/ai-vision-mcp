@@ -17,7 +17,7 @@ const ProviderSchema = z.enum(['google', 'vertex_ai']);
 const LogLevelSchema = z.enum(['info', 'debug', 'warn', 'error']);
 
 // Node environment schema
-const NodeEnvSchema = z.enum(['development', 'production']);
+const NodeEnvSchema = z.enum(['development', 'production', 'test']);
 
 // File format schemas
 const ImageFormatSchema = z.enum([

@@ -83,7 +83,7 @@ export interface Config {
   LOG_LEVEL?: 'info' | 'debug' | 'warn' | 'error';
 
   // Development configuration
-  NODE_ENV?: 'development' | 'production';
+  NODE_ENV?: 'development' | 'production' | 'test';
 }
 
 export interface GeminiConfig {
@@ -165,5 +165,5 @@ export interface LoggingConfig {
 }
 
 export interface DevelopmentConfig {
-  nodeEnv: 'development' | 'production';
+  nodeEnv: 'development' | 'production' | 'test';
 }

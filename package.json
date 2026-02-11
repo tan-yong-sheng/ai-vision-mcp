@@ -19,7 +19,13 @@
     "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags",
     "publish-registry": "mcp-publisher publish",
-    "publish-registry:dry-run": "mcp-publisher publish --dry-run"
+    "publish-registry:dry-run": "mcp-publisher publish --dry-run",
+    "test": "vitest run",
+    "test:e2e": "vitest run tests/e2e",
+    "test:e2e:protocol": "vitest run tests/e2e/protocol.test.ts",
+    "test:e2e:ci": "vitest run tests/e2e/protocol.test.ts tests/e2e/validation.test.ts",
+    "test:e2e:cli": "vitest run tests/e2e/cli.test.ts",
+    "test:watch": "vitest watch"
   },
   "keywords": [
     "mcp",
@@ -34,7 +40,8 @@
   "author": "Tan Yong Sheng <tys203831@gmail.com>",
   "license": "MIT",
   "bin": {
-    "ai-vision-mcp": "dist/index.js"
+    "ai-vision-mcp": "dist/index.js",
+    "ai-vision": "dist/index.js"
   },
   "files": [
     "dist",
@@ -69,11 +76,16 @@
     "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "depcheck": "^1.4.7",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.4",
+    "knip": "^5.83.1",
     "prettier": "^3.3.2",
-    "typescript": "^5.5.0"
+    "ts-prune": "^0.10.3",
+    "typescript": "^5.5.0",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=18.0.0"

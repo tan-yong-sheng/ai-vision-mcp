@@ -1,288 +1,274 @@
-# CLAUDE.md
+# AI Vision MCP - Agent Architecture Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-Please always use context7 MCP, web search, or web fetch for additional information when fixing bugs or implementing new features.
+## Overview
 
-## **CRITICAL: Documentation Maintenance Requirements**
+This document explains the codebase architecture for AI assistants working on the ai-vision-mcp project. It clarifies how CLI and MCP modes share the same business logic.
 
-**BEFORE starting any coding work:**
-1. **ALWAYS create a plan document** in the `docs/llm_logs/` folder before writing any code
-2. **ALWAYS update README.md** when introducing changes that affect:
-   - New MCP tools or parameters
-   - Environment variables
-   - Configuration options
-   - Installation instructions
-   - Breaking changes
-3. **ALWAYS update docs/SPEC.md** when introducing changes that affect:
-   - Architecture modifications
-   - New provider implementations
-   - API interface changes
-   - File handling logic
-   - Error handling patterns
+## Architecture Pattern: Shared Tool Functions
 
-**Planning Process:**
-- Create plan documents in `docs/llm_logs/` folder (e.g., `docs/llm_logs/feature-name-plan.md`)
-- Include architecture decisions, implementation steps, and testing strategy
-- Reference this plan in your commit messages
-- Keep plan documents as documentation of implementation decisions
+### Core Principle
 
-**Solution Planning Best Practices:**
-- **ALWAYS present at least 3 options** when planning solutions to problems
-- Analyze trade-offs: effort vs. benefit, maintainability vs. speed, risk vs. reward
-- Provide clear recommendations with rationale (e.g., "Option 2 recommended because...")
-- Consider: quick fixes, balanced approaches, and comprehensive solutions
-- Include effort estimates, risk assessments, and rollback strategies for each option
-- Use structured format: Option 1 (Simple), Option 2 (Balanced), Option 3 (Comprehensive)
+**CLI and MCP do NOT duplicate business logic.** Both are thin wrappers that call the same pure tool functions in `src/tools/`.
 
-**Example Planning Structure:**
 ```
-## Plan: [Problem Description]
-
-### Option 1: Quick Fix (15 min)
-- ✅ Minimal change, fastest implementation
-- ❌ Technical debt, not future-proof
-- **When to use**: Urgent hotfixes, time pressure
-
-### Option 2: Balanced Solution (45 min) - RECOMMENDED
-- ✅ Good maintainability, moderate effort
-- ✅ Addresses root cause, extensible
-- ❌ Longer implementation time
-- **When to use**: Most production scenarios
-
-### Option 3: Comprehensive Refactor (2 hours)
-- ✅ Perfect architecture, future-proof
-- ❌ High effort, potential for new bugs
-- **When to use**: Major feature additions, architectural improvements
-
-### Recommendation: Option 2
-**Rationale**: Balances immediate needs with long-term maintainability...
+┌─────────────────┐     ┌─────────────────┐
+│   CLI Mode      │     │   MCP Mode      │
+│   (src/cli/)    │     │   (src/server.ts)│
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         │   Both call the same  │
+         │   tool functions      │
+         ▼                       ▼
+┌──────────────────────────────────────┐
+│     Tool Functions (src/tools/)      │
+│  • analyze_image()                   │
+│  • compare_images()                  │
+│  • detect_objects_in_image()         │
+│  • analyze_video()                   │
+└──────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────┐
+│     Services (src/services/)         │
+│  • ConfigService (singleton)         │
+│  • FileService                       │
+│  • VisionProviderFactory             │
+└──────────────────────────────────────┘
 ```
 
-**Documentation Synchronization:**
-- README.md is for **users** - installation, usage, and configuration
-- docs/SPEC.md is for **developers** - technical specifications and architecture
-- CLAUDE.md is for **AI assistants** - development patterns and constraints
-- All three documents must stay consistent with the actual implementation
+### Tool Functions Are Pure Functions
 
-## Development Commands
-
-### Building and Testing
-- `npm run build` - Build TypeScript project to `dist/` directory
-- `npm run dev` - Start development server with watch mode (tsc --watch)
-- `npm start` - Start the built MCP server (node dist/index.js)
-
-### Code Quality
-- `npm run lint` - Run ESLint on all TypeScript files
-- `npm run lint:fix` - Run ESLint with auto-fix
-- `npm run format` - Format code with Prettier
-
-### Publishing
-- `npm run prepublishOnly` - Run lint before publish
-- `npm run preversion` - Run lint before version bump
-- `npm run version` - Format code and add to git before version
-- `npm run prepare` - Build project automatically on install
-
-## Architecture Overview
-
-This is a Model Context Protocol (MCP) server that provides AI-powered image and video analysis using Google Gemini and Vertex AI models.
-
-### Core Components
-
-**Server Architecture** (`src/server.ts`):
-- Main MCP server entry point using `@modelcontextprotocol/sdk`
-- Lazy-loaded services initialized on first request via `getServices()` function
-- Four primary tools: `analyze_image`, `compare_images`, `detect_objects_in_image`, and `analyze_video`
-- Comprehensive error handling with custom `VisionError` types
-- Graceful shutdown handling for SIGINT/SIGTERM
-
-**Configuration Hierarchy System**:
-The server implements a sophisticated 4-level configuration priority system:
-1. **LLM-assigned values** - Parameters passed directly in tool calls (e.g., `{"temperature": 0.1}`)
-2. **Function-specific variables** - `TEMPERATURE_FOR_ANALYZE_IMAGE`, `MAX_TOKENS_FOR_COMPARE_IMAGES`, etc.
-3. **Task-specific variables** - `TEMPERATURE_FOR_IMAGE`, `MAX_TOKENS_FOR_VIDEO`, etc.
-4. **Universal variables** - `TEMPERATURE`, `MAX_TOKENS`, etc.
-
-**Provider Factory** (`src/providers/factory/ProviderFactory.ts`):
-- Factory pattern for creating AI provider instances with validation (`VisionProviderFactory`)
-- Supports two providers: `google` (Gemini API) and `vertex_ai` (Vertex AI)
-- `createProviderWithValidation()` method ensures configuration validation before provider creation
-- Automatic provider initialization via `initializeDefaultProviders()` on module load
-- Configuration requirement validation and error handling with provider context
-- Dynamic provider registration support through `registerProvider()` method
-
-**Configuration Service** (`src/services/ConfigService.ts`):
-- Singleton pattern for configuration management via `ConfigService.getInstance()`
-- Environment variable validation with Zod schemas
-- Provider-specific configuration methods
-- Auto-derivation of related settings (e.g., project ID from credentials)
-- Hierarchical configuration resolution
-
-**Configuration Validation** (`src/types/Config.ts` and `src/utils/validation.ts`):
-- `Config.ts` defines TypeScript interfaces for all configuration options
-- `validation.ts` provides Zod schemas that validate environment variables against these interfaces
-- These files must stay synchronized - any new config field in Config.ts requires corresponding validation rules in validation.ts
-
-**Key Services**:
-- `FileService` - Handles file uploads, validation, and processing with support for URLs, local files, and base64, includes cross-platform path handling
-- `ConfigService` - Singleton pattern for environment variables and settings with validation
-- Vision providers in `src/providers/` - AI model implementations with consistent interfaces
-- Storage strategies in `src/storage/` - Google Cloud Storage integration
-- File upload strategies in `src/file-upload/` - Provider-specific upload handling
-- Image annotation utilities in `src/utils/` - Sharp-based image processing for object detection
-
-### MCP Tools Implementation
-
-**All tools follow consistent patterns:**
-- Configuration hierarchy: function-specific → task-specific → universal variables
-- File source support: URLs, local files, base64 data
-- Error handling with custom `VisionError` types with provider context
-- Provider-agnostic interface through factory pattern
-- Structured output schemas for object detection
-
-**Tool-specific behaviors:**
-- `detect_objects_in_image`: Returns annotated images with bounding boxes, 2-step file handling (explicit path → temp file), uses structured JSON output with coordinates, includes CSS selector suggestions for web elements
-- `compare_images`: Supports 2-4 images with mixed source types, batch processing optimization
-- `analyze_image`: Special prompt handling for frontend UI comparison tasks, intelligent file processing based on size
-- `analyze_video`: YouTube URL and local file support, GCS integration for Vertex AI, duration and size validation
-
-### Provider Implementation
-
-**Gemini Provider** (`src/providers/gemini/`):
-- Direct Google Gemini API integration using `@google/genai`
-- Files API for larger uploads (>10MB via `GEMINI_FILES_API_THRESHOLD`)
-- Base64 encoding for smaller files (inline data)
-- Structured output support for object detection with response schemas
-- Native support for both `google` and `vertex_ai` providers using same SDK
-
-**Vertex AI Provider** (`src/providers/vertexai/`):
-- Google Cloud Vertex AI integration using `@google/genai` SDK
-- Requires GCS bucket for all file uploads (configured via `VERTEX_AI_FILES_API_THRESHOLD`)
-- Service account authentication with auto project ID extraction
-- Uses same underlying SDK as Gemini provider for consistency
-
-### File Processing Flow
-
-1. **Input Validation**: File size, format, and duration checks using configurable limits
-2. **Upload Strategy Selection**: Based on provider and file size thresholds
-3. **File Processing**: MIME type detection, path resolution, cross-platform support (Windows/Unix)
-4. **AI Analysis**: Provider-specific API calls with structured output schemas
-5. **Response Processing**: Structured JSON responses with comprehensive error handling
-
-## Critical Development Constraints
-
-### Configuration Synchronization
-- `src/types/Config.ts` and `src/utils/validation.ts` MUST stay synchronized
-- Every new config field in Config.ts requires corresponding Zod validation in validation.ts
-- Function-specific environment variables must follow the naming pattern: `TEMPERATURE_FOR_ANALYZE_IMAGE`, etc.
-- When adding new configuration, always implement the 4-level hierarchy
-
-### Error Handling Requirements
-- Always use custom `VisionError` types with provider context
-- Include error codes for proper client handling
-- Implement retry logic for network failures
-- Never expose sensitive credentials in error messages
-- Provider-specific error context for debugging
-
-### TypeScript Configuration
-- ES2022 target with ESNext modules, strict type checking enabled
-- Path mapping with `@/*` pointing to `src/*` for clean imports
-- Declaration maps and source maps enabled for debugging
-- No implicit any, returns, or this allowed (strict mode)
-
-### File Organization
-```
-src/
-├── providers/          # AI provider implementations
-│   ├── gemini/        # Google Gemini provider
-│   ├── vertexai/      # Vertex AI provider
-│   └── factory/       # Provider factory
-├── services/          # Core services
-│   ├── ConfigService.ts
-│   └── FileService.ts
-├── storage/           # Storage implementations
-├── file-upload/       # File upload strategies
-├── types/            # TypeScript type definitions
-├── utils/            # Utility functions
-└── tools/            # MCP tool implementations
-```
-
-## Development Patterns
-
-1. **Lazy Loading**: Services initialized on first request via `getServices()` function
-2. **Factory Pattern**: Providers created through `VisionProviderFactory` with validation
-3. **Singleton Pattern**: `ConfigService.getInstance()` ensures consistency
-4. **Strategy Pattern**: File upload strategies selected based on provider and size
-5. **Zod Validation**: All inputs validated with Zod schemas for runtime type safety
-6. **Configuration Hierarchy**: Always implement 4-level priority: LLM-assigned → function-specific → task-specific → universal
-7. **Error Context**: Always include provider information in errors for debugging
-8. **Cross-Platform Support**: Handle both Windows and Unix file paths correctly
-9. **Config Building Pattern**: Use `buildConfigWithOptions()` helper from BaseVisionProvider for consistent config generation
-
-### Config Building Pattern (IMPORTANT)
-
-When implementing provider methods that need AI configuration, **always use** the `buildConfigWithOptions()` helper:
+All tool functions in `src/tools/` follow this pattern:
 
 ```typescript
-// ✅ Correct - uses helper method
-const config = this.buildConfigWithOptions('image', options?.functionName, options);
-
-await this.client.models.generateContent({
-  model,
-  contents,
-  config,  // Automatically includes responseSchema and systemInstruction if provided
-});
-
-// ❌ Incorrect - manual config building (duplicates code)
-const config = {
-  temperature: this.resolveTemperatureForFunction(...),
-  topP: this.resolveTopPForFunction(...),
-  topK: this.resolveTopKForFunction(...),
-  maxOutputTokens: this.resolveMaxTokensForFunction(...),
-  candidateCount: 1,
-};
-if (options?.responseSchema) {
-  config.responseMimeType = 'application/json';
-  config.responseSchema = options.responseSchema;
-}
-if (options?.systemInstruction) {
-  config.systemInstruction = options.systemInstruction;
-}
-// ... manual config building creates maintenance burden
+export async function analyze_image(
+  args: AnalyzeImageArgs,        // Input arguments
+  config: Config,                // Configuration
+  imageProvider: VisionProvider, // Provider instance
+  imageFileService: FileService  // File service
+): Promise<AnalysisResult>
 ```
 
-**Why use `buildConfigWithOptions()`?**
+**Key characteristics:**
+1. All dependencies are passed as parameters (not imported)
+2. No side effects (pure functions)
+3. Can be called from CLI, MCP, or tests without modification
+4. Contain ALL business logic
 
-1. **DRY Principle**: Single source of truth for config generation
-2. **Automatic Structured Output**: Handles `responseSchema` and `systemInstruction` automatically
-3. **Consistency**: Same config format across all providers (Gemini, Vertex AI)
-4. **Maintainability**: Adding new config options only requires updating one method
-5. **Type Safety**: Centralized TypeScript type checking
+### CLI Layer (Thin Wrapper)
 
-**This pattern is critical for:**
-- Object detection (`detect_objects_in_image`) - requires structured JSON output
-- Any future tools that need custom response schemas
-- Maintaining consistency between Gemini and Vertex AI providers
+**Location:** `src/cli/`
 
-**Reference Implementation:**
-- Helper method: `src/providers/base/VisionProvider.ts:354-395`
-- Usage in Gemini: `src/providers/gemini/GeminiProvider.ts:185-189, 348-352, 468-472`
-- Usage in Vertex AI: `src/providers/vertexai/VertexAIProvider.ts:84-88, 161-165, 246-250`
+**Responsibilities:**
+- Parse command-line arguments
+- Initialize services (ConfigService, FileService, providers)
+- Call tool functions with parsed arguments
+- Format and display output
 
-## Environment Variables
+**Example flow:**
+```typescript
+// src/cli/commands/analyze-image.ts
+import { analyze_image } from '../../tools/analyze_image.js';
 
-**Required for Development:**
-- `IMAGE_PROVIDER` and `VIDEO_PROVIDER`: Set to `google` or `vertex_ai`
-- Provider-specific credentials (GEMINI_API_KEY or VERTEX_CREDENTIALS + GCS_BUCKET_NAME)
+export async function runAnalyzeImage(args: string[], config: Config) {
+  // 1. Parse CLI args
+  const { positional, options } = parseArgs(args);
+  const imageSource = positional[0];
+  const prompt = options.prompt;
 
-**Common Development Overrides:**
-- `TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0` for deterministic object detection
-- `LOG_LEVEL=debug` for verbose logging during development
-- `NODE_ENV=development` for development-specific behavior
+  // 2. Initialize services
+  const imageProvider = VisionProviderFactory.createProviderWithValidation(config, 'image');
+  const imageFileService = new FileService(configService, 'image', imageProvider);
 
-## Testing and Debugging
+  // 3. Call shared tool function
+  const result = await analyze_image(
+    { imageSource, prompt, options: parseOptions(options) },
+    config,
+    imageProvider,
+    imageFileService
+  );
 
-- Use `npm run dev` for development with automatic rebuilding
-- Check console logs for detailed file processing information
-- Verify configuration hierarchy by setting different levels of environment variables
-- Test with multiple file sources (URLs, local files, base64) to ensure compatibility
-- Use structured logging patterns for consistent debugging output
+  // 4. Format output
+  console.log(formatOutput(result, options.json));
+}
+```
+
+### MCP Layer (Thin Wrapper)
+
+**Location:** `src/server.ts`
+
+**Responsibilities:**
+- Register MCP tools
+- Validate input with Zod schemas
+- Initialize services on-demand
+- Call tool functions with validated arguments
+- Format responses as MCP content
+
+**Example flow:**
+```typescript
+// src/server.ts
+import { analyze_image } from './tools/analyze_image.js';
+
+server.registerTool('analyze_image', {
+  // 1. Define input schema (Zod)
+  inputSchema: z.object({
+    imageSource: z.string(),
+    prompt: z.string(),
+    options: z.object({...}).optional(),
+  }),
+}, async (args) => {
+  // 2. Initialize services (lazy loading)
+  const { config, imageProvider, imageFileService } = getServices();
+
+  // 3. Call shared tool function (SAME as CLI!)
+  const result = await analyze_image(
+    validatedArgs,
+    config,
+    imageProvider,
+    imageFileService
+  );
+
+  // 4. Format as MCP response
+  return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+});
+```
+
+## File Organization
+
+```
+src/
+├── index.ts              # Entry point: detects CLI vs MCP mode
+├── server.ts             # MCP server setup (thin wrapper)
+├── cli/                  # CLI layer (thin wrapper)
+│   ├── index.ts          # CLI router
+│   ├── utils.ts          # CLI utilities (parsing, formatting)
+│   └── commands/         # CLI command handlers
+│       ├── analyze-image.ts
+│       ├── compare-images.ts
+│       ├── detect-objects.ts
+│       └── analyze-video.ts
+├── tools/                # SHARED business logic
+│   ├── analyze_image.ts  # Pure function
+│   ├── compare_images.ts # Pure function
+│   ├── detect_objects_in_image.ts
+│   ├── analyze_video.ts
+│   └── index.ts          # Tool exports
+├── services/             # Services (used by both CLI and MCP)
+│   ├── ConfigService.ts
+│   ├── FileService.ts
+│   └── LoggerService.ts
+├── providers/            # AI provider implementations
+│   ├── gemini/
+│   ├── vertexai/
+│   └── factory/
+└── types/                # TypeScript types
+```
+
+## Key Insight: No Logic Duplication
+
+**When adding a new feature:**
+
+1. **Modify ONLY the tool function** in `src/tools/`
+2. Both CLI and MCP automatically get the new behavior
+3. No need to update CLI commands or MCP handlers
+
+**Example:**
+```typescript
+// To add a new parameter to analyze_image:
+// 1. Update src/tools/analyze_image.ts (ONCE)
+// 2. Both CLI and MCP automatically support it!
+
+// src/tools/analyze_image.ts
+export interface AnalyzeImageArgs {
+  imageSource: string;
+  prompt: string;
+  options?: AnalysisOptions;
+  newFeature?: string;  // <-- Add here
+}
+```
+
+## Benefits of This Architecture
+
+1. **Single Source of Truth**: Business logic exists in one place
+2. **DRY (Don't Repeat Yourself)**: No code duplication
+3. **Testable**: Tool functions can be unit tested in isolation
+4. **Maintainable**: Changes apply to both CLI and MCP automatically
+5. **Flexible**: Can add new interfaces (REST API, WebSocket) by wrapping same tool functions
+
+## Common Tasks for Agents
+
+### Adding a New Tool
+
+1. Create tool function in `src/tools/new_tool.ts`
+2. Export from `src/tools/index.ts`
+3. Add CLI command in `src/cli/commands/new-tool.ts`
+4. Register CLI command in `src/cli/index.ts`
+5. Register MCP tool in `src/server.ts`
+
+### Modifying Existing Tool Logic
+
+1. **Only modify** `src/tools/<tool_name>.ts`
+2. Both CLI and MCP get the change automatically
+3. No need to touch `src/cli/` or `src/server.ts`
+
+### Adding Configuration Options
+
+1. Add to `src/types/Config.ts`
+2. Add validation to `src/utils/validation.ts`
+3. Use in tool function via `config.PARAMETER_NAME`
+4. Document in README.md
+
+## Anti-Patterns to Avoid
+
+❌ **DON'T** add business logic in CLI commands
+```typescript
+// BAD: CLI command doing analysis
+export async function runAnalyzeImage(args: string[]) {
+  // Don't implement analysis logic here!
+  const result = await fetch('https://api...');
+  // ... complex processing ...
+}
+```
+
+✅ **DO** keep CLI as thin wrapper
+```typescript
+// GOOD: CLI just calls tool function
+export async function runAnalyzeImage(args: string[]) {
+  const result = await analyze_image(args, config, provider, fileService);
+}
+```
+
+❌ **DON'T** duplicate logic between CLI and MCP
+```typescript
+// BAD: Same logic in two places
+// In CLI: await processImage(source);
+// In MCP: await processImage(source); // Duplicated!
+```
+
+✅ **DO** put logic in tool functions
+```typescript
+// GOOD: Logic in one place
+// In tools/analyze_image.ts: await processImage(source);
+// Both CLI and MCP call this function
+```
+
+## Verification Checklist
+
+Before submitting changes, verify:
+
+- [ ] Tool functions remain pure (dependencies as parameters)
+- [ ] No business logic added to CLI commands
+- [ ] No business logic added to MCP handlers
+- [ ] Both CLI and MCP use same tool function imports
+- [ ] Tests pass for both modes
+
+## Summary
+
+**The CLI and MCP share ALL business logic through pure tool functions in `src/tools/`.**
+
+When working on this codebase:
+1. Tool functions = Business logic
+2. CLI = Argument parsing + output formatting
+3. MCP = Input validation + response formatting
+
+This is a well-designed, DRY architecture that minimizes maintenance overhead.
