@@ -603,6 +603,25 @@ server.registerTool<any, any>(
             .describe(
               'Maximum number of tokens to generate in the response. For video analysis, recommend 2000-4000 tokens for comprehensive temporal understanding.'
             ),
+          videoMetadata: z
+            .object({
+              startOffset: z
+                .union([z.string(), z.number()])
+                .optional()
+                .describe('Start time offset (e.g., "40s", "2m30s", "00:02:30", or seconds)'),
+              endOffset: z
+                .union([z.string(), z.number()])
+                .optional()
+                .describe('End time offset (e.g., "80s", "3m", "00:03:00", or seconds)'),
+              fps: z
+                .number()
+                .min(0.1)
+                .max(30)
+                .optional()
+                .describe('Frame rate for sampling (default: 1, range: 0.1-30)'),
+            })
+            .optional()
+            .describe('Video clipping and frame rate settings for analyzing video segments'),
         })
         .optional(),
     }),

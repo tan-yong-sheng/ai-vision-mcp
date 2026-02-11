@@ -185,6 +185,13 @@ export const ConfigSchema = z.object({
 });
 
 // Analysis options schema
+// Video metadata schema for clipping and frame rate
+export const VideoMetadataSchema = z.object({
+  startOffset: z.union([z.string(), z.number()]).optional(),
+  endOffset: z.union([z.string(), z.number()]).optional(),
+  fps: z.number().min(0.1).max(30).optional(),
+});
+
 export const AnalysisOptionsSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   topP: z.number().min(0).max(1).optional(),
@@ -194,6 +201,7 @@ export const AnalysisOptionsSchema = z.object({
   functionName: z
     .enum(Object.values(FUNCTION_NAMES) as [FunctionName, ...FunctionName[]])
     .optional(),
+  videoMetadata: VideoMetadataSchema.optional(),
 });
 
 // MCP tool argument schemas

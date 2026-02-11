@@ -24,6 +24,7 @@ import {
   NetworkError,
 } from '../../types/Errors.js';
 import { RetryHandler } from '../../utils/retry.js';
+import { formatDuration } from '../../utils/duration.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -541,6 +542,9 @@ export class GeminiProvider extends BaseVisionProvider {
         );
       }
 
+      // Build video metadata for the request if provided
+      const videoMetadata = this.buildVideoMetadata(options?.videoMetadata);
+
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
@@ -551,6 +555,7 @@ export class GeminiProvider extends BaseVisionProvider {
               options?.functionName,
               options
             ),
+            ...(videoMetadata && { videoMetadata }),
           });
         });
 
@@ -723,6 +728,43 @@ export class GeminiProvider extends BaseVisionProvider {
   }
 
   // Private helper methods
+
+  private buildVideoMetadata(videoMetadata?: {
+    startOffset?: string | number;
+    endOffset?: string | number;
+    fps?: number;
+  }): { startOffset?: string; endOffset?: string; fps?: number } | undefined {
+    if (!videoMetadata) {
+      return undefined;
+    }
+
+    const result: { startOffset?: string; endOffset?: string; fps?: number } = {};
+
+    if (videoMetadata.startOffset !== undefined) {
+      const formatted = formatDuration(videoMetadata.startOffset);
+      if (formatted) {
+        result.startOffset = formatted;
+      }
+    }
+
+    if (videoMetadata.endOffset !== undefined) {
+      const formatted = formatDuration(videoMetadata.endOffset);
+      if (formatted) {
+        result.endOffset = formatted;
+      }
+    }
+
+    if (videoMetadata.fps !== undefined) {
+      result.fps = videoMetadata.fps;
+    }
+
+    // Return undefined if no valid metadata was provided
+    if (Object.keys(result).length === 0) {
+      return undefined;
+    }
+
+    return result;
+  }
 
   private buildFileUri(fileId: string): string {
     // Remove any leading 'files/' prefix if present

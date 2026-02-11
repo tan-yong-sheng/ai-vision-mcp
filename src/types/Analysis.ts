@@ -6,6 +6,19 @@ import { type FunctionName } from '../constants/FunctionNames.js';
 
 export type TaskType = 'image' | 'video';
 
+/**
+ * Video metadata for clipping and frame rate control
+ * Used with Gemini API for YouTube videos and file URIs
+ */
+export interface VideoMetadata {
+  /** Start time offset (e.g., "40s", "2m30s", or seconds) */
+  startOffset?: string | number;
+  /** End time offset (e.g., "80s", "3m", or seconds) */
+  endOffset?: string | number;
+  /** Frame rate for sampling (default: 1, range: 0.1-30) */
+  fps?: number;
+}
+
 export interface AnalysisOptions {
   temperature?: number | undefined;
   topP?: number | undefined;
@@ -18,6 +31,7 @@ export interface AnalysisOptions {
   functionName?: FunctionName;
   responseSchema?: any; // Structured output schema for object detection
   systemInstruction?: string | undefined; // System instruction to guide model behavior
+  videoMetadata?: VideoMetadata; // Video clipping and frame rate settings
 }
 
 export interface AnalysisResult {

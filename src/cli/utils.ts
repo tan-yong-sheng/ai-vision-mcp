@@ -1,13 +1,21 @@
 import type { AnalysisResult } from '../types/Providers.js';
 import type { ObjectDetectionResponse } from '../types/ObjectDetection.js';
+import type { VideoMetadata } from '../types/Analysis.js';
 
 export function parseOptions(options: Record<string, string>): {
   temperature?: number;
   topP?: number;
   topK?: number;
   maxTokens?: number;
+  videoMetadata?: VideoMetadata;
 } {
-  const result: Record<string, number> = {};
+  const result: {
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    maxTokens?: number;
+    videoMetadata?: VideoMetadata;
+  } = {};
 
   if (options.temperature) {
     result.temperature = parseFloat(options.temperature);
@@ -20,6 +28,26 @@ export function parseOptions(options: Record<string, string>): {
   }
   if (options['max-tokens'] || options.maxTokens) {
     result.maxTokens = parseInt(options['max-tokens'] || options.maxTokens);
+  }
+
+  // Parse video metadata options
+  const videoMetadata: VideoMetadata = {};
+  if (options['start-offset'] || options.startOffset) {
+    videoMetadata.startOffset = options['start-offset'] || options.startOffset;
+  }
+  if (options['end-offset'] || options.endOffset) {
+    videoMetadata.endOffset = options['end-offset'] || options.endOffset;
+  }
+  if (options.fps) {
+    const fpsValue = parseFloat(options.fps);
+    if (!isNaN(fpsValue)) {
+      videoMetadata.fps = fpsValue;
+    }
+  }
+
+  // Only add videoMetadata if at least one field is set
+  if (videoMetadata.startOffset !== undefined || videoMetadata.endOffset !== undefined || videoMetadata.fps !== undefined) {
+    result.videoMetadata = videoMetadata;
   }
 
   return result;
