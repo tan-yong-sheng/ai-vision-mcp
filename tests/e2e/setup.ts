@@ -17,9 +17,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..', '..');
 
-export interface TestClient extends Client {
-  transport?: StdioClientTransport;
-}
+// Store transport reference separately to avoid type conflicts
+const transportMap = new WeakMap<Client, StdioClientTransport>();
+
+export type TestClient = Client;
 
 export interface ServerProcess {
   process: ChildProcess;
@@ -149,13 +150,16 @@ export async function stopServer(server: ServerProcess): Promise<void> {
 /**
  * Create an MCP client connected to the server via stdio transport
  * The transport will spawn the server process itself.
+ * Includes timeout and proper cleanup handling.
  */
 export async function createMCPClient(
-  envOverrides: Record<string, string> = {}
+  envOverrides: Record<string, string> = {},
+  timeoutMs: number = 15000
 ): Promise<{ client: TestClient; server: ServerProcess }> {
   const serverPath = join(PROJECT_ROOT, 'dist', 'index.js');
   const env = createTestEnv(envOverrides);
 
+  // Create transport
   const transport = new StdioClientTransport({
     command: 'node',
     args: [serverPath],
@@ -169,13 +173,17 @@ export async function createMCPClient(
       version: '1.0.0',
     },
     {
-      capabilities: {
-        tools: {},
-      },
+      capabilities: {},
     }
   );
 
-  await client.connect(transport);
+  // Connect with timeout
+  const connectPromise = client.connect(transport);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`MCP client connection timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  await Promise.race([connectPromise, timeoutPromise]);
 
   // Create a ServerProcess-like object for compatibility with existing tests
   const serverProcess: ServerProcess = {
@@ -192,6 +200,9 @@ export async function createMCPClient(
       if (serverProcess.stderr.length > 100) serverProcess.stderr.shift();
     });
   }
+
+  // Store transport reference for cleanup
+  transportMap.set(client, transport);
 
   return { client: client as TestClient, server: serverProcess };
 }
@@ -214,10 +225,19 @@ export async function teardownMCPClient(
   _server?: ServerProcess
 ): Promise<void> {
   try {
-    await client.close();
+    // Close transport first to prevent hanging
+    const transport = transportMap.get(client);
+    if (transport) {
+      await transport.close().catch(() => {});
+      transportMap.delete(client);
+    }
+    // Then close client
+    await client.close().catch(() => {});
   } catch (error) {
     // Ignore close errors
   }
+  // Give time for cleanup
+  await new Promise(resolve => setTimeout(resolve, 100));
 }
 
 /**

@@ -20,6 +20,15 @@ import { LoggerService } from './services/LoggerService.js';
 
 const logger = LoggerService.getInstance('ai-vision-mcp');
 
+// Ensure providers are initialized before server starts
+try {
+  VisionProviderFactory.initializeDefaultProviders();
+  void logger.info({ msg: 'Providers initialized successfully' }, 'server');
+} catch (error) {
+  void logger.error({ msg: 'Failed to initialize providers', error: String(error) }, 'server');
+  throw error;
+}
+
 // Global exception handlers to prevent crashes from bubbling up and breaking stdio transport
 process.on('uncaughtException', (error) => {
   void logger.error(
@@ -57,6 +66,14 @@ function getServices() {
     // Initialize configuration
     const configService = ConfigService.getInstance();
     const config = configService.getConfig();
+
+    // Verify providers are registered
+    const availableProviders = VisionProviderFactory.getSupportedProviders();
+    if (availableProviders.length === 0) {
+      throw new Error('No providers registered. VisionProviderFactory.initializeDefaultProviders() may have failed.');
+    }
+
+    void logger.info({ msg: 'Available providers', providers: availableProviders }, 'server');
 
     // Create providers using factory
     const imageProvider = VisionProviderFactory.createProviderWithValidation(
