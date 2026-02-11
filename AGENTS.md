@@ -351,6 +351,10 @@ gh pr edit <PR_NUMBER> --remove-label "e2e-integration"
 - `IMAGE_MODEL` - Model for images (optional, default: gemini-2.5-flash-lite)
 - `VIDEO_MODEL` - Model for video (optional, default: gemini-2.5-flash)
 
+**Local dev note (API tests):**
+- When running integration/CLI E2E tests locally, ensure both `GEMINI_API_KEY` and `GEMINI_BASE_URL` are set in your environment.
+- Never commit actual secret values.
+
 ---
 
 ### 4. NPM Publishing Workflows
