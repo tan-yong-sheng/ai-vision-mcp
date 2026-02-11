@@ -1,0 +1,132 @@
+name: E2E Integration Tests (With API)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - cli
+          - integration
+  pull_request:
+    branches: [main]
+    types: [labeled]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  check-trigger:
+    name: Check Trigger Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Check conditions
+        id: check
+        run: |
+          RUN="false"
+
+          # Run on manual trigger
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            RUN="true"
+          fi
+
+          # Run if PR has 'e2e-integration' label
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+            if echo "$LABELS" | grep -q "e2e-integration"; then
+              RUN="true"
+            fi
+          fi
+
+          echo "run=$RUN" >> $GITHUB_OUTPUT
+          echo "Should run: $RUN"
+
+  cli-tests:
+    name: CLI E2E Tests
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run CLI E2E tests
+        if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'cli'
+        run: npm run test:e2e:cli
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.0-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-2.0-flash-lite' }}
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-test-results
+          path: test-results/
+          retention-days: 7
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run integration tests
+        if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration'
+        run: npx vitest run tests/e2e/integration.test.ts
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.0-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-2.0-flash-lite' }}
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
+          retention-days: 7

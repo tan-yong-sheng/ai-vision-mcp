@@ -1,8 +1,18 @@
-name: Publish to npm (dev) on push to main
+name: Publish to npm (dev)
 
 on:
+  # Trigger on tags with -dev suffix (e.g., v1.0.0-dev.1)
   push:
-    branches: [main]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-dev*'
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: 'Version suffix (e.g., dev.1, beta.2)'
+        required: true
+        default: 'dev'
+        type: string
 
 jobs:
   publish-dev:
@@ -29,13 +39,23 @@ jobs:
       - name: Build package
         run: npm run build
 
-      - name: Create dev version
+      - name: Determine version
         id: version
         run: |
           BASE_VERSION=$(node -p "require('./package.json').version")
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          DATE=$(date +%Y%m%d)
-          DEV_VERSION="${BASE_VERSION}-dev.${DATE}.${SHORT_SHA}"
+
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            # Extract version from tag (remove 'v' prefix)
+            TAG_VERSION=${GITHUB_REF#refs/tags/v}
+            DEV_VERSION="${TAG_VERSION}"
+          else
+            # Manual trigger - use suffix input
+            SUFFIX="${{ inputs.version_suffix }}"
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            DATE=$(date +%Y%m%d)
+            DEV_VERSION="${BASE_VERSION}-${SUFFIX}.${DATE}.${SHORT_SHA}"
+          fi
+
           echo "BASE_VERSION=${BASE_VERSION}" >> $GITHUB_OUTPUT
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "📦 Base version: ${BASE_VERSION}"
