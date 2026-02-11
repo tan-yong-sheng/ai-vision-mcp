@@ -16,11 +16,40 @@ import {
 } from './tools/index.js';
 import { VisionError } from './types/Errors.js';
 
-// Create MCP server
-const server = new McpServer({
-  name: 'ai-vision-mcp',
-  version: '0.0.5',
+import { LoggerService } from './services/LoggerService.js';
+
+const logger = LoggerService.getInstance('ai-vision-mcp');
+
+// Global exception handlers to prevent crashes from bubbling up and breaking stdio transport
+process.on('uncaughtException', (error) => {
+  void logger.error(
+    { msg: 'Uncaught exception', error: String(error), stack: error.stack },
+    'server'
+  );
+  // Don't exit - let MCP handle gracefully
 });
+
+process.on('unhandledRejection', (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  void logger.error(
+    { msg: 'Unhandled rejection', error: error.message, stack: error.stack },
+    'server'
+  );
+  // Don't exit - let MCP handle gracefully
+});
+
+// Create MCP server
+const server = new McpServer(
+  {
+    name: 'ai-vision-mcp',
+    version: '0.0.5',
+  },
+  {
+    capabilities: { logging: {} },
+  }
+);
+
+logger.attachServer(server);
 
 // Helper function to initialize services (lazy loading)
 function getServices() {
@@ -60,19 +89,19 @@ function getServices() {
       videoFileService,
     };
   } catch (error) {
-    console.error('Failed to initialize services:', error);
+    void logger.error({ msg: 'Failed to initialize services', error: String(error) }, 'server');
     throw error;
   }
 }
 
 // Register analyze_image tool
-server.registerTool(
+server.registerTool<any, any>(
   'analyze_image',
   {
     title: 'Analyze Image',
     description:
       'Analyze an image using AI vision models. Supports URLs, base64 data, and local file paths.',
-    inputSchema: {
+    inputSchema: z.object({
       imageSource: z
         .string()
         .describe(
@@ -117,9 +146,10 @@ server.registerTool(
             ),
         })
         .optional(),
-    },
+    }),
   },
-  async ({ imageSource, prompt, options }) => {
+  async (args: any, _extra: any) => {
+    const { imageSource, prompt, options } = args;
     try {
       const validatedArgs = {
         imageSource,
@@ -140,13 +170,13 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(result, null, 2),
           },
         ],
       };
     } catch (error) {
-      console.error('Error executing analyze_image tool:', error);
+      void logger.error({ msg: 'Error executing analyze_image tool', error: String(error) }, 'tools/analyze_image');
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -161,7 +191,7 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(
               {
                 error: true,
@@ -180,13 +210,13 @@ server.registerTool(
 );
 
 // Register compare_images tool
-server.registerTool(
+server.registerTool<any, any>(
   'compare_images',
   {
     title: 'Compare Images',
     description:
       'Compare multiple images using AI vision models. Supports URLs, base64 data, and local file paths.',
-    inputSchema: {
+    inputSchema: z.object({
       imageSources: z
         .array(z.string())
         .min(2)
@@ -230,9 +260,10 @@ server.registerTool(
             ),
         })
         .optional(),
-    },
+    }),
   },
-  async ({ imageSources, prompt, options }) => {
+  async (args: any, _extra: any) => {
+    const { imageSources, prompt, options } = args;
     try {
       // Initialize services on-demand to get config
       const { config, imageProvider, imageFileService } = getServices();
@@ -243,7 +274,7 @@ server.registerTool(
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text: JSON.stringify(
                 {
                   error: true,
@@ -275,13 +306,13 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(result, null, 2),
           },
         ],
       };
     } catch (error) {
-      console.error('Error executing compare_images tool:', error);
+      void logger.error({ msg: 'Error executing compare_images tool', error: String(error) }, 'tools/compare_images');
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -296,7 +327,7 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(
               {
                 error: true,
@@ -315,13 +346,13 @@ server.registerTool(
 );
 
 // Register detect_objects_in_image tool
-server.registerTool(
+server.registerTool<any, any>(
   'detect_objects_in_image',
   {
     title: 'Detect Objects in Image',
     description:
       'Detect objects in an image using AI vision models and generate annotated images with bounding boxes. Supports URLs, base64 data, and local file paths. File handling: explicit filePath → exact path, otherwise → temp directory. Uses optimized default parameters for object detection.',
-    inputSchema: {
+    inputSchema: z.object({
       imageSource: z
         .string()
         .describe(
@@ -338,9 +369,10 @@ server.registerTool(
         .describe(
           "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
         ),
-    },
+    }),
   },
-  async ({ imageSource, prompt, outputFilePath }) => {
+  async (args: any, _extra: any) => {
+    const { imageSource, prompt, outputFilePath } = args;
     try {
       const validatedArgs = {
         imageSource,
@@ -421,7 +453,7 @@ server.registerTool(
         };
       }
     } catch (error) {
-      console.error('Error executing detect_objects_in_image tool:', error);
+      void logger.error({ msg: 'Error executing detect_objects_in_image tool', error: String(error) }, 'tools/detect_objects_in_image');
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -455,13 +487,13 @@ server.registerTool(
 );
 
 // Register analyze_video tool
-server.registerTool(
+server.registerTool<any, any>(
   'analyze_video',
   {
     title: 'Analyze Video',
     description:
       'Analyze a video using AI vision models. Supports URLs and local file paths.',
-    inputSchema: {
+    inputSchema: z.object({
       videoSource: z
         .string()
         .describe('Video source - can be a URL or local file path'),
@@ -504,9 +536,10 @@ server.registerTool(
             ),
         })
         .optional(),
-    },
+    }),
   },
-  async ({ videoSource, prompt, options }) => {
+  async (args: any, _extra: any) => {
+    const { videoSource, prompt, options } = args;
     try {
       const validatedArgs = {
         videoSource,
@@ -527,13 +560,13 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(result, null, 2),
           },
         ],
       };
     } catch (error) {
-      console.error('Error executing analyze_video tool:', error);
+      void logger.error({ msg: 'Error executing analyze_video tool', error: String(error) }, 'tools/analyze_video');
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -548,7 +581,7 @@ server.registerTool(
       return {
         content: [
           {
-            type: 'text',
+            type: 'text' as const,
             text: JSON.stringify(
               {
                 error: true,
@@ -568,15 +601,23 @@ server.registerTool(
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down MCP server...');
-  await server.close();
-  process.exit(0);
+  // IMPORTANT (stdio MCP): never write logs to stdout; it corrupts JSON-RPC framing.
+  console.error('Shutting down MCP server...');
+  try {
+    await server.close();
+  } finally {
+    process.exit(0);
+  }
 });
 
 process.on('SIGTERM', async () => {
-  console.log('Shutting down MCP server...');
-  await server.close();
-  process.exit(0);
+  // IMPORTANT (stdio MCP): never write logs to stdout; it corrupts JSON-RPC framing.
+  console.error('Shutting down MCP server...');
+  try {
+    await server.close();
+  } finally {
+    process.exit(0);
+  }
 });
 
 // Start server
@@ -584,8 +625,9 @@ async function main() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('AI Vision MCP Server started successfully');
+    await logger.info('AI Vision MCP Server started successfully', 'server');
   } catch (error) {
+    // Pre-connect failures may prevent MCP logging; always write to stderr.
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   }

@@ -33,7 +33,7 @@ export class FileService {
   }
 
   async handleImageSource(imageSource: string): Promise<string> {
-    console.log(
+    console.error(
       `[FileService] handleImageSource input: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
     );
 
@@ -42,13 +42,13 @@ export class FileService {
       imageSource.startsWith('files/') ||
       imageSource.includes('generativelanguage.googleapis.com')
     ) {
-      console.log(`[FileService] Returning existing file reference`);
+      console.error(`[FileService] Returning existing file reference`);
       return imageSource;
     }
 
     // If it's a GCS URI, return as-is
     if (this.isGcsUri(imageSource)) {
-      console.log(`[FileService] Returning GCS URI`);
+      console.error(`[FileService] Returning GCS URI`);
       return imageSource;
     }
 
@@ -57,14 +57,14 @@ export class FileService {
 
     // Choose processing method based on size threshold
     const threshold = this.configService.getGeminiFilesApiThreshold();
-    console.log(
+    console.error(
       `[FileService] Buffer size: ${buffer.length}, Threshold: ${threshold}`
     );
 
     if (buffer.length <= threshold) {
       // Use inline data for small images
       const result = `data:${mimeType};base64,${buffer.toString('base64')}`;
-      console.log(
+      console.error(
         `[FileService] Returning inline data URL: ${result.substring(0, 100)}...`
       );
       return result;
@@ -75,7 +75,7 @@ export class FileService {
         filename || `image.${this.getFileExtension(mimeType)}`,
         mimeType
       );
-      console.log(`[FileService] Returning file URI: ${result}`);
+      console.error(`[FileService] Returning file URI: ${result}`);
       return result;
     }
   }
@@ -88,7 +88,7 @@ export class FileService {
 
     // If it's a local file path, upload to storage
     if (this.isLocalFilePath(videoSource)) {
-      return await this.handleLocalFile(videoSource, 'video');
+      return await this.handleLocalFile(videoSource);
     }
 
     // If it's a file reference (files/...), return as-is
@@ -169,7 +169,7 @@ export class FileService {
       try {
         // Decode URL-encoded characters to handle escaped sequences like \&
         const decodedUrl = imageSource.replace(/\\&/g, '&');
-        console.log(`[FileService] Fetching URL: ${decodedUrl}`);
+        console.error(`[FileService] Fetching URL: ${decodedUrl}`);
 
         const response = await fetch(decodedUrl);
         if (!response.ok) {
@@ -181,7 +181,7 @@ export class FileService {
         const buffer = Buffer.from(arrayBuffer);
         const filename = decodedUrl.split('/').pop() || 'image.jpg';
         const mimeType = this.getMimeType(filename, buffer);
-        console.log(
+        console.error(
           `[FileService] Successfully fetched image - size: ${buffer.length}, mimeType: ${mimeType}`
         );
         return { buffer, mimeType, filename };
@@ -231,10 +231,7 @@ export class FileService {
     }
   }
 
-  private async handleLocalFile(
-    filePath: string,
-    _type: 'image' | 'video'
-  ): Promise<string> {
+  private async handleLocalFile(filePath: string): Promise<string> {
     try {
       // Normalize file path for cross-platform compatibility
       const normalizedPath = path.normalize(filePath);

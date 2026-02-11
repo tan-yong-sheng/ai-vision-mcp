@@ -459,6 +459,38 @@ export ANALYZE_VIDEO_MODEL="gemini-2.5-flash-pro"
 ```
 </details>
 
+## Troubleshooting (stdio / Codex / Claude Code)
+
+### 1) "Transport closed" / tool call fails
+
+If you see errors like:
+
+- `tools/call failed: Transport closed`
+
+Common causes:
+
+**A) Image annotation dependency failed to load**
+
+This server uses [`imagescript`](https://github.com/matmen/ImageScript) for image annotation/dimension extraction (no `sharp`).
+
+Verify it loads:
+
+```bash
+npm run doctor
+# or
+npm run check:imagescript
+```
+
+**B) stdout logs corrupt stdio MCP framing**
+
+This server uses the MCP **stdio** transport (newline-delimited JSON-RPC over stdout).
+
+- ✅ stdout must contain **only** MCP JSON-RPC messages
+- ✅ write logs to **stderr** (e.g. `console.error`)
+- ❌ do not use `console.log` in stdio MCP servers
+
+If stdout is polluted, clients (Codex/Claude Code) may disconnect and report `Transport closed`.
+
 ## Development
 
 ### Prerequisites

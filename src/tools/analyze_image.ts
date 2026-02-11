@@ -35,11 +35,11 @@ export async function analyze_image(
     const processedImageSource = await imageFileService.handleImageSource(
       args.imageSource
     );
-    console.log(
+    console.error(
       `[analyze_image] Processed image source: ${processedImageSource.substring(0, 100)}${processedImageSource.length > 100 ? '...' : ''}`
     );
-    console.log(`[analyze_image] Original source: ${args.imageSource}`);
-    console.log(
+    console.error(`[analyze_image] Original source: ${args.imageSource}`);
+    console.error(
       `[analyze_image] Processed source starts with data:image: ${processedImageSource.startsWith('data:image/')}`
     );
 

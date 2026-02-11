@@ -53,11 +53,11 @@ export class VertexAIProvider extends BaseVisionProvider {
       clientConfig.googleAuthOptions = {
         keyFile: config.credentials,
       };
-      console.log(
-        `[VertexAI Provider] Using service account credentials: ${config.credentials}`
+      console.error(
+        `[VertexAI Provider] Using service account credentials: [REDACTED]`
       );
     } else {
-      console.warn(
+      console.error(
         '[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)'
       );
     }
@@ -142,7 +142,9 @@ export class VertexAIProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      console.log(`[VertexAIProvider] Comparing ${imageSources.length} images`);
+      console.error(
+        `[VertexAIProvider] Comparing ${imageSources.length} images`
+      );
 
       // Process all images to create parts
       const imageParts: any[] = [];
@@ -150,7 +152,7 @@ export class VertexAIProvider extends BaseVisionProvider {
 
       for (let i = 0; i < imageSources.length; i++) {
         const imageSource = imageSources[i];
-        console.log(
+        console.error(
           `[VertexAIProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
         );
 
@@ -555,14 +557,14 @@ export class VertexAIProvider extends BaseVisionProvider {
     const imageModelUrl = `${this.config.endpoint}/v1/projects/${this.config.projectId}/locations/${this.config.location}/publishers/google/models/${this.imageModel}:generateContent`;
     const videoModelUrl = `${this.config.endpoint}/v1/projects/${this.config.projectId}/locations/${this.config.location}/publishers/google/models/${this.videoModel}:generateContent`;
 
-    console.log(`[VertexAI Provider] Configuration:`);
-    console.log(`  - Project ID: ${this.config.projectId}`);
-    console.log(`  - Location: ${this.config.location}`);
-    console.log(`  - Endpoint: ${this.config.endpoint}`);
-    console.log(
+    console.error(`[VertexAI Provider] Configuration:`);
+    console.error(`  - Project ID: ${this.config.projectId}`);
+    console.error(`  - Location: ${this.config.location}`);
+    console.error(`  - Endpoint: ${this.config.endpoint}`);
+    console.error(
       `  - Authentication: ${this.config.credentials ? 'Service Account' : 'Application Default Credentials'}`
     );
-    console.log(`  - Image Model URL: ${imageModelUrl}`);
-    console.log(`  - Video Model URL: ${videoModelUrl}`);
+    console.error(`  - Image Model URL: ${imageModelUrl}`);
+    console.error(`  - Video Model URL: ${videoModelUrl}`);
   }
 }

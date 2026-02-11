@@ -52,7 +52,7 @@ export class VertexAIStorageStrategy implements FileUploadStrategy {
       await this.storageProvider.deleteFile(fileId);
     } catch (error) {
       // Log error but don't throw - cleanup failures shouldn't block the main flow
-      console.warn(`Failed to cleanup storage file ${fileId}:`, error);
+      console.error(`Failed to cleanup storage file ${fileId}:`, error);
     }
   }
 }

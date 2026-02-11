@@ -59,21 +59,21 @@ export async function compare_images(
       }
     }
 
-    console.log(
+    console.error(
       `[compare_images] Processing ${args.imageSources.length} images for comparison`
     );
 
     // Process all image sources
     const processedImageSources = await Promise.all(
       args.imageSources.map(async (imageSource, index) => {
-        console.log(
+        console.error(
           `[compare_images] Processing image ${index + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
         );
         return await imageFileService.handleImageSource(imageSource);
       })
     );
 
-    console.log(
+    console.error(
       `[compare_images] All ${processedImageSources.length} images processed successfully`
     );
 

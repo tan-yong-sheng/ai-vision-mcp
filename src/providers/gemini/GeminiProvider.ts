@@ -63,22 +63,22 @@ export class GeminiProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      console.log(
+      console.error(
         `[GeminiProvider] Received imageSource: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
       );
-      console.log(
+      console.error(
         `[GeminiProvider] ImageSource starts with data:image: ${imageSource.startsWith('data:image/')}`
       );
-      console.log(
+      console.error(
         `[GeminiProvider] ImageSource starts with http: ${imageSource.startsWith('http')}`
       );
-      console.log(
+      console.error(
         `[GeminiProvider] ImageSource starts with gs: ${imageSource.startsWith('gs://')}`
       );
-      console.log(
+      console.error(
         `[GeminiProvider] ImageSource starts with files/: ${imageSource.startsWith('files/')}`
       );
-      console.log(
+      console.error(
         `[GeminiProvider] ImageSource contains generativelanguage: ${imageSource.includes('generativelanguage.googleapis.com')}`
       );
 
@@ -220,7 +220,7 @@ export class GeminiProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      console.log(`[GeminiProvider] Comparing ${imageSources.length} images`);
+      console.error(`[GeminiProvider] Comparing ${imageSources.length} images`);
 
       // Process all images to create content parts
       const contentParts: any[] = [];
@@ -229,7 +229,7 @@ export class GeminiProvider extends BaseVisionProvider {
 
       for (let i = 0; i < imageSources.length; i++) {
         const imageSource = imageSources[i];
-        console.log(
+        console.error(
           `[GeminiProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
         );
 
@@ -333,7 +333,7 @@ export class GeminiProvider extends BaseVisionProvider {
       // Add the prompt as the last content part
       contentParts.push({ text: prompt });
 
-      console.log(
+      console.error(
         `[GeminiProvider] All ${imageSources.length} images processed, sending to Gemini API`
       );
 

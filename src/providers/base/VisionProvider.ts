@@ -387,13 +387,20 @@ export abstract class BaseVisionProvider implements VisionProvider {
       config.systemInstruction = options.systemInstruction;
     }
 
-    // Add thinking budget configuration for Gemini models
+    // Add thinking configuration for Gemini models
+    // Supports both Gemini 2.5 (thinkingBudget) and Gemini 3 (thinkingLevel)
     const model = this.resolveModelForFunction(taskType, functionName);
-    const thinkingBudget = this.getThinkingBudgetForModel(model);
-    if (thinkingBudget !== undefined) {
-      config.thinkingConfig = {
-        thinkingBudget: thinkingBudget,
-      };
+    const thinkingConfig = this.getThinkingConfig(model);
+    if (thinkingConfig) {
+      if (thinkingConfig.type === 'budget') {
+        config.thinkingConfig = {
+          thinkingBudget: thinkingConfig.value,
+        };
+      } else if (thinkingConfig.type === 'level') {
+        config.thinkingConfig = {
+          thinkingLevel: thinkingConfig.value,
+        };
+      }
     }
 
     return config;
@@ -431,30 +438,51 @@ export abstract class BaseVisionProvider implements VisionProvider {
   }
 
   /**
-   * Determine the appropriate thinking budget for Gemini model variants
-   * Applies to both Gemini API and Vertex AI providers when using Gemini models
-   * Based on user requirements:
-   * - gemini-2.5-flash-lite and gemini-2.5-flash: thinking_budget = 0
-   * - gemini-2.5-pro: thinking_budget = 128
-   * - Other models: no thinking budget (undefined)
-   * @param model - The model name
-   * @returns thinking budget value or undefined if not applicable
+   * Thinking configuration for Gemini models
+   * Gemini 2.5 series uses thinkingBudget (number of tokens)
+   * Gemini 3 series uses thinkingLevel (MINIMAL, LOW, MEDIUM, HIGH)
    */
-  protected getThinkingBudgetForModel(model: string): number | undefined {
-    // Only apply thinking budget to specific Gemini model variants
-    // This works for both direct Gemini API and Vertex AI when using Gemini models
-    if (
-      model.includes('gemini-2.5-flash-lite') ||
-      model.includes('gemini-2.5-flash')
-    ) {
-      // For flash models, use minimal thinking budget for faster response
-      return 0;
-    } else if (model.includes('gemini-2.5-pro')) {
-      // For pro models, use higher thinking budget for better reasoning
-      return 128;
+  protected getThinkingConfig(model: string):
+    | { type: 'budget'; value: number }
+    | { type: 'level'; value: 'MINIMAL' | 'LOW' | 'MEDIUM' | 'HIGH' }
+    | undefined {
+    // Gemini 2.5 series - uses thinkingBudget
+    if (model.includes('gemini-2.5')) {
+      if (
+        model.includes('gemini-2.5-flash-lite') ||
+        model.includes('gemini-2.5-flash')
+      ) {
+        // For flash models, disable thinking for faster response
+        return { type: 'budget', value: 0 };
+      } else if (model.includes('gemini-2.5-pro')) {
+        // For pro models, use minimum thinking budget (cannot disable)
+        return { type: 'budget', value: 128 };
+      }
     }
 
-    // For other models (older Gemini versions, non-Gemini models), don't set thinking budget
+    // Gemini 3 series - uses thinkingLevel
+    if (model.includes('gemini-3')) {
+      if (model.includes('gemini-3-flash')) {
+        // For Gemini 3 Flash, MINIMAL is closest to "off"
+        return { type: 'level', value: 'MINIMAL' };
+      } else if (model.includes('gemini-3-pro')) {
+        // For Gemini 3 Pro, LOW is the minimum (cannot use MINIMAL)
+        return { type: 'level', value: 'LOW' };
+      }
+    }
+
+    // For other models, no thinking configuration
+    return undefined;
+  }
+
+  /**
+   * @deprecated Use getThinkingConfig instead for full Gemini 2.5/3.0 support
+   */
+  protected getThinkingBudgetForModel(model: string): number | undefined {
+    const config = this.getThinkingConfig(model);
+    if (config?.type === 'budget') {
+      return config.value;
+    }
     return undefined;
   }
 }

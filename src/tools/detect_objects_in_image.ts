@@ -20,7 +20,7 @@ import type {
   ObjectDetectionMetadata,
 } from '../types/ObjectDetection.js';
 import { ImageAnnotator } from '../utils/imageAnnotator.js';
-import sharp from 'sharp';
+import { Image } from 'imagescript';
 
 // System instruction for object detection with web context awareness
 const DETECTION_SYSTEM_INSTRUCTION = `
@@ -195,12 +195,12 @@ function generateDetectionSummary(
   const summary = [];
 
   // Header with image context
-  summary.push(`🖼️ IMAGE ANALYSIS COMPLETE\n`);
+  summary.push(`IMAGE ANALYSIS COMPLETE\n`);
   summary.push(
-    `📏 Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`
+    `Source Image: ${imageMetadata.width}×${imageMetadata.height} pixels (${imageMetadata.format.toUpperCase()}, ${(imageMetadata.size_bytes / 1024 / 1024).toFixed(1)}MB)`
   );
-  summary.push(`🤖 Detection Model: ${model} (${provider})`);
-  summary.push(`📊 Elements Found: ${detections.length} elements detected\n`);
+  summary.push(`Detection Model: ${model} (${provider})`);
+  summary.push(`Elements Found: ${detections.length} elements detected\n`);
 
   // Context-aware guidance based on detected elements
   const webElements = [
@@ -227,7 +227,7 @@ function generateDetectionSummary(
 
   if (hasWebElements) {
     // Show web automation guidance for web interfaces
-    summary.push(`⚠️ FOR WEB AUTOMATION:`);
+    summary.push(`FOR WEB AUTOMATION:`);
     summary.push(
       `- **RECOMMENDED**: Use CSS selectors for reliable automation (primary approach)`
     );
@@ -242,7 +242,7 @@ function generateDetectionSummary(
     );
   } else {
     // Show general object detection guidance for non-web content
-    summary.push(`⚠️ OBJECT DETECTION RESULTS:`);
+    summary.push(`OBJECT DETECTION RESULTS:`);
     summary.push(
       `- **SPATIAL REFERENCE**: Coordinates show relative positioning within image`
     );
@@ -252,7 +252,7 @@ function generateDetectionSummary(
   }
 
   // Element details with hybrid format
-  summary.push(`## 🔍 DETECTED ELEMENTS:\n`);
+  summary.push(`## DETECTED ELEMENTS:\n`);
 
   detections.forEach((detection, index) => {
     const [ymin, xmin, ymax, xmax] = detection.normalized_box_2d;
@@ -323,7 +323,7 @@ export async function detect_objects_in_image(
     const processedImageSource = await imageFileService.handleImageSource(
       args.imageSource
     );
-    console.log(
+    console.error(
       `[detect_objects_in_image] Processed image source: ${processedImageSource.substring(
         0,
         100
@@ -356,21 +356,18 @@ export async function detect_objects_in_image(
       originalImageBuffer = await imageFileService.readFile(args.imageSource);
     }
 
-    // Get image dimensions using Sharp
-    const sharpMetadata = await sharp(originalImageBuffer).metadata();
+    // Get image dimensions using ImageScript
+    const decoded = await Image.decode(originalImageBuffer);
     // eslint-disable-next-line prefer-const
-    imageWidth = sharpMetadata.width || 0;
+    imageWidth = decoded.width || 0;
     // eslint-disable-next-line prefer-const
-    imageHeight = sharpMetadata.height || 0;
+    imageHeight = decoded.height || 0;
 
     if (imageWidth === 0 || imageHeight === 0) {
-      throw new VisionError(
-        'Unable to determine image dimensions',
-        'INVALID_IMAGE'
-      );
+      throw new VisionError('Unable to determine image dimensions', 'INVALID_IMAGE');
     }
 
-    console.log(
+    console.error(
       `[detect_objects_in_image] Image size: ${imageWidth}x${imageHeight}`
     );
 
@@ -404,10 +401,10 @@ export async function detect_objects_in_image(
       ...args.options, // User options override defaults
     };
 
-    console.log(
+    console.error(
       '[detect_objects_in_image] Analyzing image for object detection...'
     );
-    console.log(
+    console.error(
       `[detect_objects_in_image] Configuration: temperature=${options.temperature}, topP=${options.topP}, topK=${options.topK}, maxTokens=${options.maxTokens}`
     );
 
@@ -418,10 +415,10 @@ export async function detect_objects_in_image(
       options
     );
 
-    console.log(
+    console.error(
       `[detect_objects_in_image] Response length: ${result.text.length} characters`
     );
-    console.log(
+    console.error(
       `[detect_objects_in_image] Response ends with: "${result.text.slice(-50)}"`
     );
 
@@ -431,13 +428,13 @@ export async function detect_objects_in_image(
       // Try to parse the result directly
       detections = JSON.parse(result.text);
     } catch (parseError) {
-      console.log(
+      console.error(
         `[detect_objects_in_image] Initial JSON parse failed, attempting cleanup...`
       );
-      console.log(
+      console.error(
         `[detect_objects_in_image] Raw response (first 500 chars): ${result.text.substring(0, 500)}`
       );
-      console.log(
+      console.error(
         `[detect_objects_in_image] Full response length: ${result.text.length} characters`
       );
 
@@ -459,7 +456,7 @@ export async function detect_objects_in_image(
       // Try parsing the cleaned text
       try {
         detections = JSON.parse(cleanedText);
-        console.log(
+        console.error(
           `[detect_objects_in_image] Successfully parsed after cleanup`
         );
       } catch (secondError) {
@@ -475,7 +472,7 @@ export async function detect_objects_in_image(
 
         // Check if the JSON looks like a truncated array
         if (cleanedText.startsWith('[') && !cleanedText.endsWith(']')) {
-          console.log(
+          console.error(
             `[detect_objects_in_image] Attempting to fix truncated JSON array...`
           );
 
@@ -485,13 +482,13 @@ export async function detect_objects_in_image(
             // Truncate at the last complete object and close the array
             fixedText =
               cleanedText.substring(0, lastCompleteObjectIndex + 1) + '\n]';
-            console.log(
+            console.error(
               `[detect_objects_in_image] Fixed text ends with: "${fixedText.slice(-100)}"`
             );
 
             try {
               detections = JSON.parse(fixedText);
-              console.log(
+              console.error(
                 `[detect_objects_in_image] Successfully parsed truncated JSON after fix. Objects found: ${detections.length}`
               );
             } catch (thirdError) {
@@ -524,7 +521,7 @@ export async function detect_objects_in_image(
       }
     }
 
-    console.log(
+    console.error(
       `[detect_objects_in_image] Detected ${detections.length} objects`
     );
 
@@ -536,7 +533,7 @@ export async function detect_objects_in_image(
           !Array.isArray(detection.normalized_box_2d) ||
           detection.normalized_box_2d.length !== 4
         ) {
-          console.warn(
+          console.error(
             `[detect_objects_in_image] Skipping detection with invalid coordinates: ${JSON.stringify(detection)}`
           );
           return null;
@@ -553,7 +550,7 @@ export async function detect_objects_in_image(
           normY1 >= normY2 ||
           normX1 >= normX2
         ) {
-          console.warn(
+          console.error(
             `[detect_objects_in_image] Skipping detection with invalid coordinate ranges: ${detection.object} [${normY1}, ${normX1}, ${normY2}, ${normX2}]`
           );
           return null;
@@ -578,10 +575,26 @@ export async function detect_objects_in_image(
     );
 
     const annotatedImageSize = annotatedImageBuffer.length;
-    // Determine output format from original image
-    const outputFormat = sharpMetadata.format || 'png';
 
-    console.log(
+    // Determine output format from original image source (best-effort)
+    let outputFormat: string = 'png';
+    if (args.imageSource.startsWith('data:image/')) {
+      const mime = args.imageSource.split(';')[0];
+      const ext = mime.split('/')[1];
+      if (ext) outputFormat = ext;
+    } else if (args.imageSource.startsWith('http')) {
+      const urlPath = args.imageSource.split('?')[0];
+      const ext = path.extname(urlPath).replace('.', '').toLowerCase();
+      if (ext) outputFormat = ext;
+    } else {
+      const ext = path.extname(args.imageSource).replace('.', '').toLowerCase();
+      if (ext) outputFormat = ext;
+    }
+
+    // Annotator encodes PNG by default; align metadata with actual output.
+    outputFormat = 'png';
+
+    console.error(
       `[detect_objects_in_image] Annotated image size: ${annotatedImageSize} bytes`
     );
 
@@ -599,7 +612,7 @@ export async function detect_objects_in_image(
       config.IMAGE_PROVIDER
     );
 
-    console.log(
+    console.error(
       `[detect_objects_in_image] Generated text summary (${summary.length} characters)`
     );
 
@@ -623,7 +636,7 @@ export async function detect_objects_in_image(
         args.outputFilePath,
         annotatedImageBuffer
       );
-      console.log(
+      console.error(
         `[detect_objects_in_image] Annotated image saved to: ${args.outputFilePath}`
       );
 
@@ -653,7 +666,7 @@ export async function detect_objects_in_image(
 
       if (saveResult.method === 'temp_file') {
         // Success: Return temp file response
-        console.log(`[detect_objects_in_image] Image saved to temp: ${saveResult.path}`);
+        console.error(`[detect_objects_in_image] Image saved to temp: ${saveResult.path}`);
 
         const response: DetectionWithTempFile = {
           detections: processedDetections,
@@ -673,7 +686,7 @@ export async function detect_objects_in_image(
         return response;
       } else {
         // Permission error: Return detection data only with updated metadata
-        console.warn(`[detect_objects_in_image] Returning detection results without file output due to permission error.`);
+        console.error(`[detect_objects_in_image] Returning detection results without file output due to permission error.`);
 
         const response: DetectionOnly = {
           detections: processedDetections,

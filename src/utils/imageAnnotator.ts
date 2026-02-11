@@ -1,9 +1,9 @@
 /**
- * Image annotation utilities using Sharp
+ * Image annotation utilities using ImageScript
  * Based on gemini_object_detection.js annotation logic
  */
 
-import sharp from 'sharp';
+import { Image, TextLayout } from 'imagescript';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -32,8 +32,7 @@ export class ImageAnnotator {
   }
 
   /**
-   * Draw bounding boxes and labels on image using Sharp
-   * Adapted from gemini_object_detection.js drawAnnotations function
+   * Draw bounding boxes and labels on image using ImageScript
    */
   async drawAnnotations(
     imageBuffer: Buffer,
@@ -41,171 +40,182 @@ export class ImageAnnotator {
     imageWidth: number,
     imageHeight: number
   ): Promise<Buffer> {
-    let sharpImage = sharp(imageBuffer);
+    const image = await Image.decode(imageBuffer);
 
-    // Prepare overlays for bounding boxes, corners, and text
-    const overlays = [];
+    // If caller passed dimensions, sanity-check in debug situations; trust decoded image.
+    // (We keep the args for backward-compat with existing call sites.)
+    void imageWidth;
+    void imageHeight;
 
     for (let idx = 0; idx < detections.length; idx++) {
       const detection = detections[idx];
 
-      // Use normalized_box_2d coordinates (converted to pixels)
       if (
         !detection.normalized_box_2d ||
         detection.normalized_box_2d.length !== 4
       ) {
-        console.warn(
+        console.error(
           `[ImageAnnotator] Skipping detection without valid normalized_box_2d: ${detection.object}`
         );
         continue;
       }
 
-      // Convert normalized coordinates to pixels
       const [normY1, normX1, normY2, normX2] = detection.normalized_box_2d;
-      const x1 = Math.round((normX1 / 1000) * imageWidth); // left edge
-      const y1 = Math.round((normY1 / 1000) * imageHeight); // top edge
-      const x2 = Math.round((normX2 / 1000) * imageWidth); // right edge
-      const y2 = Math.round((normY2 / 1000) * imageHeight); // bottom edge
+      const x1 = Math.round((normX1 / 1000) * image.width);
+      const y1 = Math.round((normY1 / 1000) * image.height);
+      const x2 = Math.round((normX2 / 1000) * image.width);
+      const y2 = Math.round((normY2 / 1000) * image.height);
 
-      // Create rectangle overlay (bounding box)
-      const rectOverlay = await this.createRectangleOverlay(
-        imageWidth,
-        imageHeight,
-        x1,
-        y1,
-        x2,
-        y2
+      // Clamp to image bounds
+      const left = Math.max(0, Math.min(x1, image.width - 1));
+      const top = Math.max(0, Math.min(y1, image.height - 1));
+      const right = Math.max(0, Math.min(x2, image.width));
+      const bottom = Math.max(0, Math.min(y2, image.height));
+
+      // Draw rectangle outline by painting 4 thin filled rectangles
+      this.drawRectOutline(
+        image,
+        left,
+        top,
+        Math.max(1, right - left),
+        Math.max(1, bottom - top),
+        this.options.lineWidth,
+        this.parseColor(this.options.lineColor)
       );
-      overlays.push({
-        input: rectOverlay,
-        left: 0,
-        top: 0,
-      });
 
-      // REMOVED: Corner circles (were causing "double boxing" visual clutter)
-      // The 4 corner circles made it appear like buttons were boxed multiple times
-
-      // Create text label
-      const text = `${detection.object} - ${detection.label}`;
-      const textOverlay = await this.createTextOverlay(text);
-
-      // Calculate text position (above bounding box)
-      const textX = x1;
-      const textY = Math.max(y1 - this.options.labelHeight - 4, 0);
-
-      overlays.push({
-        input: textOverlay,
-        left: textX,
-        top: textY,
-      });
+      // Label text (requires a font buffer)
+      const labelText = `${detection.object} - ${detection.label}`;
+      await this.drawLabel(image, labelText, left, top);
     }
 
-    // Composite all overlays onto the original image
-    if (overlays.length > 0) {
-      sharpImage = sharpImage.composite(overlays);
+    // Encode as PNG for consistent output
+    return Buffer.from(await image.encode());
+  }
+
+  private parseColor(color: string): number {
+    // ImageScript expects 0xRRGGBBAA
+    switch (color.toLowerCase()) {
+      case 'red':
+        return 0xff0000ff;
+      case 'green':
+        return 0x00ff00ff;
+      case 'blue':
+        return 0x0000ffff;
+      case 'yellow':
+        return 0xffff00ff;
+      case 'black':
+        return 0x000000ff;
+      case 'white':
+        return 0xffffffff;
+      default:
+        // Best-effort fallback
+        return 0xff0000ff;
+    }
+  }
+
+  private drawRectOutline(
+    image: Image,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    thickness: number,
+    color: number
+  ) {
+    const t = Math.max(1, thickness);
+
+    // top
+    image.drawBox(x, y, w, t, color);
+    // left
+    image.drawBox(x, y, t, h, color);
+    // right
+    image.drawBox(Math.max(0, x + w - t), y, t, h, color);
+    // bottom
+    image.drawBox(x, Math.max(0, y + h - t), w, t, color);
+  }
+
+  private async drawLabel(image: Image, text: string, x1: number, y1: number) {
+    const fontBuffer = await this.loadFontBuffer();
+    if (!fontBuffer) {
+      // Graceful degradation: boxes only.
+      console.error(
+        '[ImageAnnotator] No font available for label rendering; drawing boxes only. Set ANNOTATION_FONT_PATH or install bundled font.'
+      );
+      return;
     }
 
-    return sharpImage.toBuffer();
+    const scale = 16; // px font size
+    const paddingX = 6;
+    const paddingY = 4;
+
+    const layout = new TextLayout({
+      maxWidth: Math.min(600, image.width - x1),
+      maxHeight: this.options.labelHeight,
+      wrapStyle: 'word',
+      // NOTE: ImageScript's types invert the naming here:
+      // - verticalAlign controls left/center/right
+      // - horizontalAlign controls top/middle/bottom
+      verticalAlign: 'left',
+      horizontalAlign: 'top',
+      wrapHardBreaks: true,
+    });
+
+    const textImage = await Image.renderText(
+      fontBuffer,
+      scale,
+      text,
+      0xffffffff,
+      layout
+    );
+
+    const bgColor = this.parseColor(this.options.labelColor);
+    const labelW = Math.min(
+      image.width - x1,
+      textImage.width + paddingX * 2
+    );
+    const labelH = Math.min(
+      image.height,
+      Math.max(this.options.labelHeight, textImage.height + paddingY * 2)
+    );
+
+    const labelX = x1;
+    const labelY = Math.max(y1 - labelH - 4, 0);
+
+    image.drawBox(labelX, labelY, labelW, labelH, bgColor);
+
+    // Composite text with padding
+    image.composite(textImage, labelX + paddingX, labelY + paddingY);
   }
 
-  /**
-   * Create a rectangle overlay using SVG
-   * Adapted from gemini_object_detection.js createRectangleOverlay function
-   */
-  private async createRectangleOverlay(
-    imageWidth: number,
-    imageHeight: number,
-    x1: number,
-    y1: number,
-    x2: number,
-    y3: number
-  ): Promise<Buffer> {
-    const rectWidth = x2 - x1;
-    const rectHeight = y3 - y1;
+  private async loadFontBuffer(): Promise<Buffer | null> {
+    const candidates: string[] = [];
 
-    const rectangleBuffer = await sharp({
-      create: {
-        width: imageWidth,
-        height: imageHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      },
-    })
-      .composite([
-        {
-          input: Buffer.from(
-            `<svg width="${imageWidth}" height="${imageHeight}">
-        <rect x="${x1}" y="${y1}" width="${rectWidth}" height="${rectHeight}"
-              fill="none" stroke="${this.options.lineColor}" stroke-width="${this.options.lineWidth}"/>
-      </svg>`
-          ),
-          left: 0,
-          top: 0,
-        },
-      ])
-      .png()
-      .toBuffer();
+    // 1) Explicit env
+    if (process.env.ANNOTATION_FONT_PATH) {
+      candidates.push(process.env.ANNOTATION_FONT_PATH);
+    }
 
-    return rectangleBuffer;
-  }
+    // 2) Bundled font (to be added)
+    candidates.push(path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf'));
 
-  // REMOVED: createCircleOverlay method (no longer needed since corner circles removed)
+    // 3) System fallbacks (best effort)
+    candidates.push('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf');
+    candidates.push('/System/Library/Fonts/Arial.ttf');
+    candidates.push('C:/Windows/Fonts/arial.ttf');
 
-  /**
-   * Create a text overlay using Sharp
-   * Adapted from gemini_object_detection.js createTextOverlay function
-   */
-  private async createTextOverlay(text: string): Promise<Buffer> {
-    // Try to find a system font, fallback to default
-    const fontPaths = [
-      'C:/Windows/Fonts/arial.ttf', // Windows
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Linux
-      '/System/Library/Fonts/Arial.ttf', // macOS
-    ];
-
-    let fontfile = undefined;
-    for (const fontPath of fontPaths) {
+    for (const fontPath of candidates) {
       try {
-        await fs.access(fontPath);
-        fontfile = fontPath;
-        break;
+        const buf = await fs.readFile(fontPath);
+        return buf;
       } catch {
-        // Font not found, try next
+        // try next
       }
     }
 
-    // Calculate approximate text width (rough estimate: 8 pixels per character)
-    // Add padding for better visual appearance
-    const estimatedWidth = Math.max(text.length * 8 + 8, 50); // Minimum 50px width
-
-    const textBuffer = await sharp({
-      create: {
-        width: estimatedWidth,
-        height: this.options.labelHeight,
-        channels: 4,
-        background: { r: 255, g: 0, b: 0, alpha: 1 }, // Red background
-      },
-    })
-      .composite([
-        {
-          input: {
-            text: {
-              text: text,
-              font: fontfile ? 'Arial' : 'sans-serif',
-              fontfile: fontfile,
-              rgba: true,
-              align: 'left',
-            },
-          },
-          left: 2,
-          top: 2,
-        },
-      ])
-      .png()
-      .toBuffer();
-
-    return textBuffer;
+    return null;
   }
+
+  // Legacy overlay helpers removed
 
   /**
    * Save buffer to a temporary file with unique name
@@ -240,7 +250,9 @@ export class ImageAnnotator {
       return { path: tempPath, method: 'temp_file' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn(`[ImageAnnotator] Skipped temp file creation due to permission error: ${errorMessage}. Detection results will be returned without file output.`);
+      console.error(
+        `[ImageAnnotator] Skipped temp file creation due to permission error: ${errorMessage}. Detection results will be returned without file output.`
+      );
       return { method: 'skipped' };
     }
   }

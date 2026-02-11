@@ -56,7 +56,7 @@ export class GeminiFilesAPI implements FileUploadStrategy {
       await this.geminiProvider.deleteFile(fileId);
     } catch (error) {
       // Log error but don't throw - cleanup failures shouldn't block the main flow
-      console.warn(`Failed to cleanup Gemini file ${fileId}:`, error);
+      console.error(`Failed to cleanup Gemini file ${fileId}:`, error);
     }
   }
 }

@@ -109,6 +109,32 @@ This hierarchy allows for sensible defaults while maintaining granular control p
 
 ## 3. System Architecture
 
+### 3.0 MCP logging (stdio-safe)
+
+This server enables the MCP **logging** capability and emits logs via `notifications/message`.
+
+Key rules:
+- **stdout must contain only MCP JSON-RPC** (stdio transport framing depends on it)
+- operational logs should be sent as MCP logging notifications when connected
+- for pre-connect/fatal events, logs fall back to **stderr**
+
+Implementation:
+- `src/services/LoggerService.ts` wraps MCP logging (`server.server.sendLoggingMessage`) with stderr fallback.
+- `src/server.ts` enables `capabilities: { logging: {} }` and attaches the logger.
+
+### 3.0.1 Image annotation stack
+
+`detect_objects_in_image` produces an annotated image.
+
+- `src/utils/imageAnnotator.ts` uses **ImageScript** to decode images, draw bounding box outlines, render text labels, and encode PNG output.
+- Labels require a font. The annotator tries:
+  1) `ANNOTATION_FONT_PATH` (if set)
+  2) a bundled font path (see implementation)
+  3) common system font locations
+
+If no font is available, the tool degrades to **boxes-only** and emits a warning log.
+
+
 ### 3.1 Component Overview
 
 ```
@@ -228,7 +254,7 @@ The `detect_objects_in_image` tool includes specialized logic that doesn't belon
 // Tool layer responsibilities (src/tools/detect_objects_in_image.ts):
 - Parse and validate JSON detection results with robust error handling
 - Convert normalized coordinates (0-1000) to pixel coordinates
-- Draw bounding box annotations using Sharp library
+- Draw bounding box annotations using ImageScript library
 - Handle 2-step file output logic:
   * Explicit outputFilePath → save to exact path
   * If not explicit outputFilePath → auto-save to temp or skip on permission error
