@@ -9,6 +9,8 @@ import { FileService } from '../services/FileService.js';
 import type { Config } from '../types/Config.js';
 import { VisionError } from '../types/Errors.js';
 import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
+import { isYouTubeUrl, fetchYouTubeDuration } from '../utils/youtube.js';
+import { validateVideoContext } from '../utils/videoTokens.js';
 
 export interface AnalyzeVideoArgs {
   videoSource: string; // Can be URL or local file path
@@ -16,12 +18,24 @@ export interface AnalyzeVideoArgs {
   options?: AnalysisOptions;
 }
 
+export interface ContextWarning {
+  estimatedTokens: number;
+  contextWindow: number;
+  utilization: number;
+  message: string;
+  suggestions: string[];
+}
+
+export interface ExtendedAnalysisResult extends AnalysisResult {
+  contextWarning?: ContextWarning;
+}
+
 export async function analyze_video(
   args: AnalyzeVideoArgs,
   config: Config,
   videoProvider: VisionProvider,
   videoFileService: FileService
-): Promise<AnalysisResult> {
+): Promise<ExtendedAnalysisResult> {
   try {
     // Validate arguments
     if (!args.videoSource) {
@@ -59,6 +73,43 @@ export async function analyze_video(
       ...args.options, // User options override defaults
     };
 
+    // Context window validation for YouTube videos
+    let contextWarning: ContextWarning | undefined;
+
+    if (isYouTubeUrl(args.videoSource)) {
+      const youtubeApiKey = config.YOUTUBE_API_KEY;
+
+      if (youtubeApiKey) {
+        try {
+          const durationSeconds = await fetchYouTubeDuration(args.videoSource, youtubeApiKey);
+
+          if (durationSeconds !== null) {
+            // Get the model name being used for video analysis
+            const modelName = config.VIDEO_MODEL || 'gemini-2.5-flash';
+
+            const validation = validateVideoContext({
+              durationSeconds,
+              model: modelName,
+              promptTokens: Math.ceil(args.prompt.length / 4),
+            });
+
+            if (validation.warning) {
+              contextWarning = {
+                estimatedTokens: validation.estimatedTokens,
+                contextWindow: validation.contextWindow,
+                utilization: validation.utilization,
+                message: validation.warning,
+                suggestions: validation.suggestions,
+              };
+            }
+          }
+        } catch (error) {
+          // Log but don't fail - validation is advisory only
+          console.warn('Failed to validate video context:', error);
+        }
+      }
+    }
+
     // Analyze the video
     const result = await videoProvider.analyzeVideo(
       processedVideoSource,
@@ -66,7 +117,13 @@ export async function analyze_video(
       options
     );
 
-    return result;
+    // Return result with context warning if applicable
+    const extendedResult: ExtendedAnalysisResult = {
+      ...result,
+      contextWarning,
+    };
+
+    return extendedResult;
   } catch (error) {
     console.error('Error in analyze_video tool:', error);
 

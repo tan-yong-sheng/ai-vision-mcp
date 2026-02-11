@@ -79,6 +79,9 @@ export interface Config {
   GEMINI_FILES_API_THRESHOLD?: number;
   VERTEX_AI_FILES_API_THRESHOLD?: number;
 
+  // YouTube API configuration (for video duration and context validation)
+  YOUTUBE_API_KEY?: string;
+
   // Logging configuration
   LOG_LEVEL?: 'info' | 'debug' | 'warn' | 'error';
 

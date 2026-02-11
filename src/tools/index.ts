@@ -3,7 +3,12 @@
  */
 
 export { analyze_image, type AnalyzeImageArgs } from './analyze_image.js';
-export { analyze_video, type AnalyzeVideoArgs } from './analyze_video.js';
+export {
+  analyze_video,
+  type AnalyzeVideoArgs,
+  type ContextWarning,
+  type ExtendedAnalysisResult,
+} from './analyze_video.js';
 export {
   detect_objects_in_image,
   type ObjectDetectionArgs,

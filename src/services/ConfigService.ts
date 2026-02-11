@@ -267,6 +267,9 @@ export class ConfigService {
           ? parseInt(process.env.VERTEX_AI_FILES_API_THRESHOLD, 10)
           : 0,
 
+        // YouTube API configuration
+        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+
         // Logging configuration
         LOG_LEVEL:
           (process.env.LOG_LEVEL as 'info' | 'debug' | 'warn' | 'error') ||
