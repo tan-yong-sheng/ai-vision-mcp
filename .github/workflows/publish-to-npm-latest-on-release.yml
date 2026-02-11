@@ -1,0 +1,50 @@
+name: Publish to npm (latest) on GitHub release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-latest:
+    name: Publish Latest Version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Verify version matches release tag
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: package.json ($PACKAGE_VERSION) vs tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Version: $PACKAGE_VERSION"
+
+      - name: Publish to npm with latest tag
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Output publish info
+        run: |
+          echo "✨ Published ai-vision-mcp@$(node -p "require('./package.json').version")"
+          echo "Install: npm install ai-vision-mcp"

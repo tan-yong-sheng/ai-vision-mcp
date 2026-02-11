@@ -1,0 +1,102 @@
+name: Publish to npm (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      prerelease_id:
+        description: 'Pre-release ID (for prerelease only, e.g., alpha, beta)'
+        required: false
+        default: ''
+        type: string
+      npm_tag:
+        description: 'npm tag to publish to'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+          - alpha
+          - dev
+
+jobs:
+  publish-manual:
+    name: Manual Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump version
+        id: bump
+        run: |
+          BUMP="${{ github.event.inputs.version_bump }}"
+          PREID="${{ github.event.inputs.prerelease_id }}"
+
+          if [ "$BUMP" = "prerelease" ] && [ -n "$PREID" ]; then
+            npm version prerelease --preid="$PREID"
+          else
+            npm version "$BUMP"
+          fi
+
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Bumped to version: $NEW_VERSION"
+
+      - name: Push version commit and tag
+        run: |
+          git push
+          git push --tags
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish to npm
+        run: |
+          TAG="${{ github.event.inputs.npm_tag }}"
+          if [ "$TAG" = "latest" ]; then
+            npm publish --provenance --access public
+          else
+            npm publish --tag "$TAG" --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Output publish info
+        run: |
+          echo "✨ Published ai-vision-mcp@${{ steps.bump.outputs.NEW_VERSION }}"
+          echo "npm tag: ${{ github.event.inputs.npm_tag }}"
+          if [ "${{ github.event.inputs.npm_tag }}" = "latest" ]; then
+            echo "Install: npm install ai-vision-mcp"
+          else
+            echo "Install: npm install ai-vision-mcp@${{ github.event.inputs.npm_tag }}"
+          fi
