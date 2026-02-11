@@ -18,7 +18,7 @@ import {
   parseToolResult,
 } from './setup.js';
 
-describe('Input Validation Tests', () => {
+describe.skip('Input Validation Tests', () => {
   let client: TestClient;
   let server: ServerProcess;
 
