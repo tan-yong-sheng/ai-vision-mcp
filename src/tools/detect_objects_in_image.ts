@@ -423,101 +423,87 @@ export async function detect_objects_in_image(
     );
 
     // Parse detection results
-    let detections: DetectedObject[];
-    try {
-      // Try to parse the result directly
-      detections = JSON.parse(result.text);
-    } catch (parseError) {
-      console.error(
-        `[detect_objects_in_image] Initial JSON parse failed, attempting cleanup...`
-      );
-      console.error(
-        `[detect_objects_in_image] Raw response (first 500 chars): ${result.text.substring(0, 500)}`
-      );
-      console.error(
-        `[detect_objects_in_image] Full response length: ${result.text.length} characters`
-      );
+    let detections: DetectedObject[] = [];
 
-      // Try to extract JSON from markdown code blocks if present
-      let cleanedText = result.text.trim();
+    const rawText = (result.text || '').trim();
 
-      // Remove markdown code fences if present
-      if (cleanedText.startsWith('```')) {
-        const lines = cleanedText.split('\n');
-        // Remove first line (```json or ```)
-        lines.shift();
-        // Remove last line if it's closing fence
-        if (lines[lines.length - 1].trim() === '```') {
-          lines.pop();
-        }
-        cleanedText = lines.join('\n').trim();
-      }
+    // The model is instructed to return raw JSON, but in practice it may return
+    // prose + a fenced ```json block. Build a small set of increasingly-lenient
+    // candidates and attempt to parse each.
+    const candidates: string[] = [];
 
-      // Try parsing the cleaned text
+    // 1) Raw text as-is
+    if (rawText) candidates.push(rawText);
+
+    // 2) First fenced code block (```json ... ```), even if preceded by prose
+    const fencedMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fencedMatch?.[1]) {
+      candidates.unshift(fencedMatch[1].trim());
+    }
+
+    // 3) Best-effort slice from first '[' to last ']' (common for arrays)
+    const arrayStart = rawText.indexOf('[');
+    const arrayEnd = rawText.lastIndexOf(']');
+    if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
+      candidates.push(rawText.slice(arrayStart, arrayEnd + 1).trim());
+    }
+
+    // 4) Best-effort slice from first '{' to last '}' (fallback)
+    const objStart = rawText.indexOf('{');
+    const objEnd = rawText.lastIndexOf('}');
+    if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+      candidates.push(rawText.slice(objStart, objEnd + 1).trim());
+    }
+
+    // Try parsing candidates
+    let parsed = false;
+    for (const candidate of candidates) {
       try {
-        detections = JSON.parse(cleanedText);
-        console.error(
-          `[detect_objects_in_image] Successfully parsed after cleanup`
-        );
-      } catch (secondError) {
-        console.error(
-          `[detect_objects_in_image] Failed to parse even after cleanup`
-        );
-        console.error(
-          `[detect_objects_in_image] Cleaned text (first 1000 chars): ${cleanedText.substring(0, 1000)}`
-        );
+        detections = JSON.parse(candidate);
+        parsed = true;
+        if (candidate !== rawText) {
+          console.error('[detect_objects_in_image] Successfully parsed JSON after extraction/cleanup');
+        }
+        break;
+      } catch {
+        // keep trying
+      }
+    }
 
-        // Try to fix truncated JSON arrays
-        let fixedText = cleanedText;
+    if (!parsed) {
+      console.error('[detect_objects_in_image] Failed to parse detection JSON, attempting truncated-array fix...');
+      console.error(`[detect_objects_in_image] Raw response (first 500 chars): ${rawText.substring(0, 500)}`);
 
-        // Check if the JSON looks like a truncated array
-        if (cleanedText.startsWith('[') && !cleanedText.endsWith(']')) {
-          console.error(
-            `[detect_objects_in_image] Attempting to fix truncated JSON array...`
-          );
-
-          // Find the last complete object by looking for the last complete "},"
-          const lastCompleteObjectIndex = cleanedText.lastIndexOf('},');
-          if (lastCompleteObjectIndex > 0) {
-            // Truncate at the last complete object and close the array
-            fixedText =
-              cleanedText.substring(0, lastCompleteObjectIndex + 1) + '\n]';
+      // If it looks like an array but is missing the closing bracket, try truncating
+      // to the last complete object and closing the array.
+      const best = candidates[0] || rawText;
+      if (best.startsWith('[') && !best.endsWith(']')) {
+        const lastCompleteObjectIndex = best.lastIndexOf('},');
+        if (lastCompleteObjectIndex > 0) {
+          const fixedText = best.substring(0, lastCompleteObjectIndex + 1) + '\n]';
+          try {
+            detections = JSON.parse(fixedText);
+            parsed = true;
             console.error(
-              `[detect_objects_in_image] Fixed text ends with: "${fixedText.slice(-100)}"`
+              `[detect_objects_in_image] Successfully parsed truncated JSON after fix. Objects found: ${detections.length}`
             );
-
-            try {
-              detections = JSON.parse(fixedText);
-              console.error(
-                `[detect_objects_in_image] Successfully parsed truncated JSON after fix. Objects found: ${detections.length}`
-              );
-            } catch (thirdError) {
-              console.error(
-                `[detect_objects_in_image] Failed to parse even after fixing truncated JSON`
-              );
-              throw new VisionError(
-                `Failed to parse detection results as JSON (response appears truncated): ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}. Consider increasing maxTokens parameter.`,
-                'PARSE_ERROR',
-                config.IMAGE_PROVIDER,
-                parseError instanceof Error ? parseError : undefined
-              );
-            }
-          } else {
+          } catch (parseError) {
             throw new VisionError(
-              `Failed to parse detection results as JSON (response appears truncated): ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}. Consider increasing maxTokens parameter.`,
+              `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${rawText.substring(0, 500)}`,
               'PARSE_ERROR',
               config.IMAGE_PROVIDER,
               parseError instanceof Error ? parseError : undefined
             );
           }
-        } else {
-          throw new VisionError(
-            `Failed to parse detection results as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw response (first 500 chars): ${result.text.substring(0, 500)}`,
-            'PARSE_ERROR',
-            config.IMAGE_PROVIDER,
-            parseError instanceof Error ? parseError : undefined
-          );
         }
+      }
+
+      if (!parsed) {
+        throw new VisionError(
+          `Failed to parse detection results as JSON. Raw response (first 500 chars): ${rawText.substring(0, 500)}`,
+          'PARSE_ERROR',
+          config.IMAGE_PROVIDER
+        );
       }
     }
 
