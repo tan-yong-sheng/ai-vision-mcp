@@ -12,7 +12,7 @@
  * To run these tests:
  *   npm run test:e2e:cli
  *
- * Tests are skipped by default unless GEMINI_API_KEY is set.
+ * API-calling tests are skipped by default unless a real GEMINI_API_KEY is set.
  */
 
 import { describe, test, expect } from 'vitest';
@@ -32,8 +32,9 @@ const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..', '..');
 
 describe('CLI E2E Tests', () => {
-  // Skip all CLI tests if no API key is available
-  const hasApiKey = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'test-api-key-for-e2e-tests';
+  // Skip API-calling CLI tests unless a real key is available
+  const apiKey = process.env.GEMINI_API_KEY;
+  const hasApiKey = !!apiKey && !apiKey.startsWith('test-');
   const testOrSkip = hasApiKey ? test : test.skip;
 
   describe('Help Command', () => {

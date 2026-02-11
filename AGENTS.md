@@ -262,6 +262,228 @@ Before submitting changes, verify:
 - [ ] Both CLI and MCP use same tool function imports
 - [ ] Tests pass for both modes
 
+## GitHub Actions Workflow Guide
+
+This section documents how to trigger and use the CI/CD workflows for this project.
+
+### Workflow Overview
+
+| Workflow | File | Trigger | Purpose |
+|----------|------|---------|---------|
+| **CI** | `ci.yml` | Push/PR to main | Lint, build, verify |
+| **E2E Tests (No API)** | `e2e-tests.yml` | Push/PR to main | Fast tests without API calls |
+| **E2E Integration** | `e2e-integration.yml` | Manual/Label | Tests with real API calls |
+| **Publish Dev** | `publish-to-npm-dev.yml` | Tag with `-dev` | Publish dev version to npm |
+| **Publish Beta** | `publish-to-npm-beta-on-tag.yml` | Tag with `-beta` | Publish beta version to npm |
+| **Publish Latest** | `publish-to-npm-latest-on-release.yml` | GitHub Release | Publish production version |
+| **Publish Manual** | `publish-to-npm-manual.yml` | Manual trigger | Manual publish with tag selection |
+
+### 1. CI Workflow (Lint & Build)
+
+**File:** `.github/workflows/ci.yml`
+
+**Automatic Trigger:**
+- Every push to `main` branch
+- Every pull request to `main` branch
+
+**What it does:**
+1. Installs dependencies
+2. Runs ESLint (`npm run lint`)
+3. Builds TypeScript (`npm run build`)
+4. Verifies package can be imported
+
+**Duration:** ~2 minutes
+
+**Required Secrets:** None
+
+---
+
+### 2. E2E Tests (No API)
+
+**File:** `.github/workflows/e2e-tests.yml`
+
+**Automatic Trigger:**
+- Every push to `main` or `develop` branch
+- Every pull request to `main` branch
+
+**What it does:**
+- Runs protocol tests (MCP compliance)
+- Runs validation tests (input validation)
+- **No API calls required** - fast and reliable
+
+**Duration:** ~2 minutes
+
+**Required Secrets:** None (uses dummy API key)
+
+---
+
+### 3. E2E Integration Tests (With API)
+
+**File:** `.github/workflows/e2e-integration.yml`
+
+**Trigger Options:**
+
+#### Option A: Manual Trigger (Recommended for testing)
+```bash
+# Go to GitHub → Actions → E2E Integration Tests → Run workflow
+# Select test type: all, cli, or integration
+```
+
+#### Option B: PR Label
+```bash
+# Add label to PR
+gh pr edit <PR_NUMBER> --add-label "e2e-integration"
+
+# Remove label to skip
+gh pr edit <PR_NUMBER> --remove-label "e2e-integration"
+```
+
+**What it does:**
+- Runs CLI E2E tests with real API calls
+- Runs integration tests with real API calls
+- Tests actual image/video analysis
+
+**Duration:** ~10-15 minutes
+
+**Required Secrets:**
+- `GEMINI_API_KEY` - Your Gemini API key
+- `GEMINI_BASE_URL` - Custom proxy URL (optional)
+- `IMAGE_MODEL` - Model for images (optional, default: gemini-2.5-flash-lite)
+- `VIDEO_MODEL` - Model for video (optional, default: gemini-2.5-flash)
+
+---
+
+### 4. NPM Publishing Workflows
+
+#### Publish Dev Version
+
+**File:** `.github/workflows/publish-to-npm-dev.yml`
+
+**Trigger:** Push tag with `-dev` suffix
+```bash
+# Create and push dev tag
+git tag v0.0.5-dev.1
+git push origin v0.0.5-dev.1
+```
+
+**Or manual trigger:**
+```bash
+# Go to GitHub → Actions → Publish to npm (dev) → Run workflow
+```
+
+**Result:** Publishes to npm with `dev` tag
+```bash
+npm install ai-vision-mcp@dev
+```
+
+---
+
+#### Publish Beta Version
+
+**File:** `.github/workflows/publish-to-npm-beta-on-tag.yml`
+
+**Trigger:** Push tag with `-beta` suffix
+```bash
+# Create and push beta tag
+git tag v0.0.5-beta.1
+git push origin v0.0.5-beta.1
+```
+
+**Result:** Publishes to npm with `beta` tag
+```bash
+npm install ai-vision-mcp@beta
+```
+
+---
+
+#### Publish Production (Latest)
+
+**File:** `.github/workflows/publish-to-npm-latest-on-release.yml`
+
+**Trigger:** Create GitHub Release
+```bash
+# Go to GitHub → Releases → Draft new release
+# Create tag (e.g., v0.0.6) and publish release
+```
+
+**Result:** Publishes to npm with `latest` tag
+```bash
+npm install ai-vision-mcp
+# or
+npm install ai-vision-mcp@latest
+```
+
+---
+
+#### Publish Manual
+
+**File:** `.github/workflows/publish-to-npm-manual.yml`
+
+**Trigger:** Manual only
+```bash
+# Go to GitHub → Actions → Publish to npm (manual) → Run workflow
+# Select tag: dev, beta, or latest
+```
+
+---
+
+### Publishing Checklist
+
+#### For Development Testing:
+```bash
+# 1. Make changes and commit
+git add .
+git commit -m "feat: my feature"
+git push
+
+# 2. Wait for CI to pass (green checkmark)
+
+# 3. Create dev tag
+git tag v0.0.5-dev.1
+git push origin v0.0.5-dev.1
+
+# 4. Check Actions tab for publish status
+
+# 5. Install and test
+npm install ai-vision-mcp@dev
+```
+
+#### For Beta Release:
+```bash
+# 1. Create beta tag
+git tag v0.0.5-beta.1
+git push origin v0.0.5-beta.1
+
+# 2. Users install with
+npm install ai-vision-mcp@beta
+```
+
+#### For Production Release:
+```bash
+# 1. Go to GitHub → Releases → Draft new release
+# 2. Click "Choose a tag" and type new version (e.g., v0.0.6)
+# 3. Click "Create new tag: v0.0.6 on publish"
+# 4. Add release title and description
+# 5. Click "Publish release"
+# 6. Workflow auto-publishes to npm
+```
+
+---
+
+### Required Secrets
+
+Configure these in GitHub → Settings → Secrets and variables → Actions:
+
+| Secret | Required For | Description |
+|--------|--------------|-------------|
+| `NPM_TOKEN` | Publishing | NPM authentication token |
+| `GEMINI_API_KEY` | E2E Integration | Gemini API key for tests |
+| `GEMINI_BASE_URL` | E2E Integration | Custom proxy (optional) |
+| `IMAGE_MODEL` | E2E Integration | Image model (optional) |
+| `VIDEO_MODEL` | E2E Integration | Video model (optional) |
+
+---
+
 ## Summary
 
 **The CLI and MCP share ALL business logic through pure tool functions in `src/tools/`.**

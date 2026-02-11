@@ -16,9 +16,10 @@ import {
   type TestClient,
   type ServerProcess,
   parseToolResult,
+  callTool,
 } from './setup.js';
 
-describe.skip('Input Validation Tests', () => {
+describe('Input Validation Tests', () => {
   let client: TestClient;
   let server: ServerProcess;
 
@@ -36,97 +37,97 @@ describe.skip('Input Validation Tests', () => {
 
   describe('analyze_image - Missing Parameters', () => {
     test('should return error for missing imageSource', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         prompt: 'Describe this image',
         // imageSource is missing
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
       expect(parsed.message).toMatch(/imageSource/i);
     });
 
     test('should return error for missing prompt', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'https://example.com/image.jpg',
         // prompt is missing
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
       expect(parsed.message).toMatch(/prompt/i);
     });
 
     test('should return error for empty imageSource', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: '',
         prompt: 'Describe this',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
     });
 
     test('should return error for empty prompt', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'https://example.com/image.jpg',
         prompt: '',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
     });
   });
 
   describe('analyze_image - Invalid Image Source Format', () => {
     test('should return error for invalid URL format', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'not-a-valid-url-or-path',
         prompt: 'Describe this',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
     });
 
     test('should return error for malformed base64 data', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,invalid!!!base64',
         prompt: 'Describe this',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
     });
 
     test('should return error for non-existent local file', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: '/nonexistent/path/to/image.jpg',
         prompt: 'Describe this',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
     });
   });
 
   describe('analyze_image - Options Validation', () => {
     test('should return error for temperature out of range (negative)', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -138,7 +139,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for temperature out of range (too high)', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -150,7 +151,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for maxTokens out of range', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -162,7 +163,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for non-integer maxTokens', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -174,7 +175,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for topP out of range', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -186,7 +187,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for topK out of range', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: {
@@ -200,7 +201,7 @@ describe.skip('Input Validation Tests', () => {
 
   describe('compare_images - Validation', () => {
     test('should return error when fewer than 2 images provided', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: ['https://example.com/image1.jpg'],
         prompt: 'Compare these',
       });
@@ -209,7 +210,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error when exceeding max images (default 4)', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: [
           'https://example.com/1.jpg',
           'https://example.com/2.jpg',
@@ -222,13 +223,13 @@ describe.skip('Input Validation Tests', () => {
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ error: boolean; message: string }>(result);
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
       expect(parsed.error).toBe(true);
       expect(parsed.message).toMatch(/maximum|4 images/i);
     });
 
     test('should return error for empty imageSources array', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: [],
         prompt: 'Compare these',
       });
@@ -237,7 +238,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error when imageSources is not an array', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: 'not-an-array',
         prompt: 'Compare these',
       });
@@ -246,7 +247,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for missing prompt', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: [
           'https://example.com/1.jpg',
           'https://example.com/2.jpg',
@@ -260,7 +261,7 @@ describe.skip('Input Validation Tests', () => {
 
   describe('detect_objects_in_image - Validation', () => {
     test('should return error for missing imageSource', async () => {
-      const result = await client.callTool('detect_objects_in_image', {
+      const result = await callTool(client, 'detect_objects_in_image', {
         prompt: 'Detect people',
         // imageSource is missing
       });
@@ -269,7 +270,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for missing prompt', async () => {
-      const result = await client.callTool('detect_objects_in_image', {
+      const result = await callTool(client, 'detect_objects_in_image', {
         imageSource: 'https://example.com/image.jpg',
         // prompt is missing
       });
@@ -279,7 +280,7 @@ describe.skip('Input Validation Tests', () => {
 
     test('should accept valid input with optional outputFilePath', async () => {
       // This will fail at the API level but schema validation should pass
-      const result = await client.callTool('detect_objects_in_image', {
+      const result = await callTool(client, 'detect_objects_in_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Detect people',
         outputFilePath: '/tmp/output.jpg',
@@ -292,7 +293,7 @@ describe.skip('Input Validation Tests', () => {
 
   describe('analyze_video - Validation', () => {
     test('should return error for missing videoSource', async () => {
-      const result = await client.callTool('analyze_video', {
+      const result = await callTool(client, 'analyze_video', {
         prompt: 'Summarize this video',
         // videoSource is missing
       });
@@ -301,7 +302,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for missing prompt', async () => {
-      const result = await client.callTool('analyze_video', {
+      const result = await callTool(client, 'analyze_video', {
         videoSource: 'https://youtube.com/watch?v=test',
         // prompt is missing
       });
@@ -310,7 +311,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for empty videoSource', async () => {
-      const result = await client.callTool('analyze_video', {
+      const result = await callTool(client, 'analyze_video', {
         videoSource: '',
         prompt: 'Summarize this',
       });
@@ -319,7 +320,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should validate video options similar to image options', async () => {
-      const result = await client.callTool('analyze_video', {
+      const result = await callTool(client, 'analyze_video', {
         videoSource: 'https://youtube.com/watch?v=test',
         prompt: 'Summarize this',
         options: {
@@ -333,7 +334,7 @@ describe.skip('Input Validation Tests', () => {
 
   describe('Type Validation', () => {
     test('should return error when options is not an object', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
         prompt: 'Describe this',
         options: 'not-an-object',
@@ -343,7 +344,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error when imageSources array contains non-strings', async () => {
-      const result = await client.callTool('compare_images', {
+      const result = await callTool(client, 'compare_images', {
         imageSources: [123, 456],
         prompt: 'Compare these',
       });
@@ -352,7 +353,7 @@ describe.skip('Input Validation Tests', () => {
     });
 
     test('should return error for non-string prompt', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'https://example.com/image.jpg',
         prompt: 12345,
       });
@@ -363,18 +364,21 @@ describe.skip('Input Validation Tests', () => {
 
   describe('Error Response Structure', () => {
     test('should include tool name in error response', async () => {
-      const result = await client.callTool('analyze_image', {
-        prompt: 'Missing image source',
+      // Provide required fields so we reach our server-side error formatting (not MCP schema validation)
+      const result = await callTool(client, 'analyze_image', {
+        imageSource: 'not-a-valid-url-or-path',
+        prompt: 'Describe this image',
       });
 
       expect(result.isError).toBe(true);
 
-      const parsed = parseToolResult<{ tool: string }>(result);
+      const parsed = parseToolResult<{ tool?: string; message: string }>(result as any);
       expect(parsed.tool).toBe('analyze_image');
+      expect(parsed.message).toBeDefined();
     });
 
     test('should return JSON-parseable error content', async () => {
-      const result = await client.callTool('analyze_image', {
+      const result = await callTool(client, 'analyze_image', {
         imageSource: 'invalid-source',
         prompt: 'Describe this',
       });

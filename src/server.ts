@@ -183,14 +183,40 @@ server.registerTool<any, any>(
   },
   async (args: any, _extra: any) => {
     const { imageSource, prompt, options } = args;
-    try {
-      const validatedArgs = {
-        imageSource,
-        prompt,
-        options,
-      };
 
-      // Initialize services on-demand
+    // Early validation - BEFORE calling getServices()
+    if (!imageSource || (typeof imageSource === 'string' && imageSource.trim() === '')) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            error: true,
+            message: 'imageSource is required',
+            tool: 'analyze_image',
+          }, null, 2),
+        }],
+        isError: true,
+      };
+    }
+
+    if (!prompt || (typeof prompt === 'string' && prompt.trim() === '')) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            error: true,
+            message: 'prompt is required',
+            tool: 'analyze_image',
+          }, null, 2),
+        }],
+        isError: true,
+      };
+    }
+
+    try {
+      const validatedArgs = { imageSource, prompt, options };
+
+      // Initialize services on-demand (only after validation passes)
       const { config, imageProvider, imageFileService } = getServices();
 
       const result = await analyze_image(
@@ -201,12 +227,10 @@ server.registerTool<any, any>(
       );
 
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
       };
     } catch (error) {
       void logger.error({ msg: 'Error executing analyze_image tool', error: String(error) }, 'tools/analyze_image');
@@ -222,20 +246,14 @@ server.registerTool<any, any>(
       }
 
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(
-              {
-                error: true,
-                message: errorMessage,
-                tool: 'analyze_image',
-              },
-              null,
-              2
-            ),
-          },
-        ],
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            error: true,
+            message: errorMessage,
+            tool: 'analyze_image',
+          }, null, 2),
+        }],
         isError: true,
       };
     }
@@ -297,37 +315,57 @@ server.registerTool<any, any>(
   },
   async (args: any, _extra: any) => {
     const { imageSources, prompt, options } = args;
+
+    // Early validation - BEFORE calling getServices()
+    if (!Array.isArray(imageSources) || imageSources.length < 2) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            error: true,
+            message: 'imageSources must be an array with at least 2 images',
+            tool: 'compare_images',
+          }, null, 2),
+        }],
+        isError: true,
+      };
+    }
+
+    if (!prompt || (typeof prompt === 'string' && prompt.trim() === '')) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            error: true,
+            message: 'prompt is required',
+            tool: 'compare_images',
+          }, null, 2),
+        }],
+        isError: true,
+      };
+    }
+
     try {
-      // Initialize services on-demand to get config
+      // Initialize services on-demand (only after validation passes)
       const { config, imageProvider, imageFileService } = getServices();
 
       // Dynamic validation using config
       const maxImages = config.MAX_IMAGES_FOR_COMPARISON || 4;
       if (imageSources.length > maxImages) {
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(
-                {
-                  error: true,
-                  message: `Maximum ${maxImages} images allowed for comparison, received ${imageSources.length}. Configure MAX_IMAGES_FOR_COMPARISON environment variable to change this limit.`,
-                  tool: 'compare_images',
-                },
-                null,
-                2
-              ),
-            },
-          ],
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              error: true,
+              message: `Maximum ${maxImages} images allowed for comparison, received ${imageSources.length}. Configure MAX_IMAGES_FOR_COMPARISON environment variable to change this limit.`,
+              tool: 'compare_images',
+            }, null, 2),
+          }],
           isError: true,
         };
       }
 
-      const validatedArgs = {
-        imageSources,
-        prompt,
-        options,
-      };
+      const validatedArgs = { imageSources, prompt, options };
 
       const result = await compare_images(
         validatedArgs,
@@ -337,12 +375,10 @@ server.registerTool<any, any>(
       );
 
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(result, null, 2),
+        }],
       };
     } catch (error) {
       void logger.error({ msg: 'Error executing compare_images tool', error: String(error) }, 'tools/compare_images');

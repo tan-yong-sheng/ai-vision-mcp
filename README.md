@@ -471,7 +471,7 @@ Common causes:
 
 **A) Image annotation dependency failed to load**
 
-This server uses [`imagescript`](https://github.com/matmen/ImageScript) for image annotation/dimension extraction (no `sharp`).
+This server uses [`imagescript`](https://github.com/matmen/ImageScript) for image annotation/dimension extraction.
 
 Verify it loads:
 

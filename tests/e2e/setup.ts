@@ -308,7 +308,29 @@ export function parseToolResult<T>(response: { content: Array<{ text: string }> 
   if (!text) {
     throw new Error('No content in tool response');
   }
-  return JSON.parse(text) as T;
+
+  // Tool results are usually JSON (we stringify in our server), but MCP-level
+  // validation errors can come back as plain text (e.g. "MCP error -32602...").
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return { error: true, message: text } as T;
+  }
+}
+
+/**
+ * Call a tool using the SDK's current callTool() signature.
+ *
+ * The SDK expects: client.callTool({ name, arguments })
+ * but many tests prefer: callTool(client, name, args)
+ */
+export async function callTool(
+  client: TestClient,
+  name: string,
+  args: Record<string, unknown>,
+  options?: any
+): Promise<any> {
+  return client.callTool({ name, arguments: args } as any, undefined as any, options);
 }
 
 // ============================================================================
