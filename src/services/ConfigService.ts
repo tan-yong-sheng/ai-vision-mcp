@@ -13,6 +13,7 @@ import type {
   LoggingConfig,
   DevelopmentConfig,
 } from '../types/Config.js';
+import { LoggerService } from './LoggerService.js';
 import { ConfigurationError } from '../types/Errors.js';
 import {
   type FunctionName,
@@ -27,9 +28,12 @@ dotenv.config();
 export class ConfigService {
   private static instance: ConfigService;
   private config: Config;
+  private loggedSummary = false;
+  private logger = LoggerService.getInstance('ai-vision-mcp');
 
   private constructor() {
     this.config = this.loadConfig();
+    this.logModelResolutionSummaryOnce();
   }
 
   public static getInstance(): ConfigService {
@@ -41,6 +45,54 @@ export class ConfigService {
 
   public static load(): Config {
     return ConfigService.getInstance().getConfig();
+  }
+
+  private logModelResolutionSummaryOnce(): void {
+    if (this.loggedSummary) return;
+
+    const enabled =
+      process.env.AI_VISION_LOG_MODELS === '1' ||
+      process.env.LOG_LEVEL === 'debug';
+    if (!enabled) return;
+
+    this.loggedSummary = true;
+
+    const cfg = this.config;
+
+    const resolve = (taskType: 'image' | 'video', functionName: FunctionName): string => {
+      const fnSpecific = this.getModelForFunction(functionName);
+      if (fnSpecific) return fnSpecific;
+
+      const taskSpecific = taskType === 'image' ? cfg.IMAGE_MODEL : cfg.VIDEO_MODEL;
+      if (taskSpecific) return taskSpecific;
+
+      return taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+    };
+
+    void this.logger.info(
+      {
+        msg: 'Config loaded (model resolution summary)',
+        NODE_ENV: cfg.NODE_ENV,
+        IMAGE_PROVIDER: cfg.IMAGE_PROVIDER,
+        VIDEO_PROVIDER: cfg.VIDEO_PROVIDER,
+        GEMINI_BASE_URL: cfg.GEMINI_BASE_URL,
+        IMAGE_MODEL: cfg.IMAGE_MODEL ?? null,
+        VIDEO_MODEL: cfg.VIDEO_MODEL ?? null,
+        function_models: {
+          ANALYZE_IMAGE_MODEL: cfg.ANALYZE_IMAGE_MODEL ?? null,
+          COMPARE_IMAGES_MODEL: cfg.COMPARE_IMAGES_MODEL ?? null,
+          DETECT_OBJECTS_IN_IMAGE_MODEL: cfg.DETECT_OBJECTS_IN_IMAGE_MODEL ?? null,
+          ANALYZE_VIDEO_MODEL: cfg.ANALYZE_VIDEO_MODEL ?? null,
+        },
+        resolved_models: {
+          analyze_image: resolve('image', FUNCTION_NAMES.ANALYZE_IMAGE),
+          compare_images: resolve('image', FUNCTION_NAMES.COMPARE_IMAGES),
+          detect_objects_in_image: resolve('image', FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE),
+          analyze_video: resolve('video', FUNCTION_NAMES.ANALYZE_VIDEO),
+        },
+      },
+      'config'
+    );
   }
 
   private loadConfig(): Config {

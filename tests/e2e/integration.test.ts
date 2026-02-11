@@ -161,6 +161,40 @@ describe('Integration Tests', () => {
     );
   });
 
+  describe('Video Analysis (Real API)', () => {
+    testOrSkip(
+      'should analyze YouTube video',
+      async () => {
+        // Using Big Buck Bunny trailer - a short open-source test video
+        const result = await callTool(
+          client,
+          'analyze_video',
+          {
+            videoSource: 'https://www.youtube.com/watch?v=9hE5-98ZeCg',
+            prompt: 'What is this video about? Give a one-sentence summary.',
+            options: {
+              maxTokens: 300,
+              temperature: 0.1,
+            },
+          },
+          { timeout: 120000 }
+        );
+
+        expect(result.isError).toBeFalsy();
+
+        const parsed = parseToolResult<{
+          text?: string;
+          description?: string;
+          analysis?: string;
+        }>(result as any);
+        const text =
+          parsed.text || parsed.description || parsed.analysis || '';
+        expect(text.length).toBeGreaterThan(0);
+      },
+      120000
+    );
+  });
+
   describe('Error Handling (Real API)', () => {
     testOrSkip(
       'should handle invalid image gracefully',

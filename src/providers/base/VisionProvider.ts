@@ -15,12 +15,14 @@ import type {
 import type { TaskType } from '../../types/Analysis.js';
 import { type FunctionName } from '../../constants/FunctionNames.js';
 import { ConfigService } from '../../services/ConfigService.js';
+import { LoggerService } from '../../services/LoggerService.js';
 
 export abstract class BaseVisionProvider implements VisionProvider {
   protected imageModel: string;
   protected videoModel: string;
   protected providerName: string;
   protected configService: ConfigService;
+  protected logger = LoggerService.getInstance('ai-vision-mcp');
 
   constructor(providerName: string, imageModel: string, videoModel: string) {
     this.providerName = providerName;
@@ -377,9 +379,11 @@ export abstract class BaseVisionProvider implements VisionProvider {
     };
 
     // Add structured output configuration if responseSchema is provided
+    // Note: Use responseJsonSchema (not responseSchema) for better compatibility
+    // with proxy endpoints like Bifrost. The Gemini REST API expects responseJsonSchema.
     if (options?.responseSchema) {
       config.responseMimeType = 'application/json';
-      config.responseSchema = options.responseSchema;
+      config.responseJsonSchema = options.responseSchema;
     }
 
     // Add system instruction if provided
@@ -414,18 +418,59 @@ export abstract class BaseVisionProvider implements VisionProvider {
     const systemDefault =
       taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
 
+    const enabled =
+      process.env.AI_VISION_LOG_MODELS === '1' ||
+      process.env.LOG_LEVEL === 'debug';
+
     // Priority hierarchy: Function-specific > Task-specific > System default
     if (functionName) {
       const functionSpecificModel =
         this.configService.getModelForFunction(functionName);
       if (functionSpecificModel) {
+        if (enabled) {
+          void this.logger.debug(
+            {
+              msg: 'Resolved model (function-specific)',
+              provider: this.providerName,
+              taskType,
+              functionName,
+              model: functionSpecificModel,
+            },
+            'models'
+          );
+        }
         return functionSpecificModel;
       }
     }
 
     const taskSpecificModel = this.getModelForTask(taskType);
     if (taskSpecificModel) {
+      if (enabled) {
+        void this.logger.debug(
+          {
+            msg: 'Resolved model (task-specific)',
+            provider: this.providerName,
+            taskType,
+            functionName: functionName ?? null,
+            model: taskSpecificModel,
+          },
+          'models'
+        );
+      }
       return taskSpecificModel;
+    }
+
+    if (enabled) {
+      void this.logger.debug(
+        {
+          msg: 'Resolved model (system default)',
+          provider: this.providerName,
+          taskType,
+          functionName: functionName ?? null,
+          model: systemDefault,
+        },
+        'models'
+      );
     }
 
     return systemDefault;

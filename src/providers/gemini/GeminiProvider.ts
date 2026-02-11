@@ -208,6 +208,21 @@ export class GeminiProvider extends BaseVisionProvider {
         options?.functionName
       );
 
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Gemini request (image)',
+            baseUrl: this.baseUrl,
+            model,
+            functionName: options?.functionName ?? null,
+          },
+          'models'
+        );
+      }
+
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
@@ -373,6 +388,22 @@ export class GeminiProvider extends BaseVisionProvider {
         options?.functionName
       );
 
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Gemini request (compare_images)',
+            baseUrl: this.baseUrl,
+            model,
+            functionName: options?.functionName ?? null,
+            imageCount: imageSources.length,
+          },
+          'models'
+        );
+      }
+
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {
           return await this.client.models.generateContent({
@@ -494,6 +525,21 @@ export class GeminiProvider extends BaseVisionProvider {
         'video',
         options?.functionName
       );
+
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Gemini request (video)',
+            baseUrl: this.baseUrl,
+            model,
+            functionName: options?.functionName ?? null,
+          },
+          'models'
+        );
+      }
 
       const { result: response, duration: analysisDuration } =
         await this.measureAsync(async () => {

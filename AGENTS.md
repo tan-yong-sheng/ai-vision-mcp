@@ -353,6 +353,8 @@ gh pr edit <PR_NUMBER> --remove-label "e2e-integration"
 
 **Local dev note (API tests):**
 - When running integration/CLI E2E tests locally, ensure both `GEMINI_API_KEY` and `GEMINI_BASE_URL` are set in your environment.
+- If you use proxy-prefixed models like `IMAGE_MODEL=cli_proxy_api/gemini-2.5-flash`, you must also set:
+  - `GEMINI_BASE_URL=https://bifrost.tanyongsheng.site/genai`
 - Never commit actual secret values.
 
 ---
