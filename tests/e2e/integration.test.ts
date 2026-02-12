@@ -254,7 +254,7 @@ describe('Integration Tests', () => {
               maxTokens: 100,
             },
           },
-          { timeout: 60000 }
+          { timeout: 120000 }
         );
 
         expect(result.isError).toBeFalsy();
@@ -284,7 +284,7 @@ describe('Integration Tests', () => {
         // Short video (2 min) should have low utilization (< 50%)
         expect(parsed.metadata?.contextWarning?.utilization).toBeLessThan(0.5);
       },
-      60000
+      120000
     );
   });
 

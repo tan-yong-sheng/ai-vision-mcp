@@ -51,7 +51,7 @@ process.on('unhandledRejection', (reason) => {
 const server = new McpServer(
   {
     name: 'ai-vision-mcp',
-    version: '0.0.5',
+    version: '0.0.6',
   },
   {
     capabilities: { logging: {} },

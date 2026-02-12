@@ -145,6 +145,7 @@ describe('YouTube Video Analysis E2E Tests (Gemini)', () => {
         // Skip this test if YOUTUBE_API_KEY is set (we test that separately)
         if (hasYouTubeApiKey) {
           console.log('Skipping - YOUTUBE_API_KEY is set, testing fallback behavior instead');
+          return;
         }
 
         // Big Buck Bunny trailer
@@ -211,7 +212,7 @@ describe('YouTube Video Analysis E2E Tests (Gemini)', () => {
               maxTokens: 100,
             },
           },
-          { timeout: 60000 }
+          { timeout: 120000 }
         );
 
         // Should either succeed (Gemini may handle it) or fail gracefully
@@ -228,7 +229,7 @@ describe('YouTube Video Analysis E2E Tests (Gemini)', () => {
           expect(typeof text).toBe('string');
         }
       },
-      60000
+      120000
     );
   });
 });

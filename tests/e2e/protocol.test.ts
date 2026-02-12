@@ -48,7 +48,7 @@ describe('MCP Protocol Tests', () => {
       expect(serverInfo).toBeDefined();
       expect(serverInfo.name).toBe('ai-vision-mcp');
       expect(serverInfo.version).toBeDefined();
-      expect(serverInfo.version).toBe('0.0.5');
+      expect(serverInfo.version).toBe('0.0.6');
     });
   });
 
