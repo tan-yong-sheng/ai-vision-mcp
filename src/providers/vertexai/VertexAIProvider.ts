@@ -23,6 +23,7 @@ import {
 } from '../../types/Errors.js';
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
+import { parseServiceAccountCredentials } from '../../utils/credentialsParser.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -51,13 +52,28 @@ export class VertexAIProvider extends BaseVisionProvider {
     }
 
     // Add authentication if credentials are provided
+    // Supports: base64-encoded JSON, file path, or raw JSON string
     if (config.credentials) {
-      clientConfig.googleAuthOptions = {
-        keyFile: config.credentials,
-      };
-      console.error(
-        `[VertexAI Provider] Using service account credentials: [REDACTED]`
-      );
+      try {
+        // Parse credentials using the unified parser
+        const parsedCredentials = parseServiceAccountCredentials(config.credentials);
+
+        // Use credentials object directly (works for all formats)
+        clientConfig.googleAuthOptions = {
+          credentials: {
+            client_email: parsedCredentials.client_email,
+            private_key: parsedCredentials.private_key,
+          },
+        };
+        console.error(
+          `[VertexAI Provider] Using service account credentials for: ${parsedCredentials.client_email}`
+        );
+      } catch (error) {
+        console.error(
+          `[VertexAI Provider] Failed to parse credentials: ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
+      }
     } else {
       console.error(
         '[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)'

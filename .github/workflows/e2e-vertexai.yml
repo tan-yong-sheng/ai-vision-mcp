@@ -46,33 +46,10 @@ jobs:
           echo "run=$RUN" >> $GITHUB_OUTPUT
           echo "Should run: $RUN"
 
-  setup-credentials:
-    name: Setup Vertex AI Credentials
-    runs-on: ubuntu-latest
-    needs: check-trigger
-    if: needs.check-trigger.outputs.should_run == 'true'
-    outputs:
-      credentials_path: ${{ steps.setup.outputs.credentials_path }}
-    steps:
-      - name: Decode and save service account credentials
-        id: setup
-        run: |
-          # Decode base64-encoded service account JSON
-          echo "${{ secrets.VERTEX_CREDENTIALS_JSON }}" | base64 -d > /tmp/vertex-credentials.json
-          echo "credentials_path=/tmp/vertex-credentials.json" >> $GITHUB_OUTPUT
-          echo "Credentials file created"
-
-      - name: Upload credentials artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: vertex-credentials
-          path: /tmp/vertex-credentials.json
-          retention-days: 1
-
   integration-tests:
     name: Integration Tests (VertexAI)
     runs-on: ubuntu-latest
-    needs: [check-trigger, setup-credentials]
+    needs: check-trigger
     if: needs.check-trigger.outputs.should_run == 'true'
     continue-on-error: true
     timeout-minutes: 20
@@ -80,12 +57,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download credentials artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vertex-credentials
-          path: /tmp
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -104,8 +75,9 @@ jobs:
         run: npx vitest run tests/e2e/integration.vertexai.test.ts
         env:
           NODE_ENV: test
-          # Vertex AI credentials - PROJECT_ID is auto-derived from credentials
-          VERTEX_CREDENTIALS: /tmp/vertex-credentials.json
+          # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON
+          # PROJECT_ID is auto-derived from credentials
+          VERTEX_CREDENTIALS: ${{ secrets.VERTEX_CREDENTIALS }}
           VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
           # GCS configuration for video files (optional)
           GCS_BUCKET_NAME: ${{ secrets.VERTEX_GCS_BUCKET_NAME }}
@@ -121,9 +93,3 @@ jobs:
           name: vertexai-integration-test-results
           path: test-results/
           retention-days: 7
-
-      - name: Cleanup credentials
-        if: always()
-        run: |
-          rm -f /tmp/vertex-credentials.json
-          echo "Credentials cleaned up"

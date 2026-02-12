@@ -87,10 +87,49 @@ The AI Vision MCP Server uses a hierarchical configuration system where more spe
 
 | Variable | Required | Description | Default |
 |----------|-----------|-------------|---------|
-| `VERTEX_CREDENTIALS` | Yes if using `vertex_ai` provider | Path to GCP service account JSON | Required for Vertex AI |
+| `VERTEX_CREDENTIALS` | Yes if using `vertex_ai` provider | GCP service account credentials (see formats below) | Required for Vertex AI |
 | `VERTEX_PROJECT_ID` | Auto | Google Cloud project ID | Auto-derived from credentials |
 | `VERTEX_LOCATION` | No | Vertex AI region | `us-central1` |
 | `VERTEX_ENDPOINT` | No | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
+
+#### VERTEX_CREDENTIALS Format Options
+
+The `VERTEX_CREDENTIALS` variable supports three formats (auto-detected):
+
+**Option 1: Base64-encoded JSON (Recommended for cloud/secrets)**
+
+Best for GitHub Actions, Docker, Kubernetes, and cloud secret managers.
+
+```bash
+# Encode your service account JSON to base64
+cat service-account.json | base64 -w 0  # Linux
+cat service-account.json | base64        # macOS
+
+# Set as environment variable
+export VERTEX_CREDENTIALS='eyJ0eXBlIjoic2VydmljZV9hY2NvdW50Iiwi...'
+```
+
+**Option 2: File path (Recommended for local development)**
+
+Best for local development with a credentials file on disk.
+
+```bash
+export VERTEX_CREDENTIALS='/path/to/service-account.json'
+```
+
+**Option 3: Raw JSON string (May have escaping issues)**
+
+Not recommended due to shell escaping issues with private key newlines.
+
+```bash
+export VERTEX_CREDENTIALS='{"type":"service_account","project_id":"..."}'
+```
+
+**Why Base64 is recommended for cloud:**
+- Private keys contain `\n` characters that break in shell environment variables
+- Base64 encoding preserves all characters safely
+- Works universally across all secret managers and CI/CD platforms
+- No filesystem access required (more secure)
 
 ### Google Cloud Storage (Required for Vertex AI)
 

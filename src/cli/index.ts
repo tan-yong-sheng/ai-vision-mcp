@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import type { Config } from '../types/Config.js';
 import { ConfigService } from '../services/ConfigService.js';
 import { runAnalyzeImage } from './commands/analyze-image.js';
 import { runCompareImages } from './commands/compare-images.js';

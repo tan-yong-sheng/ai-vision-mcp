@@ -93,15 +93,15 @@ export async function analyze_video(
               promptTokens: Math.ceil(args.prompt.length / 4),
             });
 
-            if (validation.warning) {
-              contextWarning = {
-                estimatedTokens: validation.estimatedTokens,
-                contextWindow: validation.contextWindow,
-                utilization: validation.utilization,
-                message: validation.warning,
-                suggestions: validation.suggestions,
-              };
-            }
+            // Always set contextWarning when validation succeeds (even if no warning message)
+            // This allows callers to know the context utilization
+            contextWarning = {
+              estimatedTokens: validation.estimatedTokens,
+              contextWindow: validation.contextWindow,
+              utilization: validation.utilization,
+              message: validation.warning || '',
+              suggestions: validation.suggestions,
+            };
           }
         } catch (error) {
           // Log but don't fail - validation is advisory only
@@ -117,10 +117,13 @@ export async function analyze_video(
       options
     );
 
-    // Return result with context warning if applicable
+    // Return result with context warning nested under metadata
     const extendedResult: ExtendedAnalysisResult = {
       ...result,
-      contextWarning,
+      metadata: {
+        ...result.metadata,
+        ...(contextWarning && { contextWarning }),
+      },
     };
 
     return extendedResult;
