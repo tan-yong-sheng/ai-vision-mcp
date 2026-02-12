@@ -72,7 +72,7 @@ jobs:
 
       - name: Run VertexAI integration tests
         if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
-        run: npx vitest run tests/e2e/integration.vertexai.test.ts
+        run: npx vitest run tests/e2e/integration.vertexai.test.ts --bail=0
         env:
           NODE_ENV: test
           # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON
@@ -120,7 +120,7 @@ jobs:
 
       - name: Run YouTube E2E tests
         if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
-        run: npx vitest run tests/e2e/youtube.test.ts
+        run: npx vitest run tests/e2e/youtube.test.ts --bail=0
         env:
           NODE_ENV: test
           # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON

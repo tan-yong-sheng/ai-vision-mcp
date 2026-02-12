@@ -116,7 +116,7 @@ jobs:
 
       - name: Run integration tests
         if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
-        run: npx vitest run tests/e2e/integration.test.ts
+        run: npx vitest run tests/e2e/integration.test.ts --bail=0
         env:
           NODE_ENV: test
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -160,7 +160,7 @@ jobs:
 
       - name: Run YouTube E2E tests
         if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
-        run: npx vitest run tests/e2e/youtube.test.ts
+        run: npx vitest run tests/e2e/youtube.test.ts --bail=0
         env:
           NODE_ENV: test
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
