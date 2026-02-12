@@ -108,7 +108,11 @@ export class ConfigService {
 
         // Vertex AI configuration (simplified credentials)
         VERTEX_CLIENT_EMAIL: process.env.VERTEX_CLIENT_EMAIL,
-        VERTEX_PRIVATE_KEY: process.env.VERTEX_PRIVATE_KEY,
+        // GitHub Secrets / env vars often store private keys with literal "\\n".
+        // Normalize to actual newlines so OpenSSL can parse the PEM.
+        VERTEX_PRIVATE_KEY: process.env.VERTEX_PRIVATE_KEY?.includes('\\n')
+          ? process.env.VERTEX_PRIVATE_KEY.replace(/\\n/g, '\n')
+          : process.env.VERTEX_PRIVATE_KEY,
         VERTEX_PROJECT_ID: process.env.VERTEX_PROJECT_ID,
         VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
         VERTEX_ENDPOINT:
