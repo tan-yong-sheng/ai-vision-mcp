@@ -389,7 +389,7 @@ gh pr edit <PR_NUMBER> --remove-label "e2e-vertexai"
 - `VERTEX_PRIVATE_KEY` - Service account private key
 - `VERTEX_PROJECT_ID` - Google Cloud project ID
 - `VERTEX_LOCATION` - GCP region (optional, default: us-central1)
-- `VERTEX_GCS_BUCKET_NAME` - GCS bucket for video files (required)
+- `GCS_BUCKET_NAME` - GCS bucket for video files (required)
 - `VERTEX_IMAGE_MODEL` - Model for images (optional)
 - `VERTEX_VIDEO_MODEL` - Model for video (optional)
 
@@ -554,7 +554,7 @@ Configure these in GitHub → Settings → Secrets and variables → Actions:
 | `VERTEX_PRIVATE_KEY` | E2E VertexAI | Service account private key |
 | `VERTEX_PROJECT_ID` | E2E VertexAI | Google Cloud project ID |
 | `VERTEX_LOCATION` | E2E VertexAI | GCP region (optional, default: us-central1) |
-| `VERTEX_GCS_BUCKET_NAME` | E2E VertexAI | GCS bucket for video files (required) |
+| `GCS_BUCKET_NAME` | E2E VertexAI | GCS bucket for video files (required) |
 
 ---
 

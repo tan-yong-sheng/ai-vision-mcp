@@ -81,7 +81,7 @@ jobs:
           VERTEX_PROJECT_ID: ${{ secrets.VERTEX_PROJECT_ID }}
           VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
           # GCS configuration for video files
-          GCS_BUCKET_NAME: ${{ secrets.VERTEX_GCS_BUCKET_NAME }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
           # Model configuration
           IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
           VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-2.5-flash' }}
