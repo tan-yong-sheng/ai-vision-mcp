@@ -302,21 +302,21 @@ describe('VertexAI Integration Tests', () => {
       60000
     );
 
-    // GCS URI test - requires GCS_BUCKET_NAME to be configured
+    // GCS URI test - requires a pre-uploaded object. Gate it behind an explicit env var
+    // so CI doesn't fail when the object isn't present.
     const hasGCSBucket = !!process.env.GCS_BUCKET_NAME;
-    const gcsTestOrSkip = hasGCSBucket && hasVertexCredentials ? test : test.skip;
+    const hasGcsTestVideo = !!process.env.GCS_TEST_VIDEO_OBJECT;
+    const gcsTestOrSkip =
+      hasGCSBucket && hasGcsTestVideo && hasVertexCredentials ? test : test.skip;
 
     gcsTestOrSkip(
       'should analyze video from GCS URI',
       async () => {
-        // This test requires a video file to be pre-uploaded to GCS
-        // The test will fail if the GCS URI doesn't exist
         const result = await callTool(
           client,
           'analyze_video',
           {
-            // Example GCS URI - replace with actual test video
-            videoSource: `gs://${process.env.GCS_BUCKET_NAME}/test-video.mp4`,
+            videoSource: `gs://${process.env.GCS_BUCKET_NAME}/${process.env.GCS_TEST_VIDEO_OBJECT}`,
             prompt: 'Describe this video.',
             options: {
               maxTokens: 200,
@@ -325,8 +325,6 @@ describe('VertexAI Integration Tests', () => {
           { timeout: 120000 }
         );
 
-        // Note: This test may fail if the video doesn't exist in GCS
-        // It's designed to verify GCS URI support
         expect(result.isError).toBeFalsy();
       },
       120000

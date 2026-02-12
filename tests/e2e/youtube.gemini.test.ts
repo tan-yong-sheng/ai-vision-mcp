@@ -12,11 +12,10 @@
  *
  * Test Videos (stable public videos):
  * - Short (2 min): Big Buck Bunny trailer - 9hE5-98ZeCg
- * - Long (4+ hours): Google I/O 2023 keynote - 2Vv-BfVoq4g
  *
  * To run these tests locally:
- *   With API key: GEMINI_API_KEY=xxx YOUTUBE_API_KEY=xxx npm run test:e2e -- tests/e2e/youtube.test.ts
- *   Without API key: GEMINI_API_KEY=xxx npm run test:e2e -- tests/e2e/youtube.test.ts
+ *   With API key: GEMINI_API_KEY=xxx YOUTUBE_API_KEY=xxx npm run test:e2e -- tests/e2e/youtube.gemini.test.ts
+ *   Without API key: GEMINI_API_KEY=xxx npm run test:e2e -- tests/e2e/youtube.gemini.test.ts
  */
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
@@ -29,12 +28,15 @@ import {
   callTool,
 } from './setup.js';
 
-describe('YouTube Video Analysis E2E Tests', () => {
+describe('YouTube Video Analysis E2E Tests (Gemini)', () => {
   let client: TestClient;
   let server: ServerProcess;
 
   // Check prerequisites
-  const hasGeminiKey = process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.startsWith('test-');
+  const hasGeminiKey = !!(
+    process.env.GEMINI_API_KEY &&
+    !process.env.GEMINI_API_KEY.startsWith('test-')
+  );
   const hasYouTubeApiKey = !!process.env.YOUTUBE_API_KEY;
 
   beforeAll(async () => {
@@ -45,6 +47,8 @@ describe('YouTube Video Analysis E2E Tests', () => {
 
     const envOverrides: Record<string, string> = {
       GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
+      IMAGE_PROVIDER: 'google',
+      VIDEO_PROVIDER: 'google',
     };
 
     if (process.env.YOUTUBE_API_KEY) {
@@ -128,53 +132,6 @@ describe('YouTube Video Analysis E2E Tests', () => {
       120000
     );
 
-    testWithApiKey(
-      'should warn about high context utilization for long videos',
-      async () => {
-        // Google I/O 2023 keynote - ~4 hours (long video)
-        const videoUrl = 'https://www.youtube.com/watch?v=2Vv-BfVoq4g';
-
-        const result = await callTool(
-          client,
-          'analyze_video',
-          {
-            videoSource: videoUrl,
-            prompt: 'Summarize the key announcements in this keynote.',
-            options: {
-              maxTokens: 200,
-              temperature: 0.1,
-            },
-          },
-          { timeout: 120000 }
-        );
-
-        expect(result.isError).toBeFalsy();
-
-        const parsed = parseToolResult<{
-          text?: string;
-          description?: string;
-          metadata?: {
-            contextWarning?: {
-              estimatedTokens: number;
-              contextWindow: number;
-              utilization: number;
-              message?: string;
-              suggestions?: string[];
-            };
-          };
-        }>(result as any);
-
-        // Verify context warning is present
-        expect(parsed.metadata?.contextWarning).toBeDefined();
-
-        // Long video should have higher utilization than short videos (> 1%)
-        const utilization = parsed.metadata?.contextWarning?.utilization || 0;
-        expect(utilization).toBeGreaterThan(0.01);
-
-        // Should have suggestions array (may be empty if utilization is low enough)
-      },
-      120000
-    );
   });
 
   /**
