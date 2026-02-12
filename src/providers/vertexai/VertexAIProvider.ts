@@ -21,6 +21,8 @@ import {
   FileUploadError,
   NetworkError,
 } from '../../types/Errors.js';
+import { RetryHandler } from '../../utils/retry.js';
+import { formatDuration } from '../../utils/duration.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -74,6 +76,36 @@ export class VertexAIProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
+      const { result: analysisResult } = await RetryHandler.withRetry(
+        async () => {
+          return await this.analyzeImageOnce(imageSource, prompt, options);
+        },
+        {
+          // Prefer a couple quick retries for transient rate limits/network.
+          maxRetries: 2,
+          baseDelay: 1500,
+          maxDelay: 20000,
+          retryableErrors: ['RATE_LIMIT_EXCEEDED', 'NETWORK_ERROR'],
+          onRetry: (attempt, err) => {
+            console.error(
+              `[VertexAIProvider] Retry analyzeImage attempt ${attempt}: ${err.message}`
+            );
+          },
+        }
+      );
+
+      return analysisResult;
+    } catch (error) {
+      throw this.handleError(error, 'image analysis');
+    }
+  }
+
+  private async analyzeImageOnce(
+    imageSource: string,
+    prompt: string,
+    options?: AnalysisOptions
+  ): Promise<AnalysisResult> {
+    try {
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
@@ -81,6 +113,22 @@ export class VertexAIProvider extends BaseVisionProvider {
         'image',
         options?.functionName
       );
+
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Vertex AI request (image)',
+            projectId: this.config.projectId,
+            location: this.config.location,
+            model,
+            functionName: options?.functionName ?? null,
+          },
+          'models'
+        );
+      }
 
       const { result: response, duration } = await this.measureAsync(
         async () => {
@@ -176,6 +224,23 @@ export class VertexAIProvider extends BaseVisionProvider {
         options?.functionName
       );
 
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Vertex AI request (compare_images)',
+            projectId: this.config.projectId,
+            location: this.config.location,
+            model,
+            functionName: options?.functionName ?? null,
+            imageCount: imageSources.length,
+          },
+          'models'
+        );
+      }
+
       const { result: response, duration } = await this.measureAsync(
         async () => {
           return await this.client.models.generateContent({
@@ -229,10 +294,12 @@ export class VertexAIProvider extends BaseVisionProvider {
   ): Promise<AnalysisResult> {
     try {
       let fileUri: string;
+      let mimeType = 'video/mp4'; // Default, will be detected if possible
 
       if (videoSource.startsWith('gs://')) {
         // Already a GCS URI
         fileUri = videoSource;
+        mimeType = this.getVideoMimeTypeFromUrl(videoSource);
       } else if (videoSource.startsWith('http')) {
         // Check if it's a YouTube URL - these can be passed directly
         if (
@@ -240,6 +307,7 @@ export class VertexAIProvider extends BaseVisionProvider {
           videoSource.includes('youtu.be')
         ) {
           fileUri = videoSource;
+          mimeType = 'video/mp4'; // YouTube is always MP4
         } else {
           // For other HTTP URLs, would need to upload to GCS first
           throw new Error(
@@ -249,6 +317,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       } else if (videoSource.startsWith('files/')) {
         // File reference - should be a GCS URI
         fileUri = videoSource;
+        mimeType = this.getVideoMimeTypeFromUrl(videoSource);
       } else {
         throw new Error(
           'Invalid video source format for Vertex AI. Expected GCS URI or YouTube URL.'
@@ -260,6 +329,25 @@ export class VertexAIProvider extends BaseVisionProvider {
         options?.functionName
       );
 
+      const enabled =
+        process.env.AI_VISION_LOG_MODELS === '1' ||
+        process.env.LOG_LEVEL === 'debug';
+      if (enabled) {
+        void this.logger.info(
+          {
+            msg: 'Vertex AI request (video)',
+            projectId: this.config.projectId,
+            location: this.config.location,
+            model,
+            functionName: options?.functionName ?? null,
+          },
+          'models'
+        );
+      }
+
+      // Build video metadata for the request if provided
+      const videoMetadata = this.buildVideoMetadata(options?.videoMetadata);
+
       const { result: response, duration } = await this.measureAsync(
         async () => {
           return await this.client.models.generateContent({
@@ -270,7 +358,7 @@ export class VertexAIProvider extends BaseVisionProvider {
                 parts: [
                   {
                     fileData: {
-                      mimeType: 'video/mp4',
+                      mimeType,
                       fileUri,
                     },
                   },
@@ -283,6 +371,7 @@ export class VertexAIProvider extends BaseVisionProvider {
               options?.functionName,
               options
             ),
+            ...(videoMetadata && { videoMetadata }),
           });
         }
       );
@@ -304,7 +393,7 @@ export class VertexAIProvider extends BaseVisionProvider {
             }
           : undefined,
         duration,
-        'video/mp4',
+        mimeType,
         undefined, // fileSize not available for video
         response.modelVersion,
         response.responseId
@@ -460,6 +549,14 @@ export class VertexAIProvider extends BaseVisionProvider {
       return source.split(':')[1].split(';')[0];
     }
 
+    // Try to get MIME type from URL extension first
+    if (source.startsWith('http')) {
+      const urlMimeType = this.getImageMimeTypeFromUrl(source);
+      if (urlMimeType !== 'image/jpeg') {
+        return urlMimeType; // Return if we found a specific type
+      }
+    }
+
     // Simple detection based on file signature
     const signatures: Record<string, string> = {
       'image/png': '\x89PNG\r\n\x1a\n',
@@ -469,7 +566,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     };
 
     for (const [mimeType, signature] of Object.entries(signatures)) {
-      if (buffer.slice(0, signature.length).toString() === signature) {
+      if (buffer.subarray(0, signature.length).toString() === signature) {
         return mimeType;
       }
     }
@@ -566,5 +663,121 @@ export class VertexAIProvider extends BaseVisionProvider {
     );
     console.error(`  - Image Model URL: ${imageModelUrl}`);
     console.error(`  - Video Model URL: ${videoModelUrl}`);
+  }
+
+  /**
+   * Build video metadata for the API request
+   * Converts startOffset, endOffset, fps to API format
+   */
+  private buildVideoMetadata(videoMetadata?: {
+    startOffset?: string | number;
+    endOffset?: string | number;
+    fps?: number;
+  }): { startOffset?: string; endOffset?: string; fps?: number } | undefined {
+    if (!videoMetadata) {
+      return undefined;
+    }
+
+    const result: { startOffset?: string; endOffset?: string; fps?: number } = {};
+
+    if (videoMetadata.startOffset !== undefined) {
+      const formatted = formatDuration(videoMetadata.startOffset);
+      if (formatted) {
+        result.startOffset = formatted;
+      }
+    }
+
+    if (videoMetadata.endOffset !== undefined) {
+      const formatted = formatDuration(videoMetadata.endOffset);
+      if (formatted) {
+        result.endOffset = formatted;
+      }
+    }
+
+    if (videoMetadata.fps !== undefined) {
+      result.fps = videoMetadata.fps;
+    }
+
+    // Return undefined if no valid metadata was provided
+    if (Object.keys(result).length === 0) {
+      return undefined;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get video MIME type from URL extension
+   */
+  private getVideoMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      avi: 'video/x-msvideo',
+      mkv: 'video/x-matroska',
+      webm: 'video/webm',
+      flv: 'video/x-flv',
+      wmv: 'video/x-ms-wmv',
+      '3gp': 'video/3gpp',
+      m4v: 'video/mp4',
+    };
+    return mimeTypes[extension || ''] || 'video/mp4';
+  }
+
+  /**
+   * Get image MIME type from URL extension
+   */
+  private getImageMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      bmp: 'image/bmp',
+      tiff: 'image/tiff',
+    };
+    return mimeTypes[extension || ''] || 'image/jpeg';
+  }
+
+  /**
+   * Detect video MIME type from buffer (file signature)
+   */
+  private getVideoMimeType(source: string, buffer: Buffer): string {
+    // Try to detect from file extension
+    const extension = source.split('.').pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      avi: 'video/x-msvideo',
+      mkv: 'video/x-matroska',
+      webm: 'video/webm',
+      flv: 'video/x-flv',
+      wmv: 'video/x-ms-wmv',
+      '3gp': 'video/3gpp',
+      m4v: 'video/mp4',
+    };
+
+    if (extension && mimeTypes[extension]) {
+      return mimeTypes[extension];
+    }
+
+    // Simple detection based on file signature
+    const signatures: Record<string, string> = {
+      'video/mp4': '\x00\x00\x00\x18ftypmp42',
+      'video/webm': '\x1a\x45\xdf\xa3',
+      'video/avi': 'RIFF',
+      'video/mov': '\x00\x00\x00\x14ftyp',
+    };
+
+    for (const [mimeType, signature] of Object.entries(signatures)) {
+      if (buffer.subarray(0, signature.length).toString() === signature) {
+        return mimeType;
+      }
+    }
+
+    return 'video/mp4'; // Default fallback
   }
 }

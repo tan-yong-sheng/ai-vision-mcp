@@ -1,0 +1,129 @@
+name: E2E VertexAI Tests (Google Cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - integration
+  pull_request:
+    branches: [main]
+    types: [labeled]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  check-trigger:
+    name: Check Trigger Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Check conditions
+        id: check
+        run: |
+          RUN="false"
+
+          # Run on manual trigger
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            RUN="true"
+          fi
+
+          # Run if PR has 'e2e-vertexai' label
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+            if echo "$LABELS" | grep -q "e2e-vertexai"; then
+              RUN="true"
+            fi
+          fi
+
+          echo "run=$RUN" >> $GITHUB_OUTPUT
+          echo "Should run: $RUN"
+
+  setup-credentials:
+    name: Setup Vertex AI Credentials
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
+    outputs:
+      credentials_path: ${{ steps.setup.outputs.credentials_path }}
+    steps:
+      - name: Decode and save service account credentials
+        id: setup
+        run: |
+          # Decode base64-encoded service account JSON
+          echo "${{ secrets.VERTEX_CREDENTIALS_JSON }}" | base64 -d > /tmp/vertex-credentials.json
+          echo "credentials_path=/tmp/vertex-credentials.json" >> $GITHUB_OUTPUT
+          echo "Credentials file created"
+
+      - name: Upload credentials artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vertex-credentials
+          path: /tmp/vertex-credentials.json
+          retention-days: 1
+
+  integration-tests:
+    name: Integration Tests (VertexAI)
+    runs-on: ubuntu-latest
+    needs: [check-trigger, setup-credentials]
+    if: needs.check-trigger.outputs.should_run == 'true'
+    continue-on-error: true
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download credentials artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vertex-credentials
+          path: /tmp
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run VertexAI integration tests
+        if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
+        run: npx vitest run tests/e2e/integration.vertexai.test.ts
+        env:
+          NODE_ENV: test
+          # Vertex AI credentials - PROJECT_ID is auto-derived from credentials
+          VERTEX_CREDENTIALS: /tmp/vertex-credentials.json
+          VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
+          # GCS configuration for video files (optional)
+          GCS_BUCKET_NAME: ${{ secrets.VERTEX_GCS_BUCKET_NAME }}
+          # Model configuration
+          IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-2.5-flash' }}
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vertexai-integration-test-results
+          path: test-results/
+          retention-days: 7
+
+      - name: Cleanup credentials
+        if: always()
+        run: |
+          rm -f /tmp/vertex-credentials.json
+          echo "Credentials cleaned up"
