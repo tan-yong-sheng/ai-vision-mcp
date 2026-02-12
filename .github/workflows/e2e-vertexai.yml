@@ -129,6 +129,8 @@ jobs:
           VERTEX_PRIVATE_KEY: ${{ secrets.VERTEX_PRIVATE_KEY }}
           VERTEX_PROJECT_ID: ${{ secrets.VERTEX_PROJECT_ID }}
           VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
+          # GCS configuration (required by ConfigService for vertex_ai)
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
           # YouTube API key (optional)
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           # Model configuration
