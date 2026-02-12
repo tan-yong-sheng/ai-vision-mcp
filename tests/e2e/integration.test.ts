@@ -19,7 +19,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import {
-  setupMCPClient,
+  createMCPClient,
   teardownMCPClient,
   type TestClient,
   type ServerProcess,
@@ -38,7 +38,7 @@ describe('Integration Tests', () => {
       return;
     }
 
-    const setup = await setupMCPClient({
+    const setup = await createMCPClient({
       GEMINI_API_KEY: apiKey,
       // Respect IMAGE_MODEL/VIDEO_MODEL from the environment (e.g. GitHub secrets)
       // by not overriding them here.
@@ -196,6 +196,40 @@ describe('Integration Tests', () => {
         }>(result as any);
         const text =
           parsed.text || parsed.description || parsed.analysis || '';
+        expect(text.length).toBeGreaterThan(0);
+      },
+      120000
+    );
+
+    testOrSkip(
+      'should analyze video with metadata (startOffset, endOffset, fps)',
+      async () => {
+        const result = await callTool(
+          client,
+          'analyze_video',
+          {
+            videoSource: 'https://www.youtube.com/watch?v=9hE5-98ZeCg',
+            prompt: 'What happens in this video clip?',
+            options: {
+              maxTokens: 200,
+              videoMetadata: {
+                startOffset: '10s',
+                endOffset: '30s',
+                fps: 1,
+              },
+            },
+          },
+          { timeout: 120000 }
+        );
+
+        expect(result.isError).toBeFalsy();
+
+        const parsed = parseToolResult<{
+          text?: string;
+          description?: string;
+          analysis?: string;
+        }>(result as any);
+        const text = parsed.text || parsed.description || parsed.analysis || '';
         expect(text.length).toBeGreaterThan(0);
       },
       120000

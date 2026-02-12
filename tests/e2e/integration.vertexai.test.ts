@@ -15,7 +15,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import {
-  setupMCPClient,
+  createMCPClient,
   teardownMCPClient,
   type TestClient,
   type ServerProcess,
@@ -29,6 +29,7 @@ describe('VertexAI Integration Tests', () => {
 
   // Check for VertexAI credentials (PROJECT_ID is auto-derived from credentials)
   const hasVertexCredentials = !!process.env.VERTEX_CREDENTIALS;
+  const hasYouTubeApiKey = !!process.env.YOUTUBE_API_KEY;
 
   beforeAll(async () => {
     if (!hasVertexCredentials) {
@@ -36,14 +37,21 @@ describe('VertexAI Integration Tests', () => {
       return;
     }
 
-    const setup = await setupMCPClient({
+    const envOverrides: Record<string, string> = {
       // Vertex AI configuration (PROJECT_ID auto-derived from credentials)
       VERTEX_CREDENTIALS: process.env.VERTEX_CREDENTIALS!,
       VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
       // Set provider to vertex_ai
       IMAGE_PROVIDER: 'vertex_ai',
       VIDEO_PROVIDER: 'vertex_ai',
-    });
+    };
+
+    // Pass YouTube API key if available (for context metadata)
+    if (process.env.YOUTUBE_API_KEY) {
+      envOverrides.YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+    }
+
+    const setup = await createMCPClient(envOverrides);
     client = setup.client;
     server = setup.server;
   }, 30000);
@@ -235,6 +243,55 @@ describe('VertexAI Integration Tests', () => {
         expect(text.length).toBeGreaterThan(0);
       },
       120000
+    );
+
+    // Test YouTube context metadata when YOUTUBE_API_KEY is set
+    const youtubeTestOrSkip = hasYouTubeApiKey && hasVertexCredentials ? test : test.skip;
+
+    youtubeTestOrSkip(
+      'should return context metadata for YouTube video when YOUTUBE_API_KEY is set',
+      async () => {
+        const result = await callTool(
+          client,
+          'analyze_video',
+          {
+            videoSource: 'https://www.youtube.com/watch?v=9hE5-98ZeCg',
+            prompt: 'What is this video about?',
+            options: {
+              maxTokens: 100,
+            },
+          },
+          { timeout: 60000 }
+        );
+
+        expect(result.isError).toBeFalsy();
+
+        const parsed = parseToolResult<{
+          text?: string;
+          description?: string;
+          metadata?: {
+            contextWarning?: {
+              estimatedTokens: number;
+              contextWindow: number;
+              utilization: number;
+            };
+          };
+        }>(result as any);
+
+        // Verify analysis completed
+        const text = parsed.text || parsed.description || '';
+        expect(text.length).toBeGreaterThan(0);
+
+        // Verify context metadata is present
+        expect(parsed.metadata?.contextWarning).toBeDefined();
+        expect(parsed.metadata?.contextWarning?.estimatedTokens).toBeGreaterThan(0);
+        expect(parsed.metadata?.contextWarning?.contextWindow).toBeGreaterThan(0);
+        expect(parsed.metadata?.contextWarning?.utilization).toBeGreaterThan(0);
+
+        // Short video (2 min) should have low utilization (< 50%)
+        expect(parsed.metadata?.contextWarning?.utilization).toBeLessThan(0.5);
+      },
+      60000
     );
 
     // GCS URI test - requires GCS_BUCKET_NAME to be configured
