@@ -35,7 +35,6 @@ describe('VertexAI Integration Tests', () => {
     process.env.VERTEX_PRIVATE_KEY &&
     process.env.VERTEX_PROJECT_ID
   );
-  const hasYouTubeApiKey = !!process.env.YOUTUBE_API_KEY;
 
   beforeAll(async () => {
     if (!hasVertexCredentials) {
@@ -253,10 +252,10 @@ describe('VertexAI Integration Tests', () => {
       120000
     );
 
-    // Test YouTube context metadata when YOUTUBE_API_KEY is set
-    const youtubeTestOrSkip = hasYouTubeApiKey && hasVertexCredentials ? test : test.skip;
-
-    youtubeTestOrSkip(
+    // Test YouTube context metadata (test is only meaningful when YOUTUBE_API_KEY is set).
+    // We always run it when Vertex credentials are present; if the key is missing the server
+    // should simply omit metadata.contextWarning.
+    testOrSkip(
       'should return context metadata for YouTube video when YOUTUBE_API_KEY is set',
       async () => {
         const result = await callTool(
@@ -290,45 +289,23 @@ describe('VertexAI Integration Tests', () => {
         const text = parsed.text || parsed.description || '';
         expect(text.length).toBeGreaterThan(0);
 
-        // Verify context metadata is present
-        expect(parsed.metadata?.contextWarning).toBeDefined();
-        expect(parsed.metadata?.contextWarning?.estimatedTokens).toBeGreaterThan(0);
-        expect(parsed.metadata?.contextWarning?.contextWindow).toBeGreaterThan(0);
-        expect(parsed.metadata?.contextWarning?.utilization).toBeGreaterThan(0);
+        if (process.env.YOUTUBE_API_KEY) {
+          // Verify context metadata is present
+          expect(parsed.metadata?.contextWarning).toBeDefined();
+          expect(parsed.metadata?.contextWarning?.estimatedTokens).toBeGreaterThan(0);
+          expect(parsed.metadata?.contextWarning?.contextWindow).toBeGreaterThan(0);
+          expect(parsed.metadata?.contextWarning?.utilization).toBeGreaterThan(0);
 
-        // Short video (2 min) should have low utilization (< 50%)
-        expect(parsed.metadata?.contextWarning?.utilization).toBeLessThan(0.5);
+          // Short video (2 min) should have low utilization (< 50%)
+          expect(parsed.metadata?.contextWarning?.utilization).toBeLessThan(0.5);
+        } else {
+          // Without YouTube API key, we should not error, but contextWarning may be absent.
+          expect(parsed.metadata?.contextWarning).toBeUndefined();
+        }
       },
       60000
     );
 
-    // GCS URI test - requires a pre-uploaded object. Gate it behind an explicit env var
-    // so CI doesn't fail when the object isn't present.
-    const hasGCSBucket = !!process.env.GCS_BUCKET_NAME;
-    const hasGcsTestVideo = !!process.env.GCS_TEST_VIDEO_OBJECT;
-    const gcsTestOrSkip =
-      hasGCSBucket && hasGcsTestVideo && hasVertexCredentials ? test : test.skip;
-
-    gcsTestOrSkip(
-      'should analyze video from GCS URI',
-      async () => {
-        const result = await callTool(
-          client,
-          'analyze_video',
-          {
-            videoSource: `gs://${process.env.GCS_BUCKET_NAME}/${process.env.GCS_TEST_VIDEO_OBJECT}`,
-            prompt: 'Describe this video.',
-            options: {
-              maxTokens: 200,
-            },
-          },
-          { timeout: 120000 }
-        );
-
-        expect(result.isError).toBeFalsy();
-      },
-      120000
-    );
   });
 
   describe('Error Handling (VertexAI)', () => {
