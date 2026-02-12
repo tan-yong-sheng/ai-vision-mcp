@@ -91,6 +91,14 @@ function parseJsonCredentials(
   try {
     const credentials = JSON.parse(jsonContent) as ServiceAccountCredentials;
     validateCredentials(credentials, source);
+
+    // Fix private_key: replace escaped \n with actual newlines
+    // This is necessary when JSON is pasted as a secret (e.g., in GitHub Actions)
+    // where the \n escape sequences are preserved as literal strings
+    if (credentials.private_key && credentials.private_key.includes('\\n')) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+
     return credentials;
   } catch (error) {
     if (error instanceof SyntaxError) {
