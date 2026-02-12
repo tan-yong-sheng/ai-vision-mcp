@@ -46,7 +46,9 @@ VIDEO_PROVIDER=google|vertex_ai
 GEMINI_API_KEY=your_gemini_api_key
 
 # Vertex AI (if using vertex_ai provider)
-VERTEX_CREDENTIALS=path/to/service-account.json
+VERTEX_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+VERTEX_PROJECT_ID=your-project-id
 GCS_BUCKET_NAME=your-vision-files-bucket
 ```
 
@@ -879,23 +881,22 @@ export class RetryHandler {
 
 ### 5.1 Native Google Cloud Storage (for Vertex AI)
 
-Vertex AI now uses native Google Cloud Storage SDK with automatic credential sharing:
+Vertex AI uses native Google Cloud Storage SDK with simplified credentials:
 
 ```bash
 # Required configuration
-VERTEX_CREDENTIALS=path/to/service-account.json
+VERTEX_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+VERTEX_PROJECT_ID=your-project-id
 GCS_BUCKET_NAME=your-gcs-bucket
 
-# Optional (auto-derived from VERTEX_CREDENTIALS)
-# VERTEX_PROJECT_ID - extracted from service account JSON
-# GCS_PROJECT_ID - same as VERTEX_PROJECT_ID
-# GCS_CREDENTIALS - defaults to VERTEX_CREDENTIALS
-# GCS_REGION - defaults to VERTEX_LOCATION
+# Optional
+VERTEX_LOCATION=us-central1  # defaults to us-central1
 ```
 
 **Key Benefits:**
-- Single credential file for both Vertex AI and GCS
-- Automatic project ID extraction from credentials
+- Simple environment variables (no JSON file parsing)
+- Same credentials for both Vertex AI and GCS
 - Native GCS SDK for better performance
 - Direct `gs://` URI support for Vertex AI
 
@@ -906,7 +907,10 @@ GCS_BUCKET_NAME=your-gcs-bucket
    - `Vertex AI User` - for Vertex AI API access
    - `Storage Object Admin` - for GCS bucket access
 3. Download the JSON key file
-4. Set `VERTEX_CREDENTIALS` to the key file path
+4. Extract and set these environment variables:
+   - `VERTEX_CLIENT_EMAIL` - from `client_email` field
+   - `VERTEX_PRIVATE_KEY` - from `private_key` field
+   - `VERTEX_PROJECT_ID` - from `project_id` field
 
 ## 6. Provider Configuration Examples
 
@@ -920,10 +924,6 @@ VIDEO_PROVIDER=google
 # Gemini API configuration
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com
-
-# Optional: Google Cloud Storage for large files (uses inlineData for smaller files)
-GCS_BUCKET_NAME=your-gemini-files
-VERTEX_CREDENTIALS=path/to/service-account.json
 ```
 
 ### 6.2 Vertex AI - Production Setup
@@ -933,18 +933,14 @@ VERTEX_CREDENTIALS=path/to/service-account.json
 IMAGE_PROVIDER=vertex_ai
 VIDEO_PROVIDER=vertex_ai
 
-# Vertex AI configuration (simplified)
-VERTEX_CREDENTIALS=path/to/service-account.json
+# Vertex AI configuration (simplified credentials)
+VERTEX_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+VERTEX_PROJECT_ID=your-project-id
 VERTEX_LOCATION=us-central1
 
 # Required: Google Cloud Storage bucket
 GCS_BUCKET_NAME=your-vertex-files
-
-# All other fields auto-derived from VERTEX_CREDENTIALS:
-# - VERTEX_PROJECT_ID
-# - GCS_PROJECT_ID
-# - GCS_CREDENTIALS
-# - GCS_REGION
 ```
 
 ### 6.3 Mixed Setup - Development with Vertex AI for Production
@@ -957,12 +953,13 @@ VIDEO_PROVIDER=vertex_ai
 
 # Both providers configured
 GEMINI_API_KEY=your_gemini_api_key
-VERTEX_CREDENTIALS=path/to/service-account.json
+VERTEX_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+VERTEX_PROJECT_ID=your-project-id
 VERTEX_LOCATION=us-central1
 
 # Google Cloud Storage for Vertex AI video processing
 GCS_BUCKET_NAME=your-mixed-provider-files
-# All GCS config auto-derived from VERTEX_CREDENTIALS
 ```
 
 ## 7. Security Considerations

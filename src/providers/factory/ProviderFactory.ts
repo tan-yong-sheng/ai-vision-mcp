@@ -77,7 +77,7 @@ export class VisionProviderFactory {
         return ['GEMINI_API_KEY'];
 
       case 'vertex_ai':
-        return ['VERTEX_CREDENTIALS', 'VERTEX_PROJECT_ID', 'VERTEX_LOCATION'];
+        return ['VERTEX_CLIENT_EMAIL', 'VERTEX_PRIVATE_KEY', 'VERTEX_PROJECT_ID', 'VERTEX_LOCATION'];
 
       default:
         return [];

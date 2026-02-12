@@ -23,7 +23,6 @@ import {
 } from '../../types/Errors.js';
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
-import { parseServiceAccountCredentials } from '../../utils/credentialsParser.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -52,28 +51,17 @@ export class VertexAIProvider extends BaseVisionProvider {
     }
 
     // Add authentication if credentials are provided
-    // Supports: base64-encoded JSON, file path, or raw JSON string
-    if (config.credentials) {
-      try {
-        // Parse credentials using the unified parser
-        const parsedCredentials = parseServiceAccountCredentials(config.credentials);
-
-        // Use credentials object directly (works for all formats)
-        clientConfig.googleAuthOptions = {
-          credentials: {
-            client_email: parsedCredentials.client_email,
-            private_key: parsedCredentials.private_key,
-          },
-        };
-        console.error(
-          `[VertexAI Provider] Using service account credentials for: ${parsedCredentials.client_email}`
-        );
-      } catch (error) {
-        console.error(
-          `[VertexAI Provider] Failed to parse credentials: ${error instanceof Error ? error.message : String(error)}`
-        );
-        throw error;
-      }
+    if (config.clientEmail && config.privateKey) {
+      // Use credentials object directly
+      clientConfig.googleAuthOptions = {
+        credentials: {
+          client_email: config.clientEmail,
+          private_key: config.privateKey,
+        },
+      };
+      console.error(
+        `[VertexAI Provider] Using service account credentials for: ${config.clientEmail}`
+      );
     } else {
       console.error(
         '[VertexAI Provider] No credentials provided - using Application Default Credentials (ADC)'
@@ -675,7 +663,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     console.error(`  - Location: ${this.config.location}`);
     console.error(`  - Endpoint: ${this.config.endpoint}`);
     console.error(
-      `  - Authentication: ${this.config.credentials ? 'Service Account' : 'Application Default Credentials'}`
+      `  - Authentication: ${this.config.clientEmail && this.config.privateKey ? 'Service Account' : 'Application Default Credentials'}`
     );
     console.error(`  - Image Model URL: ${imageModelUrl}`);
     console.error(`  - Video Model URL: ${videoModelUrl}`);

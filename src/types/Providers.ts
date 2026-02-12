@@ -171,7 +171,8 @@ export interface VertexAIConfig {
   projectId: string;
   location: string;
   endpoint: string;
-  credentials?: string;
+  clientEmail?: string;
+  privateKey?: string;
   imageModel: string;
   videoModel: string;
 }

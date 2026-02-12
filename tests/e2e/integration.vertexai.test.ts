@@ -2,7 +2,9 @@
  * VertexAI Integration E2E Tests
  *
  * These tests make actual API calls to Google Cloud Vertex AI and require:
- * - VERTEX_CREDENTIALS: Path to service account JSON file (PROJECT_ID is auto-derived)
+ * - VERTEX_CLIENT_EMAIL: Service account client email
+ * - VERTEX_PRIVATE_KEY: Service account private key
+ * - VERTEX_PROJECT_ID: Google Cloud project ID
  * - VERTEX_LOCATION: GCP region (default: us-central1)
  * - GCS_BUCKET_NAME: For video file storage (optional for image-only tests)
  *
@@ -27,19 +29,25 @@ describe('VertexAI Integration Tests', () => {
   let client: TestClient;
   let server: ServerProcess;
 
-  // Check for VertexAI credentials (PROJECT_ID is auto-derived from credentials)
-  const hasVertexCredentials = !!process.env.VERTEX_CREDENTIALS;
+  // Check for VertexAI credentials
+  const hasVertexCredentials = !!(
+    process.env.VERTEX_CLIENT_EMAIL &&
+    process.env.VERTEX_PRIVATE_KEY &&
+    process.env.VERTEX_PROJECT_ID
+  );
   const hasYouTubeApiKey = !!process.env.YOUTUBE_API_KEY;
 
   beforeAll(async () => {
     if (!hasVertexCredentials) {
-      console.log('Skipping VertexAI integration tests - missing VERTEX_CREDENTIALS');
+      console.log('Skipping VertexAI integration tests - missing VERTEX_CLIENT_EMAIL, VERTEX_PRIVATE_KEY, or VERTEX_PROJECT_ID');
       return;
     }
 
     const envOverrides: Record<string, string> = {
-      // Vertex AI configuration (PROJECT_ID auto-derived from credentials)
-      VERTEX_CREDENTIALS: process.env.VERTEX_CREDENTIALS!,
+      // Vertex AI configuration
+      VERTEX_CLIENT_EMAIL: process.env.VERTEX_CLIENT_EMAIL!,
+      VERTEX_PRIVATE_KEY: process.env.VERTEX_PRIVATE_KEY!,
+      VERTEX_PROJECT_ID: process.env.VERTEX_PROJECT_ID!,
       VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
       // Set provider to vertex_ai
       IMAGE_PROVIDER: 'vertex_ai',

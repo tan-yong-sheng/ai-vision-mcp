@@ -9,7 +9,7 @@ This guide will configure your Google Cloud environment with:
 - ✅ **Vertex AI API Access** - Enables calling Gemini models (gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite, etc.)
 - ✅ **Google Cloud Storage** - Storage bucket for video files and large images
 - ✅ **Service Account** - Secure authentication with proper IAM permissions
-- ✅ **Unified Credentials** - Single credential file for both Vertex AI and GCS access
+- ✅ **Simplified Credentials** - Extract three fields from service account JSON for both Vertex AI and GCS access
 
 ## Prerequisites
 
@@ -302,7 +302,7 @@ Create and download the service account key file:
 
 ```bash
 # Set credentials file path
-export CREDENTIALS_FILE="vertex-ai-credentials.json"
+export CREDENTIALS_FILE="service-account.json"
 
 # Create key and download
 gcloud iam service-accounts keys create $CREDENTIALS_FILE \
@@ -461,7 +461,9 @@ Next Steps:
   1. Download the credentials file to your local machine
   2. Set environment variables in your .env file:
 
-     VERTEX_CREDENTIALS=$CREDENTIALS_FILE
+     VERTEX_CLIENT_EMAIL=$SA_EMAIL
+     VERTEX_PRIVATE_KEY=<contents of private_key from credentials file>
+     VERTEX_PROJECT_ID=$PROJECT_ID
      GCS_BUCKET_NAME=$BUCKET_NAME
      VERTEX_LOCATION=$BUCKET_LOCATION
 
@@ -494,7 +496,7 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME \
   --role="roles/storage.objectAdmin"
 
 # Create new key (or use existing one)
-gcloud iam service-accounts keys create vertex-ai-credentials.json \
+gcloud iam service-accounts keys create service-account.json \
   --iam-account=$SA_EMAIL
 ```
 
@@ -662,7 +664,7 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME \
   --quiet
 
 # Create credentials
-CREDENTIALS_FILE="vertex-ai-credentials.json"
+CREDENTIALS_FILE="service-account.json"
 echo "Creating credentials file: $CREDENTIALS_FILE"
 gcloud iam service-accounts keys create $CREDENTIALS_FILE \
   --iam-account=$SA_EMAIL
@@ -673,11 +675,13 @@ echo ""
 echo "=== Setup Complete! ==="
 echo ""
 echo "Configuration:"
-echo "  VERTEX_CREDENTIALS=$CREDENTIALS_FILE"
+echo "  VERTEX_CLIENT_EMAIL=$SA_EMAIL"
+echo "  VERTEX_PRIVATE_KEY=<from $CREDENTIALS_FILE>"
+echo "  VERTEX_PROJECT_ID=$PROJECT_ID"
 echo "  GCS_BUCKET_NAME=$BUCKET_NAME"
 echo "  VERTEX_LOCATION=$BUCKET_LOCATION"
 echo ""
-echo "Add these to your .env file to get started!"
+echo "Extract the private_key from $CREDENTIALS_FILE and add these to your .env file!"
 ```
 
 Save this script and run:

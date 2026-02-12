@@ -36,7 +36,9 @@ Get your Google AI Studio's api key [here](https://aistudio.google.com/app/api-k
 ```bash
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
-export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export VERTEX_CLIENT_EMAIL="your-service-account@project.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-gcp-project-id"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
 
@@ -79,7 +81,9 @@ Add to your Claude Desktop configuration:
       "env": {
         "IMAGE_PROVIDER": "vertex_ai",
         "VIDEO_PROVIDER": "vertex_ai",
-        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "VERTEX_CLIENT_EMAIL": "your-service-account@project.iam.gserviceaccount.com",
+        "VERTEX_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+        "VERTEX_PROJECT_ID": "your-gcp-project-id",
         "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
       }
     }
@@ -106,7 +110,9 @@ claude mcp add ai-vision-mcp \
 claude mcp add ai-vision-mcp \
   -e IMAGE_PROVIDER=vertex_ai \
   -e VIDEO_PROVIDER=vertex_ai \
-  -e VERTEX_CREDENTIALS=/path/to/service-account.json \
+  -e VERTEX_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com \
+  -e VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n" \
+  -e VERTEX_PROJECT_ID=your-gcp-project-id \
   -e GCS_BUCKET_NAME=ai-vision-mcp-{VERTEX_PROJECT_ID} \
   -- npx ai-vision-mcp
 ```
@@ -159,7 +165,9 @@ Pasting the following configuration into your Cursor ~/.cursor/mcp.json file is 
       "env": {
         "IMAGE_PROVIDER": "vertex_ai",
         "VIDEO_PROVIDER": "vertex_ai",
-        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "VERTEX_CLIENT_EMAIL": "your-service-account@project.iam.gserviceaccount.com",
+        "VERTEX_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+        "VERTEX_PROJECT_ID": "your-gcp-project-id",
         "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
       }
     }
@@ -209,7 +217,9 @@ Cline uses a JSON configuration file to manage MCP servers. To integrate the pro
       "env": {
         "IMAGE_PROVIDER": "vertex_ai",
         "VIDEO_PROVIDER": "vertex_ai",
-        "VERTEX_CREDENTIALS": "/path/to/service-account.json",
+        "VERTEX_CLIENT_EMAIL": "your-service-account@project.iam.gserviceaccount.com",
+        "VERTEX_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+        "VERTEX_PROJECT_ID": "your-gcp-project-id",
         "GCS_BUCKET_NAME": "ai-vision-mcp-{VERTEX_PROJECT_ID}"
       }
     }
@@ -403,7 +413,9 @@ export GEMINI_API_KEY="your-gemini-api-key"
 ```bash
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
-export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export VERTEX_CLIENT_EMAIL="your-service-account@project.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-gcp-project-id"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
 

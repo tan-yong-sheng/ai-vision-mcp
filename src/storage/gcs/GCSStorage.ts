@@ -15,10 +15,13 @@ export class GCSStorageProvider implements StorageProvider {
   constructor(config: GCSConfig) {
     this.config = config;
 
-    // Initialize native GCS Storage client
+    // Initialize native GCS Storage client with credentials object
     this.storage = new Storage({
       projectId: config.projectId,
-      keyFilename: config.credentials,
+      credentials: {
+        client_email: config.clientEmail,
+        private_key: config.privateKey,
+      },
     });
 
     this.bucket = this.storage.bucket(config.bucketName);

@@ -25,7 +25,9 @@ export GEMINI_API_KEY="your-gemini-api-key"
 ```bash
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
-export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export VERTEX_CLIENT_EMAIL="your-service-account@project.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-project-id"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
 
@@ -87,58 +89,50 @@ The AI Vision MCP Server uses a hierarchical configuration system where more spe
 
 | Variable | Required | Description | Default |
 |----------|-----------|-------------|---------|
-| `VERTEX_CREDENTIALS` | Yes if using `vertex_ai` provider | GCP service account credentials (see formats below) | Required for Vertex AI |
-| `VERTEX_PROJECT_ID` | Auto | Google Cloud project ID | Auto-derived from credentials |
+| `VERTEX_CLIENT_EMAIL` | Yes if using `vertex_ai` provider | Service account client email | Required for Vertex AI |
+| `VERTEX_PRIVATE_KEY` | Yes if using `vertex_ai` provider | Service account private key | Required for Vertex AI |
+| `VERTEX_PROJECT_ID` | Yes if using `vertex_ai` provider | Google Cloud project ID | Required for Vertex AI |
 | `VERTEX_LOCATION` | No | Vertex AI region | `us-central1` |
 | `VERTEX_ENDPOINT` | No | Vertex AI endpoint URL | `https://aiplatform.googleapis.com` |
 
-#### VERTEX_CREDENTIALS Format Options
+#### Setting Up Vertex AI Credentials
 
-The `VERTEX_CREDENTIALS` variable supports three formats (auto-detected):
-
-**Option 1: Base64-encoded JSON (Recommended for cloud/secrets)**
-
-Best for GitHub Actions, Docker, Kubernetes, and cloud secret managers.
+Vertex AI requires a Google Cloud service account. Extract these fields from your service account JSON file:
 
 ```bash
-# Encode your service account JSON to base64
-cat service-account.json | base64 -w 0  # Linux
-cat service-account.json | base64        # macOS
+# From your service-account.json file:
+{
+  "client_email": "your-service-account@project-id.iam.gserviceaccount.com",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+  "project_id": "your-project-id"
+}
 
-# Set as environment variable
-export VERTEX_CREDENTIALS='eyJ0eXBlIjoic2VydmljZV9hY2NvdW50Iiwi...'
+# Set as environment variables:
+export VERTEX_CLIENT_EMAIL="your-service-account@project-id.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-project-id"
 ```
 
-**Option 2: File path (Recommended for local development)**
+**For GitHub Actions secrets:**
+Add each value as a separate secret:
+- `VERTEX_CLIENT_EMAIL`: The client_email value from your service account JSON
+- `VERTEX_PRIVATE_KEY`: The full private_key value (including `\n` characters)
+- `VERTEX_PROJECT_ID`: The project_id value
 
-Best for local development with a credentials file on disk.
-
+**For shell/environment files:**
+When setting `VERTEX_PRIVATE_KEY`, ensure the newlines are preserved:
 ```bash
-export VERTEX_CREDENTIALS='/path/to/service-account.json'
+# If your private key has literal \n, keep them as-is
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBg...\n-----END PRIVATE KEY-----\n"
 ```
-
-**Option 3: Raw JSON string (May have escaping issues)**
-
-Not recommended due to shell escaping issues with private key newlines.
-
-```bash
-export VERTEX_CREDENTIALS='{"type":"service_account","project_id":"..."}'
-```
-
-**Why Base64 is recommended for cloud:**
-- Private keys contain `\n` characters that break in shell environment variables
-- Base64 encoding preserves all characters safely
-- Works universally across all secret managers and CI/CD platforms
-- No filesystem access required (more secure)
 
 ### Google Cloud Storage (Required for Vertex AI)
 
 | Variable | Required | Description | Default |
 |----------|-----------|-------------|---------|
 | `GCS_BUCKET_NAME` | Yes if using `vertex_ai` provider | GCS bucket name for Vertex AI uploads | Required for Vertex AI |
-| `GCS_CREDENTIALS` | No | Path to GCS credentials | Defaults to `VERTEX_CREDENTIALS` |
-| `GCS_PROJECT_ID` | No | GCS project ID | Auto-derived from `VERTEX_CREDENTIALS` |
-| `GCS_REGION` | No | GCS region | Defaults to `VERTEX_LOCATION` |
+
+**Note:** GCS uses the same credentials as Vertex AI (`VERTEX_CLIENT_EMAIL`, `VERTEX_PRIVATE_KEY`, `VERTEX_PROJECT_ID`).
 
 ### Universal API Parameters
 
@@ -230,7 +224,11 @@ export LOG_LEVEL="debug"
 # Provider selection
 export IMAGE_PROVIDER="vertex_ai"
 export VIDEO_PROVIDER="vertex_ai"
-export VERTEX_CREDENTIALS="/path/to/service-account.json"
+
+# Vertex AI credentials
+export VERTEX_CLIENT_EMAIL="your-service-account@project-id.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-project-id"
 export GCS_BUCKET_NAME="your-production-bucket"
 
 # Production models
@@ -272,7 +270,9 @@ export GEMINI_API_KEY="your-gemini-api-key"
 
 # Use Vertex AI for videos (enterprise features)
 export VIDEO_PROVIDER="vertex_ai"
-export VERTEX_CREDENTIALS="/path/to/service-account.json"
+export VERTEX_CLIENT_EMAIL="your-service-account@project-id.iam.gserviceaccount.com"
+export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+export VERTEX_PROJECT_ID="your-project-id"
 export GCS_BUCKET_NAME="your-mixed-provider-bucket"
 
 # Task-specific parameters
@@ -313,9 +313,9 @@ export VERTEX_AI_FILES_API_THRESHOLD=0  # All files use GCS
 
 2. **Vertex AI Authentication Error**
    ```
-   Error: Missing required configuration for vertex_ai: VERTEX_CREDENTIALS
+   Error: Missing required configuration for vertex_ai: VERTEX_CLIENT_EMAIL
    ```
-   **Solution**: Set `VERTEX_CREDENTIALS` and `GCS_BUCKET_NAME` for Vertex AI
+   **Solution**: Set `VERTEX_CLIENT_EMAIL`, `VERTEX_PRIVATE_KEY`, `VERTEX_PROJECT_ID`, and `GCS_BUCKET_NAME` for Vertex AI
 
 3. **File Size Limit Exceeded**
    ```

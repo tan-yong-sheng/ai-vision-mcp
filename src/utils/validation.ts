@@ -64,8 +64,9 @@ export const ConfigSchema = z.object({
     .optional()
     .default('https://generativelanguage.googleapis.com'),
 
-  // Vertex AI configuration
-  VERTEX_CREDENTIALS: z.string().min(1).optional(),
+  // Vertex AI configuration (simplified credentials)
+  VERTEX_CLIENT_EMAIL: z.string().min(1).optional(),
+  VERTEX_PRIVATE_KEY: z.string().min(1).optional(),
   VERTEX_PROJECT_ID: z.string().min(1).optional(),
   VERTEX_LOCATION: z.string().min(1).optional().default('us-central1'),
   VERTEX_ENDPOINT: z
@@ -74,11 +75,8 @@ export const ConfigSchema = z.object({
     .optional()
     .default('https://aiplatform.googleapis.com'),
 
-  // Google Cloud Storage configuration (for Vertex AI file storage)
+  // Google Cloud Storage configuration (uses Vertex AI credentials)
   GCS_BUCKET_NAME: z.string().min(1).optional(),
-  GCS_PROJECT_ID: z.string().min(1).optional(), // Auto-derived from credentials
-  GCS_CREDENTIALS: z.string().min(1).optional(), // Defaults to VERTEX_CREDENTIALS
-  GCS_REGION: z.string().min(1).optional().default('us-central1'),
 
   // Universal API parameters
   TEMPERATURE: z.coerce.number().min(0).max(2).optional().default(0.8),

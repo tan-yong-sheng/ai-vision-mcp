@@ -20,7 +20,6 @@ import {
   FUNCTION_NAMES,
 } from '../constants/FunctionNames.js';
 import { validateConfig, formatZodError } from '../utils/validation.js';
-import { extractProjectIdFromCredentials } from '../utils/credentialsParser.js';
 
 // Load environment variables
 dotenv.config();
@@ -107,8 +106,9 @@ export class ConfigService {
           process.env.GEMINI_BASE_URL ||
           'https://generativelanguage.googleapis.com',
 
-        // Vertex AI configuration
-        VERTEX_CREDENTIALS: process.env.VERTEX_CREDENTIALS,
+        // Vertex AI configuration (simplified credentials)
+        VERTEX_CLIENT_EMAIL: process.env.VERTEX_CLIENT_EMAIL,
+        VERTEX_PRIVATE_KEY: process.env.VERTEX_PRIVATE_KEY,
         VERTEX_PROJECT_ID: process.env.VERTEX_PROJECT_ID,
         VERTEX_LOCATION: process.env.VERTEX_LOCATION || 'us-central1',
         VERTEX_ENDPOINT:
@@ -125,11 +125,8 @@ export class ConfigService {
           process.env.DETECT_OBJECTS_IN_IMAGE_MODEL,
         ANALYZE_VIDEO_MODEL: process.env.ANALYZE_VIDEO_MODEL,
 
-        // Google Cloud Storage configuration (auto-derive from Vertex AI if not provided)
+        // Google Cloud Storage configuration (uses Vertex AI credentials)
         GCS_BUCKET_NAME: process.env.GCS_BUCKET_NAME,
-        GCS_PROJECT_ID: process.env.GCS_PROJECT_ID,
-        GCS_CREDENTIALS: process.env.GCS_CREDENTIALS,
-        GCS_REGION: process.env.GCS_REGION,
 
         // Universal API parameters
         TEMPERATURE: process.env.TEMPERATURE
@@ -308,56 +305,30 @@ export class ConfigService {
 
     // Validate Vertex AI configuration
     if (imageProvider === 'vertex_ai' || videoProvider === 'vertex_ai') {
-      if (!config.VERTEX_CREDENTIALS) {
+      if (!config.VERTEX_CLIENT_EMAIL) {
         throw new ConfigurationError(
-          'VERTEX_CREDENTIALS is required when using Vertex AI provider',
-          'VERTEX_CREDENTIALS'
+          'VERTEX_CLIENT_EMAIL is required when using Vertex AI provider',
+          'VERTEX_CLIENT_EMAIL'
+        );
+      }
+      if (!config.VERTEX_PRIVATE_KEY) {
+        throw new ConfigurationError(
+          'VERTEX_PRIVATE_KEY is required when using Vertex AI provider',
+          'VERTEX_PRIVATE_KEY'
+        );
+      }
+      if (!config.VERTEX_PROJECT_ID) {
+        throw new ConfigurationError(
+          'VERTEX_PROJECT_ID is required when using Vertex AI provider',
+          'VERTEX_PROJECT_ID'
         );
       }
 
-      // Auto-derive VERTEX_PROJECT_ID from credentials if not provided
-      if (!config.VERTEX_PROJECT_ID) {
-        try {
-          config.VERTEX_PROJECT_ID = extractProjectIdFromCredentials(
-            config.VERTEX_CREDENTIALS
-          );
-        } catch (error) {
-          throw new ConfigurationError(
-            'VERTEX_PROJECT_ID could not be auto-derived from credentials file. Please provide it explicitly.',
-            'VERTEX_PROJECT_ID'
-          );
-        }
-      }
-
-      // GCS storage is required for Vertex AI
+      // GCS storage is required for Vertex AI video processing
       if (!config.GCS_BUCKET_NAME) {
         throw new ConfigurationError(
           'GCS_BUCKET_NAME is required when using Vertex AI provider'
         );
-      }
-
-      // Auto-derive GCS_CREDENTIALS from VERTEX_CREDENTIALS if not provided
-      if (!config.GCS_CREDENTIALS) {
-        config.GCS_CREDENTIALS = config.VERTEX_CREDENTIALS;
-      }
-
-      // Auto-derive GCS_PROJECT_ID from credentials if not provided
-      if (!config.GCS_PROJECT_ID) {
-        try {
-          config.GCS_PROJECT_ID = extractProjectIdFromCredentials(
-            config.GCS_CREDENTIALS
-          );
-        } catch (error) {
-          throw new ConfigurationError(
-            'GCS_PROJECT_ID could not be auto-derived from credentials file. Please provide it explicitly.',
-            'GCS_PROJECT_ID'
-          );
-        }
-      }
-
-      // Auto-derive GCS_REGION from VERTEX_LOCATION if not provided
-      if (!config.GCS_REGION) {
-        config.GCS_REGION = config.VERTEX_LOCATION || 'us-central1';
       }
     }
   }
@@ -395,7 +366,8 @@ export class ConfigService {
       location: this.config.VERTEX_LOCATION || 'us-central1',
       endpoint:
         this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
-      credentials: this.config.VERTEX_CREDENTIALS,
+      clientEmail: this.config.VERTEX_CLIENT_EMAIL,
+      privateKey: this.config.VERTEX_PRIVATE_KEY,
       imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
       videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
     };
@@ -406,19 +378,24 @@ export class ConfigService {
       throw new ConfigurationError('GCS configuration is missing');
     }
 
-    if (!this.config.GCS_PROJECT_ID) {
-      throw new ConfigurationError('GCS_PROJECT_ID is missing');
+    if (!this.config.VERTEX_PROJECT_ID) {
+      throw new ConfigurationError('VERTEX_PROJECT_ID is missing');
     }
 
-    if (!this.config.GCS_CREDENTIALS) {
-      throw new ConfigurationError('GCS_CREDENTIALS is missing');
+    if (!this.config.VERTEX_CLIENT_EMAIL) {
+      throw new ConfigurationError('VERTEX_CLIENT_EMAIL is missing');
+    }
+
+    if (!this.config.VERTEX_PRIVATE_KEY) {
+      throw new ConfigurationError('VERTEX_PRIVATE_KEY is missing');
     }
 
     return {
       bucketName: this.config.GCS_BUCKET_NAME,
-      projectId: this.config.GCS_PROJECT_ID,
-      credentials: this.config.GCS_CREDENTIALS,
-      region: this.config.GCS_REGION || 'us-central1',
+      projectId: this.config.VERTEX_PROJECT_ID,
+      clientEmail: this.config.VERTEX_CLIENT_EMAIL,
+      privateKey: this.config.VERTEX_PRIVATE_KEY,
+      region: this.config.VERTEX_LOCATION || 'us-central1',
     };
   }
 

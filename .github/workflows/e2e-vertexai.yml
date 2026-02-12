@@ -75,11 +75,12 @@ jobs:
         run: npx vitest run tests/e2e/integration.vertexai.test.ts --bail=0
         env:
           NODE_ENV: test
-          # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON
-          # PROJECT_ID is auto-derived from credentials
-          VERTEX_CREDENTIALS: ${{ secrets.VERTEX_CREDENTIALS }}
+          # Vertex AI credentials (individual secrets)
+          VERTEX_CLIENT_EMAIL: ${{ secrets.VERTEX_CLIENT_EMAIL }}
+          VERTEX_PRIVATE_KEY: ${{ secrets.VERTEX_PRIVATE_KEY }}
+          VERTEX_PROJECT_ID: ${{ secrets.VERTEX_PROJECT_ID }}
           VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
-          # GCS configuration for video files (optional)
+          # GCS configuration for video files
           GCS_BUCKET_NAME: ${{ secrets.VERTEX_GCS_BUCKET_NAME }}
           # Model configuration
           IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
@@ -123,8 +124,10 @@ jobs:
         run: npx vitest run tests/e2e/youtube.test.ts --bail=0
         env:
           NODE_ENV: test
-          # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON
-          VERTEX_CREDENTIALS: ${{ secrets.VERTEX_CREDENTIALS }}
+          # Vertex AI credentials (individual secrets)
+          VERTEX_CLIENT_EMAIL: ${{ secrets.VERTEX_CLIENT_EMAIL }}
+          VERTEX_PRIVATE_KEY: ${{ secrets.VERTEX_PRIVATE_KEY }}
+          VERTEX_PROJECT_ID: ${{ secrets.VERTEX_PROJECT_ID }}
           VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
           # YouTube API key (optional)
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}

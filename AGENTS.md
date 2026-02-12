@@ -385,23 +385,31 @@ gh pr edit <PR_NUMBER> --remove-label "e2e-vertexai"
 **Duration:** ~15-20 minutes
 
 **Required Secrets:**
-- `VERTEX_CREDENTIALS_JSON` - Base64-encoded service account JSON (PROJECT_ID is auto-derived)
+- `VERTEX_CLIENT_EMAIL` - Service account client email
+- `VERTEX_PRIVATE_KEY` - Service account private key
+- `VERTEX_PROJECT_ID` - Google Cloud project ID
 - `VERTEX_LOCATION` - GCP region (optional, default: us-central1)
-- `VERTEX_GCS_BUCKET_NAME` - GCS bucket for video files (optional)
+- `VERTEX_GCS_BUCKET_NAME` - GCS bucket for video files (required)
 - `VERTEX_IMAGE_MODEL` - Model for images (optional)
 - `VERTEX_VIDEO_MODEL` - Model for video (optional)
 
 **Test File:** `tests/e2e/integration.vertexai.test.ts`
 
 **Setting up VertexAI credentials:**
-```bash
-# Encode your service account JSON (PROJECT_ID is auto-derived from credentials)
-cat path/to/service-account.json | base64 -w 0 | pbcopy  # macOS
-# or
-cat path/to/service-account.json | base64 -w 0  # Linux
-
-# Add the base64 output to GitHub Secrets as VERTEX_CREDENTIALS_JSON
+Extract these values from your service account JSON file and add them as GitHub secrets:
+```json
+// From your service-account.json:
+{
+  "client_email": "your-service-account@project-id.iam.gserviceaccount.com",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+  "project_id": "your-project-id"
+}
 ```
+
+Add each as a separate GitHub secret:
+- `VERTEX_CLIENT_EMAIL`: The client_email value
+- `VERTEX_PRIVATE_KEY`: The full private_key value (including `\n` characters)
+- `VERTEX_PROJECT_ID`: The project_id value
 
 ---
 
@@ -542,9 +550,11 @@ Configure these in GitHub → Settings → Secrets and variables → Actions:
 **For VertexAI Tests:**
 | Secret | Required For | Description |
 |--------|--------------|-------------|
-| `VERTEX_CREDENTIALS_JSON` | E2E VertexAI | Base64-encoded service account JSON (PROJECT_ID auto-derived) |
+| `VERTEX_CLIENT_EMAIL` | E2E VertexAI | Service account client email |
+| `VERTEX_PRIVATE_KEY` | E2E VertexAI | Service account private key |
+| `VERTEX_PROJECT_ID` | E2E VertexAI | Google Cloud project ID |
 | `VERTEX_LOCATION` | E2E VertexAI | GCP region (optional, default: us-central1) |
-| `VERTEX_GCS_BUCKET_NAME` | E2E VertexAI | GCS bucket for video files (optional) |
+| `VERTEX_GCS_BUCKET_NAME` | E2E VertexAI | GCS bucket for video files (required) |
 
 ---
 

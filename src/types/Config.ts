@@ -11,8 +11,9 @@ export interface Config {
   GEMINI_API_KEY?: string | undefined;
   GEMINI_BASE_URL?: string | undefined;
 
-  // Vertex AI configuration
-  VERTEX_CREDENTIALS?: string;
+  // Vertex AI configuration (simplified credentials)
+  VERTEX_CLIENT_EMAIL?: string;
+  VERTEX_PRIVATE_KEY?: string;
   VERTEX_PROJECT_ID?: string;
   VERTEX_LOCATION?: string;
   VERTEX_ENDPOINT?: string;
@@ -28,10 +29,8 @@ export interface Config {
   ANALYZE_VIDEO_MODEL?: string;
 
   // Google Cloud Storage configuration (for Vertex AI file storage)
+  // Uses VERTEX_CLIENT_EMAIL, VERTEX_PRIVATE_KEY, VERTEX_PROJECT_ID for auth
   GCS_BUCKET_NAME?: string;
-  GCS_PROJECT_ID?: string; // Auto-derived from VERTEX_CREDENTIALS if not provided
-  GCS_CREDENTIALS?: string; // Optional: defaults to VERTEX_CREDENTIALS
-  GCS_REGION?: string; // Optional: defaults to VERTEX_LOCATION
 
   // Universal API parameters
   TEMPERATURE?: number;
@@ -100,7 +99,8 @@ export interface VertexAIConfig {
   projectId: string;
   location: string;
   endpoint: string;
-  credentials?: string;
+  clientEmail?: string;
+  privateKey?: string;
   imageModel: string;
   videoModel: string;
 }
@@ -108,7 +108,8 @@ export interface VertexAIConfig {
 export interface GCSConfig {
   bucketName: string;
   projectId: string;
-  credentials: string;
+  clientEmail: string;
+  privateKey: string;
   region: string;
 }
 
