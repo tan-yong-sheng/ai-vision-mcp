@@ -272,7 +272,8 @@ This section documents how to trigger and use the CI/CD workflows for this proje
 |----------|------|---------|---------|
 | **CI** | `ci.yml` | Push/PR to main | Lint, build, verify |
 | **E2E Tests (No API)** | `e2e-tests.yml` | Push/PR to main | Fast tests without API calls |
-| **E2E Integration** | `e2e-integration.yml` | Manual/Label | Tests with real API calls |
+| **E2E Gemini Tests** | `e2e-gemini.yml` | Manual/Label | Gemini API tests (Google AI Studio) |
+| **E2E VertexAI Tests** | `e2e-vertexai.yml` | Manual/Label | Vertex AI tests (Google Cloud) |
 | **Publish Dev** | `publish-to-npm-dev.yml` | Tag with `-dev` | Publish dev version to npm |
 | **Publish Beta** | `publish-to-npm-beta-on-tag.yml` | Tag with `-beta` | Publish beta version to npm |
 | **Publish Latest** | `publish-to-npm-latest-on-release.yml` | GitHub Release | Publish production version |
@@ -317,30 +318,30 @@ This section documents how to trigger and use the CI/CD workflows for this proje
 
 ---
 
-### 3. E2E Integration Tests (With API)
+### 3. E2E Gemini Tests (Google AI Studio)
 
-**File:** `.github/workflows/e2e-integration.yml`
+**File:** `.github/workflows/e2e-gemini.yml`
 
 **Trigger Options:**
 
-#### Option A: Manual Trigger (Recommended for testing)
+#### Option A: Manual Trigger
 ```bash
-# Go to GitHub → Actions → E2E Integration Tests → Run workflow
+# Go to GitHub → Actions → E2E Gemini Tests → Run workflow
 # Select test type: all, cli, or integration
 ```
 
 #### Option B: PR Label
 ```bash
 # Add label to PR
-gh pr edit <PR_NUMBER> --add-label "e2e-integration"
+gh pr edit <PR_NUMBER> --add-label "e2e-gemini"
 
 # Remove label to skip
-gh pr edit <PR_NUMBER> --remove-label "e2e-integration"
+gh pr edit <PR_NUMBER> --remove-label "e2e-gemini"
 ```
 
 **What it does:**
-- Runs CLI E2E tests with real API calls
-- Runs integration tests with real API calls
+- Runs CLI E2E tests with Gemini API
+- Runs integration tests with Gemini API
 - Tests actual image/video analysis
 
 **Duration:** ~10-15 minutes
@@ -351,15 +352,60 @@ gh pr edit <PR_NUMBER> --remove-label "e2e-integration"
 - `IMAGE_MODEL` - Model for images (optional, default: gemini-2.5-flash-lite)
 - `VIDEO_MODEL` - Model for video (optional, default: gemini-2.5-flash)
 
-**Local dev note (API tests):**
-- When running integration/CLI E2E tests locally, ensure both `GEMINI_API_KEY` and `GEMINI_BASE_URL` are set in your environment.
-- If you use proxy-prefixed models like `IMAGE_MODEL=cli_proxy_api/gemini-2.5-flash`, you must also set:
-  - `GEMINI_BASE_URL=https://bifrost.tanyongsheng.site/genai`
-- Never commit actual secret values.
+**Test File:** `tests/e2e/integration.test.ts`
 
 ---
 
-### 4. NPM Publishing Workflows
+### 4. E2E VertexAI Tests (Google Cloud)
+
+**File:** `.github/workflows/e2e-vertexai.yml`
+
+**Trigger Options:**
+
+#### Option A: Manual Trigger
+```bash
+# Go to GitHub → Actions → E2E VertexAI Tests → Run workflow
+# Select test type: all or integration
+```
+
+#### Option B: PR Label
+```bash
+# Add label to PR
+gh pr edit <PR_NUMBER> --add-label "e2e-vertexai"
+
+# Remove label to skip
+gh pr edit <PR_NUMBER> --remove-label "e2e-vertexai"
+```
+
+**What it does:**
+- Runs integration tests with Vertex AI API
+- Tests VertexAI-specific features (video metadata, GCS URIs)
+- Tests actual image/video analysis on Google Cloud
+
+**Duration:** ~15-20 minutes
+
+**Required Secrets:**
+- `VERTEX_CREDENTIALS_JSON` - Base64-encoded service account JSON (PROJECT_ID is auto-derived)
+- `VERTEX_LOCATION` - GCP region (optional, default: us-central1)
+- `VERTEX_GCS_BUCKET_NAME` - GCS bucket for video files (optional)
+- `VERTEX_IMAGE_MODEL` - Model for images (optional)
+- `VERTEX_VIDEO_MODEL` - Model for video (optional)
+
+**Test File:** `tests/e2e/integration.vertexai.test.ts`
+
+**Setting up VertexAI credentials:**
+```bash
+# Encode your service account JSON (PROJECT_ID is auto-derived from credentials)
+cat path/to/service-account.json | base64 -w 0 | pbcopy  # macOS
+# or
+cat path/to/service-account.json | base64 -w 0  # Linux
+
+# Add the base64 output to GitHub Secrets as VERTEX_CREDENTIALS_JSON
+```
+
+---
+
+### 5. NPM Publishing Workflows
 
 #### Publish Dev Version
 
@@ -480,13 +526,25 @@ npm install ai-vision-mcp@beta
 
 Configure these in GitHub → Settings → Secrets and variables → Actions:
 
+**For NPM Publishing:**
 | Secret | Required For | Description |
 |--------|--------------|-------------|
 | `NPM_TOKEN` | Publishing | NPM authentication token |
-| `GEMINI_API_KEY` | E2E Integration | Gemini API key for tests |
-| `GEMINI_BASE_URL` | E2E Integration | Custom proxy (optional) |
-| `IMAGE_MODEL` | E2E Integration | Image model (optional) |
-| `VIDEO_MODEL` | E2E Integration | Video model (optional) |
+
+**For Gemini Tests:**
+| Secret | Required For | Description |
+|--------|--------------|-------------|
+| `GEMINI_API_KEY` | E2E Gemini | Gemini API key for tests |
+| `GEMINI_BASE_URL` | E2E Gemini | Custom proxy (optional) |
+| `IMAGE_MODEL` | E2E Gemini | Image model (optional) |
+| `VIDEO_MODEL` | E2E Gemini | Video model (optional) |
+
+**For VertexAI Tests:**
+| Secret | Required For | Description |
+|--------|--------------|-------------|
+| `VERTEX_CREDENTIALS_JSON` | E2E VertexAI | Base64-encoded service account JSON (PROJECT_ID auto-derived) |
+| `VERTEX_LOCATION` | E2E VertexAI | GCP region (optional, default: us-central1) |
+| `VERTEX_GCS_BUCKET_NAME` | E2E VertexAI | GCS bucket for video files (optional) |
 
 ---
 

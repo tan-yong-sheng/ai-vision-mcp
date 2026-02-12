@@ -177,6 +177,9 @@ export const ConfigSchema = z.object({
     .default(10 * 1024 * 1024), // 10MB
   VERTEX_AI_FILES_API_THRESHOLD: z.coerce.number().int().optional().default(0), // Vertex AI requires external storage for all files
 
+  // YouTube API configuration
+  YOUTUBE_API_KEY: z.string().min(1).optional(),
+
   // Logging configuration
   LOG_LEVEL: LogLevelSchema.optional().default('info'),
 

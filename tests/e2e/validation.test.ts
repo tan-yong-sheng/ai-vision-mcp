@@ -393,4 +393,39 @@ describe('Input Validation Tests', () => {
       expect(parsed).toHaveProperty('message');
     });
   });
+
+  describe('YouTube API Key Handling', () => {
+    test('should analyze YouTube video without YOUTUBE_API_KEY (graceful degradation)', async () => {
+      // This test verifies that missing YOUTUBE_API_KEY doesn't cause schema/validation errors
+      // The analysis will fail due to invalid API key, but not due to missing YouTube key
+      const result = await callTool(client, 'analyze_video', {
+        videoSource: 'https://www.youtube.com/watch?v=9hE5-98ZeCg',
+        prompt: 'What is this video about?',
+      });
+
+      // Should fail due to API/authentication, not missing YouTube key
+      expect(result.isError).toBe(true);
+
+      const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
+      expect(parsed.error).toBe(true);
+      // Error should NOT mention youtube_api_key - should be about Gemini API/auth
+      expect(parsed.message.toLowerCase()).not.toMatch(/youtube_api_key|youtube api key/i);
+    });
+
+    test('should handle invalid YouTube URL format gracefully', async () => {
+      const result = await callTool(client, 'analyze_video', {
+        videoSource: 'https://not-youtube.com/video/123',
+        prompt: 'Analyze this video',
+      });
+
+      // Should either succeed (if URL is valid video source) or fail gracefully
+      // The key is: it shouldn't crash due to YouTube parsing
+      expect(result).toBeDefined();
+      if (result.isError) {
+        const parsed = parseToolResult<{ error: boolean; message: string }>(result as any);
+        expect(parsed.error).toBe(true);
+        expect(parsed.message).toBeDefined();
+      }
+    });
+  });
 });

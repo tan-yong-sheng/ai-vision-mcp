@@ -159,11 +159,17 @@ export async function createMCPClient(
   const serverPath = join(PROJECT_ROOT, 'dist', 'index.js');
   const env = createTestEnv(envOverrides);
 
+  // Ensure PATH is set for the child process
+  const envWithPath: Record<string, string> = {
+    ...env,
+    PATH: process.env.PATH || '/usr/bin:/bin',
+  };
+
   // Create transport
   const transport = new StdioClientTransport({
     command: 'node',
     args: [serverPath],
-    env,
+    env: envWithPath,
     cwd: PROJECT_ROOT,
   });
 

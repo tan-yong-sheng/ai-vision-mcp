@@ -93,3 +93,53 @@ jobs:
           name: vertexai-integration-test-results
           path: test-results/
           retention-days: 7
+
+  youtube-tests:
+    name: YouTube Video Tests (VertexAI)
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
+    continue-on-error: true
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run YouTube E2E tests
+        if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event_name == 'pull_request'
+        run: npx vitest run tests/e2e/youtube.test.ts
+        env:
+          NODE_ENV: test
+          # Vertex AI credentials - supports base64-encoded JSON, file path, or raw JSON
+          VERTEX_CREDENTIALS: ${{ secrets.VERTEX_CREDENTIALS }}
+          VERTEX_LOCATION: ${{ secrets.VERTEX_LOCATION || 'us-central1' }}
+          # YouTube API key (optional)
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          # Model configuration
+          IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
+          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-2.5-flash' }}
+          # Set providers to vertex_ai
+          IMAGE_PROVIDER: vertex_ai
+          VIDEO_PROVIDER: vertex_ai
+          LOG_LEVEL: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vertexai-youtube-test-results
+          path: test-results/
+          retention-days: 7
