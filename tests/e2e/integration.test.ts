@@ -288,6 +288,67 @@ describe('Integration Tests', () => {
     );
   });
 
+  describe('Local Video Upload (Real API)', () => {
+    testOrSkip(
+      'should upload and analyze local video file with offsets',
+      async () => {
+        // Download a small sample video first
+        const sampleVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+        const tempVideoPath = '/tmp/e2e-test-video.mp4';
+
+        // Download video
+        const response = await fetch(sampleVideoUrl);
+        if (!response.ok) {
+          console.log('Skipping - could not download sample video');
+          return;
+        }
+        const videoBuffer = Buffer.from(await response.arrayBuffer());
+        await require('fs').promises.writeFile(tempVideoPath, videoBuffer);
+
+        try {
+          const result = await callTool(
+            client,
+            'analyze_video',
+            {
+              videoSource: tempVideoPath,
+              prompt: 'What is shown in this video?',
+              options: {
+                maxTokens: 100,
+                videoMetadata: {
+                  startOffset: '0s',
+                  endOffset: '5s', // Only analyze first 5 seconds
+                  fps: 1,
+                },
+              },
+            },
+            { timeout: 180000 } // Longer timeout for upload + analysis
+          );
+
+          expect(result.isError).toBeFalsy();
+
+          const parsed = parseToolResult<{
+            text?: string;
+            description?: string;
+            analysis?: string;
+          }>(result as any);
+          const text = parsed.text || parsed.description || parsed.analysis || '';
+          expect(text.length).toBeGreaterThan(0);
+
+          console.log('Local video analysis completed successfully');
+          console.log('Analysis:', text.substring(0, 100) + '...');
+        } finally {
+          // Cleanup
+          try {
+            await require('fs').promises.unlink(tempVideoPath);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+      },
+      180000
+    );
+  });
+
   describe('Model Compatibility Tracking (Real API)', () => {
     /**
      * This test tracks whether the current default video model supports
