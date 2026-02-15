@@ -8,8 +8,8 @@ set -e
 GEMINI_API_KEY="${GEMINI_API_KEY:?GEMINI_API_KEY is required}"
 GEMINI_BASE_URL="${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}"
 
-# Sample video URL (Big Buck Bunny trailer - 2 min, open source)
-SAMPLE_VIDEO_URL="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+# Sample video URL (W3Schools test video - ~10 sec, small file)
+SAMPLE_VIDEO_URL="https://www.w3schools.com/html/mov_bbb.mp4"
 VIDEO_FILE="/tmp/test-video.mp4"
 
 echo "=== Step 1: Download sample video ==="

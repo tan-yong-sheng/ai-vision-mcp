@@ -292,8 +292,8 @@ describe('Integration Tests', () => {
     testOrSkip(
       'should upload and analyze local video file with offsets',
       async () => {
-        // Download a small sample video first
-        const sampleVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+        // Download a small sample video first (W3Schools test video - ~10 sec)
+        const sampleVideoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
         const tempVideoPath = '/tmp/e2e-test-video.mp4';
 
         // Download video
