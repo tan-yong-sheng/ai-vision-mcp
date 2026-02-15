@@ -19,7 +19,8 @@ echo "Downloaded: $VIDEO_FILE ($VIDEO_SIZE bytes)"
 
 echo ""
 echo "=== Step 2: Upload video to Gemini Files API ==="
-UPLOAD_RESPONSE=$(curl -s -X POST "${GEMINI_BASE_URL}/upload/v1beta/files?key=${GEMINI_API_KEY}" \
+UPLOAD_RESPONSE=$(curl -s -X POST "${GEMINI_BASE_URL}/upload/v1beta/files" \
+  -H "x-goog-api-key: ${GEMINI_API_KEY}" \
   -H "Content-Type: multipart/form-data" \
   -F "metadata={\"display_name\":\"test-video\"};type=application/json" \
   -F "file=@${VIDEO_FILE};type=video/mp4")
@@ -38,7 +39,7 @@ echo ""
 echo "=== Step 3: Wait for video processing ==="
 echo "Checking processing status..."
 for i in {1..30}; do
-  STATUS_RESPONSE=$(curl -s "${GEMINI_BASE_URL}/v1beta/${FILE_NAME}?key=${GEMINI_API_KEY}")
+  STATUS_RESPONSE=$(curl -s "${GEMINI_BASE_URL}/v1beta/${FILE_NAME}" -H "x-goog-api-key: ${GEMINI_API_KEY}")
   STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state')
   echo "Attempt $i: State = $STATE"
 
@@ -55,7 +56,8 @@ done
 
 echo ""
 echo "=== Step 4: Analyze video WITHOUT offsets (full video) ==="
-curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}" \
+curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateContent" \
+  -H "x-goog-api-key: ${GEMINI_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "contents": [{
@@ -68,7 +70,8 @@ curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateCo
 
 echo ""
 echo "=== Step 5: Analyze video WITH startOffset/endOffset (first 10 seconds) ==="
-curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}" \
+curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateContent" \
+  -H "x-goog-api-key: ${GEMINI_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "contents": [{
@@ -85,7 +88,8 @@ curl -X POST "${GEMINI_BASE_URL}/v1beta/models/gemini-3-flash-preview:generateCo
 
 echo ""
 echo "=== Step 6: Cleanup - Delete uploaded file ==="
-curl -X DELETE "${GEMINI_BASE_URL}/v1beta/${FILE_NAME}?key=${GEMINI_API_KEY}"
+curl -X DELETE "${GEMINI_BASE_URL}/v1beta/${FILE_NAME}" \
+  -H "x-goog-api-key: ${GEMINI_API_KEY}"
 echo "File deleted."
 
 echo ""
