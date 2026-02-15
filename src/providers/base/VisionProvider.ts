@@ -416,7 +416,7 @@ export abstract class BaseVisionProvider implements VisionProvider {
     functionName: FunctionName | undefined
   ): string {
     const systemDefault =
-      taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+      taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-3-flash-preview';
 
     const enabled =
       process.env.AI_VISION_LOG_MODELS === '1' ||

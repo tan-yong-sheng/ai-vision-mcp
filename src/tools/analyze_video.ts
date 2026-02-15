@@ -85,7 +85,7 @@ export async function analyze_video(
 
           if (durationSeconds !== null) {
             // Get the model name being used for video analysis
-            const modelName = config.VIDEO_MODEL || 'gemini-2.5-flash';
+            const modelName = config.VIDEO_MODEL || 'gemini-3-flash-preview';
 
             const validation = validateVideoContext({
               durationSeconds,

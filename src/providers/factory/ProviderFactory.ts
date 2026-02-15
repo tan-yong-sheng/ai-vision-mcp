@@ -115,7 +115,7 @@ export class VisionProviderFactory {
     // 2. Hardcoded defaults - Last resort
     return {
       image: config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
-      video: config.VIDEO_MODEL || 'gemini-2.5-flash',
+      video: config.VIDEO_MODEL || 'gemini-3-flash-preview',
     };
   }
 

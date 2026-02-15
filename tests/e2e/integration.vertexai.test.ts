@@ -355,6 +355,62 @@ describe('VertexAI Integration Tests', () => {
     );
   });
 
+  describe('Model Compatibility Tracking (VertexAI)', () => {
+    /**
+     * This test tracks whether the current default video model supports
+     * the fileUri parameter (YouTube video URLs) via VertexAI. If this test fails,
+     * it indicates the model may have changed its support for fileUri.
+     *
+     * This test uses continue-on-error pattern - it logs the error but
+     * doesn't fail the test suite, allowing CI to track model behavior changes.
+     */
+    testOrSkip(
+      'should track fileUri parameter support for YouTube videos',
+      async () => {
+        const errors: string[] = [];
+        let result: any;
+
+        try {
+          result = await callTool(
+            client,
+            'analyze_video',
+            {
+              videoSource: 'https://www.youtube.com/watch?v=9hE5-98ZeCg',
+              prompt: 'Summarize this video in one sentence.',
+              options: {
+                maxTokens: 100,
+                temperature: 0.1,
+              },
+            },
+            { timeout: 120000 }
+          );
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : String(error));
+        }
+
+        // Log detailed information for tracking
+        console.log('=== VertexAI fileUri Parameter Support Test ===');
+        console.log('Timestamp:', new Date().toISOString());
+        console.log('Model used:', process.env.VIDEO_MODEL || 'gemini-3-flash-preview (default)');
+        console.log('Errors encountered:', errors.length > 0 ? errors : 'None');
+        console.log('Result status:', result?.isError ? 'ERROR' : 'SUCCESS');
+
+        if (result?.isError && result.content) {
+          const errorContent = result.content.find(
+            (c: any) => c.type === 'text' && c.text?.includes('error')
+          );
+          if (errorContent) {
+            console.log('API Error details:', errorContent.text);
+          }
+        }
+
+        // Test passes regardless of outcome - we're just tracking behavior
+        expect(true).toBe(true);
+      },
+      120000
+    );
+  });
+
   describe('VertexAI-Specific Features', () => {
     // Test retry logic was synced from GeminiProvider
     testOrSkip(

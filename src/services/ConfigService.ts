@@ -65,7 +65,7 @@ export class ConfigService {
       const taskSpecific = taskType === 'image' ? cfg.IMAGE_MODEL : cfg.VIDEO_MODEL;
       if (taskSpecific) return taskSpecific;
 
-      return taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+      return taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-3-flash-preview';
     };
 
     void this.logger.info(
@@ -353,7 +353,7 @@ export class ConfigService {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
       imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
-      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-3-flash-preview',
     } as GeminiConfig;
   }
 
@@ -373,7 +373,7 @@ export class ConfigService {
       clientEmail: this.config.VERTEX_CLIENT_EMAIL,
       privateKey: this.config.VERTEX_PRIVATE_KEY,
       imageModel: this.config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
-      videoModel: this.config.VIDEO_MODEL || 'gemini-2.5-flash',
+      videoModel: this.config.VIDEO_MODEL || 'gemini-3-flash-preview',
     };
   }
 
