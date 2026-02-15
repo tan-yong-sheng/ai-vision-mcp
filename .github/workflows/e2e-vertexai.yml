@@ -84,7 +84,7 @@ jobs:
           GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
           # Model configuration
           IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
-          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-2.5-flash' }}
+          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-3-flash-preview' }}
           LOG_LEVEL: error
 
       - name: Upload test results
@@ -135,7 +135,7 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           # Model configuration
           IMAGE_MODEL: ${{ secrets.VERTEX_IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
-          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-2.5-flash' }}
+          VIDEO_MODEL: ${{ secrets.VERTEX_VIDEO_MODEL || 'gemini-3-flash-preview' }}
           # Set providers to vertex_ai
           IMAGE_PROVIDER: vertex_ai
           VIDEO_PROVIDER: vertex_ai
