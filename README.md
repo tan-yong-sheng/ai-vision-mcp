@@ -2,6 +2,10 @@
 
 A powerful Model Context Protocol (MCP) server that provides AI-powered image and video analysis using Google Gemini and Vertex AI models.
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/tan-yong-sheng-ai-vision-mcp).
+
 ## Features
 
 - **Dual Provider Support**: Choose between Google Gemini API and Vertex AI
