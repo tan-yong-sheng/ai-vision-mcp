@@ -9,6 +9,7 @@ export interface DetectedObject {
   label: string; // Descriptive label or instance-specific detail
   normalized_box_2d: [number, number, number, number]; // [ymin, xmin, ymax, xmax] normalized to 0-1000
   confidence: number; // Detection confidence score (0-1)
+  mid?: string; // Knowledge Graph Machine ID for semantic enrichment
 }
 
 export interface ObjectDetectionResult {
@@ -51,6 +52,9 @@ export interface ObjectDetectionMetadata {
   coordinateScale: number; // Coordinate normalization scale (1000)
   coordinateFormat: string; // Coordinate format description
   coordinateOrigin: string; // Coordinate origin (top-left)
+  detectionMethod?: 'vision' | 'ml' | 'hybrid'; // How detection was performed
+  imageOrientation?: number; // EXIF orientation (0, 90, 180, 270)
+  timestamp?: string; // ISO 8601 when detection was performed
 }
 
 // MCP response types for different output scenarios

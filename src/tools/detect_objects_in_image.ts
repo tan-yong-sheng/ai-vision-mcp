@@ -47,7 +47,8 @@ Return a valid JSON array (no text outside JSON) with:
   "object": "<name based on context>",
   "label": "<short description>",
   "normalized_box_2d": [ymin, xmin, ymax, xmax],
-  "confidence": <0.0-1.0>
+  "confidence": <0.0-1.0>,
+  "mid": "<optional Knowledge Graph Machine ID>"
 }
 
 Bounding box rules:
@@ -61,6 +62,12 @@ Confidence scoring:
 - 0.7-0.9: Confident detection (visible, identifiable)
 - 0.5-0.7: Moderate confidence (partially visible or ambiguous)
 - Below 0.5: Low confidence (unclear or uncertain)
+
+Knowledge Graph MID:
+- If the detected object corresponds to a known entity in Google's Knowledge Graph, include its Machine ID (mid)
+- Format: "/m/XXXXXXX" (e.g., "/m/02j81" for Eiffel Tower)
+- Only include if confident the entity exists in Knowledge Graph
+- Omit if uncertain or for generic objects
 `;
 
 // Detection schema equivalent to the one in gemini_object_detection.js
@@ -94,6 +101,10 @@ const createDetectionSchema = (provider: string) => {
             type: 'number',
             description: 'Detection confidence score (0.0-1.0)',
           },
+          mid: {
+            type: 'string',
+            description: 'Optional Knowledge Graph Machine ID (e.g., /m/02j81)',
+          },
         },
         required: ['object', 'label', 'normalized_box_2d', 'confidence'],
       },
@@ -126,6 +137,10 @@ const createDetectionSchema = (provider: string) => {
           confidence: {
             type: 'number',
             description: 'Detection confidence score (0.0-1.0)',
+          },
+          mid: {
+            type: 'string',
+            description: 'Optional Knowledge Graph Machine ID (e.g., /m/02j81)',
           },
         },
         required: ['object', 'label', 'normalized_box_2d', 'confidence'],
@@ -576,12 +591,13 @@ export async function detect_objects_in_image(
           );
         }
 
-        // Return detection object with confidence
+        // Return detection object with confidence and mid
         return {
           object: detection.object,
           label: detection.label,
           normalized_box_2d: detection.normalized_box_2d,
           confidence: Math.max(0, Math.min(1, confidence)),
+          mid: detection.mid || undefined,
         };
       })
       .filter(Boolean) as DetectedObject[];
@@ -651,6 +667,8 @@ export async function detect_objects_in_image(
       coordinateScale: 1000,
       coordinateFormat: '[ymin, xmin, ymax, xmax]',
       coordinateOrigin: 'top-left',
+      detectionMethod: 'vision',
+      timestamp: new Date().toISOString(),
     };
 
     // 2-step workflow for image file handling
