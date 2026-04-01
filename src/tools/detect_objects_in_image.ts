@@ -37,7 +37,7 @@ Consider it a webpage if you detect multiple web indicators such as:
 - Visible URL or webpage content
 
 STEP 2 - NAME ELEMENTS:
-- If the image appears to be a webpage → use HTML element names  
+- If the image appears to be a webpage → use HTML element names
   (e.g., button, input, a, nav, header, section, h1-h6, p, img, video)
 - Otherwise → use general object names based on visual meaning.
 
@@ -46,7 +46,8 @@ Return a valid JSON array (no text outside JSON) with:
 {
   "object": "<name based on context>",
   "label": "<short description>",
-  "normalized_box_2d": [ymin, xmin, ymax, xmax] // normalized (0-1000)
+  "normalized_box_2d": [ymin, xmin, ymax, xmax],
+  "confidence": <0.0-1.0>
 }
 
 Bounding box rules:
@@ -54,6 +55,12 @@ Bounding box rules:
 - Avoid overlap when separable
 - Maintain ymin < ymax and xmin < xmax
 - Differentiate duplicates by traits (e.g., color, position)
+
+Confidence scoring:
+- 0.9-1.0: Highly confident detection (clear, unambiguous)
+- 0.7-0.9: Confident detection (visible, identifiable)
+- 0.5-0.7: Moderate confidence (partially visible or ambiguous)
+- Below 0.5: Low confidence (unclear or uncertain)
 `;
 
 // Detection schema equivalent to the one in gemini_object_detection.js
@@ -83,8 +90,12 @@ const createDetectionSchema = (provider: string) => {
             description:
               'Bounding box coordinates [ymin, xmin, ymax, xmax], normalized to 0-1000',
           },
+          confidence: {
+            type: 'number',
+            description: 'Detection confidence score (0.0-1.0)',
+          },
         },
-        required: ['object', 'label', 'normalized_box_2d'],
+        required: ['object', 'label', 'normalized_box_2d', 'confidence'],
       },
     };
   } else {
@@ -112,8 +123,12 @@ const createDetectionSchema = (provider: string) => {
             description:
               'Bounding box coordinates [ymin, xmin, ymax, xmax], normalized to 0-1000',
           },
+          confidence: {
+            type: 'number',
+            description: 'Detection confidence score (0.0-1.0)',
+          },
         },
-        required: ['object', 'label', 'normalized_box_2d'],
+        required: ['object', 'label', 'normalized_box_2d', 'confidence'],
       },
     };
   }
@@ -364,7 +379,10 @@ export async function detect_objects_in_image(
     imageHeight = decoded.height || 0;
 
     if (imageWidth === 0 || imageHeight === 0) {
-      throw new VisionError('Unable to determine image dimensions', 'INVALID_IMAGE');
+      throw new VisionError(
+        'Unable to determine image dimensions',
+        'INVALID_IMAGE'
+      );
     }
 
     console.error(
@@ -462,7 +480,9 @@ export async function detect_objects_in_image(
         detections = JSON.parse(candidate);
         parsed = true;
         if (candidate !== rawText) {
-          console.error('[detect_objects_in_image] Successfully parsed JSON after extraction/cleanup');
+          console.error(
+            '[detect_objects_in_image] Successfully parsed JSON after extraction/cleanup'
+          );
         }
         break;
       } catch {
@@ -471,8 +491,12 @@ export async function detect_objects_in_image(
     }
 
     if (!parsed) {
-      console.error('[detect_objects_in_image] Failed to parse detection JSON, attempting truncated-array fix...');
-      console.error(`[detect_objects_in_image] Raw response (first 500 chars): ${rawText.substring(0, 500)}`);
+      console.error(
+        '[detect_objects_in_image] Failed to parse detection JSON, attempting truncated-array fix...'
+      );
+      console.error(
+        `[detect_objects_in_image] Raw response (first 500 chars): ${rawText.substring(0, 500)}`
+      );
 
       // If it looks like an array but is missing the closing bracket, try truncating
       // to the last complete object and closing the array.
@@ -480,7 +504,8 @@ export async function detect_objects_in_image(
       if (best.startsWith('[') && !best.endsWith(']')) {
         const lastCompleteObjectIndex = best.lastIndexOf('},');
         if (lastCompleteObjectIndex > 0) {
-          const fixedText = best.substring(0, lastCompleteObjectIndex + 1) + '\n]';
+          const fixedText =
+            best.substring(0, lastCompleteObjectIndex + 1) + '\n]';
           try {
             detections = JSON.parse(fixedText);
             parsed = true;
@@ -542,11 +567,21 @@ export async function detect_objects_in_image(
           return null;
         }
 
-        // Return simplified detection object
+        // Validate confidence score (should be 0-1)
+        const confidence =
+          typeof detection.confidence === 'number' ? detection.confidence : 0.5;
+        if (confidence < 0 || confidence > 1) {
+          console.error(
+            `[detect_objects_in_image] Invalid confidence score for ${detection.object}: ${confidence}, clamping to 0-1 range`
+          );
+        }
+
+        // Return detection object with confidence
         return {
           object: detection.object,
           label: detection.label,
           normalized_box_2d: detection.normalized_box_2d,
+          confidence: Math.max(0, Math.min(1, confidence)),
         };
       })
       .filter(Boolean) as DetectedObject[];
@@ -613,6 +648,9 @@ export async function detect_objects_in_image(
       modelVersion: result.metadata?.modelVersion,
       responseId: result.metadata?.responseId,
       fileSaveStatus: 'saved', // Default, will be overridden if file save fails
+      coordinateScale: 1000,
+      coordinateFormat: '[ymin, xmin, ymax, xmax]',
+      coordinateOrigin: 'top-left',
     };
 
     // 2-step workflow for image file handling
@@ -637,6 +675,13 @@ export async function detect_objects_in_image(
           width: imageWidth,
           height: imageHeight,
           original_size: originalImageBuffer.length,
+          viewport:
+            args.viewportWidth && args.viewportHeight
+              ? {
+                  width: args.viewportWidth,
+                  height: args.viewportHeight,
+                }
+              : undefined,
         },
         summary: summary,
         metadata: detectionMetadata,
@@ -652,7 +697,9 @@ export async function detect_objects_in_image(
 
       if (saveResult.method === 'temp_file') {
         // Success: Return temp file response
-        console.error(`[detect_objects_in_image] Image saved to temp: ${saveResult.path}`);
+        console.error(
+          `[detect_objects_in_image] Image saved to temp: ${saveResult.path}`
+        );
 
         const response: DetectionWithTempFile = {
           detections: processedDetections,
@@ -665,6 +712,13 @@ export async function detect_objects_in_image(
             width: imageWidth,
             height: imageHeight,
             original_size: originalImageBuffer.length,
+            viewport:
+              args.viewportWidth && args.viewportHeight
+                ? {
+                    width: args.viewportWidth,
+                    height: args.viewportHeight,
+                  }
+                : undefined,
           },
           summary: summary,
           metadata: detectionMetadata,
@@ -672,7 +726,9 @@ export async function detect_objects_in_image(
         return response;
       } else {
         // Permission error: Return detection data only with updated metadata
-        console.error(`[detect_objects_in_image] Returning detection results without file output due to permission error.`);
+        console.error(
+          `[detect_objects_in_image] Returning detection results without file output due to permission error.`
+        );
 
         const response: DetectionOnly = {
           detections: processedDetections,
@@ -680,6 +736,13 @@ export async function detect_objects_in_image(
             width: imageWidth,
             height: imageHeight,
             original_size: originalImageBuffer.length,
+            viewport:
+              args.viewportWidth && args.viewportHeight
+                ? {
+                    width: args.viewportWidth,
+                    height: args.viewportHeight,
+                  }
+                : undefined,
           },
           summary: summary,
           metadata: {

@@ -13,6 +13,7 @@ import {
   compare_images,
   analyze_video,
   detect_objects_in_image,
+  extract_layout_tree,
 } from './tools/index.js';
 import { VisionError } from './types/Errors.js';
 
@@ -25,12 +26,15 @@ try {
   VisionProviderFactory.initializeDefaultProviders();
   void logger.info({ msg: 'Providers initialized successfully' }, 'server');
 } catch (error) {
-  void logger.error({ msg: 'Failed to initialize providers', error: String(error) }, 'server');
+  void logger.error(
+    { msg: 'Failed to initialize providers', error: String(error) },
+    'server'
+  );
   throw error;
 }
 
 // Global exception handlers to prevent crashes from bubbling up and breaking stdio transport
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   void logger.error(
     { msg: 'Uncaught exception', error: String(error), stack: error.stack },
     'server'
@@ -38,7 +42,7 @@ process.on('uncaughtException', (error) => {
   // Don't exit - let MCP handle gracefully
 });
 
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', reason => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   void logger.error(
     { msg: 'Unhandled rejection', error: error.message, stack: error.stack },
@@ -63,7 +67,10 @@ logger.attachServer(server);
 // Helper function to initialize services (lazy loading)
 function getServices() {
   try {
-    void logger.info({ msg: 'getServices() called - initializing...' }, 'server');
+    void logger.info(
+      { msg: 'getServices() called - initializing...' },
+      'server'
+    );
 
     // Initialize configuration
     void logger.info({ msg: 'Getting ConfigService instance...' }, 'server');
@@ -72,15 +79,23 @@ function getServices() {
 
     void logger.info({ msg: 'Getting config...' }, 'server');
     const config = configService.getConfig();
-    void logger.info({ msg: 'Config obtained', provider: config.IMAGE_PROVIDER }, 'server');
+    void logger.info(
+      { msg: 'Config obtained', provider: config.IMAGE_PROVIDER },
+      'server'
+    );
 
     // Verify providers are registered
     void logger.info({ msg: 'Checking available providers...' }, 'server');
     const availableProviders = VisionProviderFactory.getSupportedProviders();
-    void logger.info({ msg: 'Available providers', providers: availableProviders }, 'server');
+    void logger.info(
+      { msg: 'Available providers', providers: availableProviders },
+      'server'
+    );
 
     if (availableProviders.length === 0) {
-      throw new Error('No providers registered. VisionProviderFactory.initializeDefaultProviders() may have failed.');
+      throw new Error(
+        'No providers registered. VisionProviderFactory.initializeDefaultProviders() may have failed.'
+      );
     }
 
     // Create providers using factory
@@ -122,7 +137,10 @@ function getServices() {
       videoFileService,
     };
   } catch (error) {
-    void logger.error({ msg: 'Failed to initialize services', error: String(error) }, 'server');
+    void logger.error(
+      { msg: 'Failed to initialize services', error: String(error) },
+      'server'
+    );
     throw error;
   }
 }
@@ -185,30 +203,45 @@ server.registerTool<any, any>(
     const { imageSource, prompt, options } = args;
 
     // Early validation - BEFORE calling getServices()
-    if (!imageSource || (typeof imageSource === 'string' && imageSource.trim() === '')) {
+    if (
+      !imageSource ||
+      (typeof imageSource === 'string' && imageSource.trim() === '')
+    ) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: true,
-            message: 'imageSource is required',
-            tool: 'analyze_image',
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'imageSource is required',
+                tool: 'analyze_image',
+              },
+              null,
+              2
+            ),
+          },
+        ],
         isError: true,
       };
     }
 
     if (!prompt || (typeof prompt === 'string' && prompt.trim() === '')) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: true,
-            message: 'prompt is required',
-            tool: 'analyze_image',
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'prompt is required',
+                tool: 'analyze_image',
+              },
+              null,
+              2
+            ),
+          },
+        ],
         isError: true,
       };
     }
@@ -227,13 +260,18 @@ server.registerTool<any, any>(
       );
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify(result, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
     } catch (error) {
-      void logger.error({ msg: 'Error executing analyze_image tool', error: String(error) }, 'tools/analyze_image');
+      void logger.error(
+        { msg: 'Error executing analyze_image tool', error: String(error) },
+        'tools/analyze_image'
+      );
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -246,14 +284,20 @@ server.registerTool<any, any>(
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: true,
-            message: errorMessage,
-            tool: 'analyze_image',
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'analyze_image',
+              },
+              null,
+              2
+            ),
+          },
+        ],
         isError: true,
       };
     }
@@ -276,7 +320,9 @@ server.registerTool<any, any>(
         ),
       prompt: z
         .string()
-        .describe('The prompt describing how you want to compare the images. If the task is **front-end or UI consistency**, the prompt you provide must specify what to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, and visual hierarchy. Pay special attention to shared sections like the **navbar**, **header**, **footer**, and **main content areas** to identify layout shifts or inconsistent styles between versions. \ For **other tasks**, the prompt you provide must clearly describe what aspects to compare or analyze — such as visual differences, content changes, design variations, or quality degradation.'),
+        .describe(
+          'The prompt describing how you want to compare the images. If the task is **front-end or UI consistency**, the prompt you provide must specify what to evaluate — such as layout alignment, component structure, spacing, typography, color consistency, and visual hierarchy. Pay special attention to shared sections like the **navbar**, **header**, **footer**, and **main content areas** to identify layout shifts or inconsistent styles between versions. \ For **other tasks**, the prompt you provide must clearly describe what aspects to compare or analyze — such as visual differences, content changes, design variations, or quality degradation.'
+        ),
       options: z
         .object({
           temperature: z
@@ -319,28 +365,40 @@ server.registerTool<any, any>(
     // Early validation - BEFORE calling getServices()
     if (!Array.isArray(imageSources) || imageSources.length < 2) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: true,
-            message: 'imageSources must be an array with at least 2 images',
-            tool: 'compare_images',
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'imageSources must be an array with at least 2 images',
+                tool: 'compare_images',
+              },
+              null,
+              2
+            ),
+          },
+        ],
         isError: true,
       };
     }
 
     if (!prompt || (typeof prompt === 'string' && prompt.trim() === '')) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: true,
-            message: 'prompt is required',
-            tool: 'compare_images',
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'prompt is required',
+                tool: 'compare_images',
+              },
+              null,
+              2
+            ),
+          },
+        ],
         isError: true,
       };
     }
@@ -353,14 +411,20 @@ server.registerTool<any, any>(
       const maxImages = config.MAX_IMAGES_FOR_COMPARISON || 4;
       if (imageSources.length > maxImages) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: JSON.stringify({
-              error: true,
-              message: `Maximum ${maxImages} images allowed for comparison, received ${imageSources.length}. Configure MAX_IMAGES_FOR_COMPARISON environment variable to change this limit.`,
-              tool: 'compare_images',
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(
+                {
+                  error: true,
+                  message: `Maximum ${maxImages} images allowed for comparison, received ${imageSources.length}. Configure MAX_IMAGES_FOR_COMPARISON environment variable to change this limit.`,
+                  tool: 'compare_images',
+                },
+                null,
+                2
+              ),
+            },
+          ],
           isError: true,
         };
       }
@@ -375,13 +439,18 @@ server.registerTool<any, any>(
       );
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify(result, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
     } catch (error) {
-      void logger.error({ msg: 'Error executing compare_images tool', error: String(error) }, 'tools/compare_images');
+      void logger.error(
+        { msg: 'Error executing compare_images tool', error: String(error) },
+        'tools/compare_images'
+      );
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -438,15 +507,35 @@ server.registerTool<any, any>(
         .describe(
           "Optional explicit output path for the annotated image. If provided, the image is saved to this exact path. Relative paths are resolved against the MCP server's current working directory."
         ),
+      viewportWidth: z
+        .number()
+        .optional()
+        .describe(
+          'Optional logical viewport width (for web screenshots). Used to distinguish between actual image dimensions and logical viewport size.'
+        ),
+      viewportHeight: z
+        .number()
+        .optional()
+        .describe(
+          'Optional logical viewport height (for web screenshots). Used to distinguish between actual image dimensions and logical viewport size.'
+        ),
     }),
   },
   async (args: any, _extra: any) => {
-    const { imageSource, prompt, outputFilePath } = args;
+    const {
+      imageSource,
+      prompt,
+      outputFilePath,
+      viewportWidth,
+      viewportHeight,
+    } = args;
     try {
       const validatedArgs = {
         imageSource,
         prompt,
         outputFilePath,
+        viewportWidth,
+        viewportHeight,
         // Remove options parameter - use environment variable configuration instead
       };
 
@@ -522,7 +611,13 @@ server.registerTool<any, any>(
         };
       }
     } catch (error) {
-      void logger.error({ msg: 'Error executing detect_objects_in_image tool', error: String(error) }, 'tools/detect_objects_in_image');
+      void logger.error(
+        {
+          msg: 'Error executing detect_objects_in_image tool',
+          error: String(error),
+        },
+        'tools/detect_objects_in_image'
+      );
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -608,20 +703,28 @@ server.registerTool<any, any>(
               startOffset: z
                 .union([z.string(), z.number()])
                 .optional()
-                .describe('Start time offset (e.g., "40s", "2m30s", "00:02:30", or seconds)'),
+                .describe(
+                  'Start time offset (e.g., "40s", "2m30s", "00:02:30", or seconds)'
+                ),
               endOffset: z
                 .union([z.string(), z.number()])
                 .optional()
-                .describe('End time offset (e.g., "80s", "3m", "00:03:00", or seconds)'),
+                .describe(
+                  'End time offset (e.g., "80s", "3m", "00:03:00", or seconds)'
+                ),
               fps: z
                 .number()
                 .min(0.1)
                 .max(30)
                 .optional()
-                .describe('Frame rate for sampling (default: 1, range: 0.1-30)'),
+                .describe(
+                  'Frame rate for sampling (default: 1, range: 0.1-30)'
+                ),
             })
             .optional()
-            .describe('Video clipping and frame rate settings for analyzing video segments'),
+            .describe(
+              'Video clipping and frame rate settings for analyzing video segments'
+            ),
         })
         .optional(),
     }),
@@ -654,7 +757,10 @@ server.registerTool<any, any>(
         ],
       };
     } catch (error) {
-      void logger.error({ msg: 'Error executing analyze_video tool', error: String(error) }, 'tools/analyze_video');
+      void logger.error(
+        { msg: 'Error executing analyze_video tool', error: String(error) },
+        'tools/analyze_video'
+      );
 
       let errorMessage = 'An unknown error occurred';
       if (error instanceof VisionError) {
@@ -675,6 +781,143 @@ server.registerTool<any, any>(
                 error: true,
                 message: errorMessage,
                 tool: 'analyze_video',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Register extract_layout_tree tool
+server.registerTool<any, any>(
+  'extract_layout_tree',
+  {
+    title: 'Extract Layout Tree',
+    description:
+      'Extract hierarchical layout tree from a screenshot for LLM design reasoning. Returns structured JSON with element hierarchy, bounding boxes, semantic roles, and visual properties.',
+    inputSchema: z.object({
+      imageSource: z
+        .string()
+        .describe(
+          'Image source - can be a URL, base64 data (data:image/...), or local file path'
+        ),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe(
+              'Maximum number of tokens to generate in the response. For layout extraction, 2000-4000 tokens recommended.'
+            ),
+        })
+        .optional(),
+    }),
+  },
+  async (args: any, _extra: any) => {
+    const { imageSource, options } = args;
+
+    // Early validation
+    if (
+      !imageSource ||
+      (typeof imageSource === 'string' && imageSource.trim() === '')
+    ) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'imageSource is required',
+                tool: 'extract_layout_tree',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      const validatedArgs = { imageSource, options };
+
+      // Initialize services on-demand
+      const { config, imageProvider, imageFileService } = getServices();
+
+      const result = await extract_layout_tree(
+        validatedArgs,
+        config,
+        imageProvider,
+        imageFileService
+      );
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      void logger.error(
+        {
+          msg: 'Error executing extract_layout_tree tool',
+          error: String(error),
+        },
+        'tools/extract_layout_tree'
+      );
+
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof VisionError) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.provider) {
+          errorMessage += ` (Provider: ${error.provider})`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'extract_layout_tree',
               },
               null,
               2

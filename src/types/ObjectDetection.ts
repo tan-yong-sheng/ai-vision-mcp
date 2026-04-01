@@ -8,6 +8,7 @@ export interface DetectedObject {
   object: string; // Generic category for detected object
   label: string; // Descriptive label or instance-specific detail
   normalized_box_2d: [number, number, number, number]; // [ymin, xmin, ymax, xmax] normalized to 0-1000
+  confidence: number; // Detection confidence score (0-1)
 }
 
 export interface ObjectDetectionResult {
@@ -27,6 +28,8 @@ export interface ObjectDetectionArgs {
   imageSource: string; // URL, base64, or local file path
   prompt?: string; // Optional custom detection prompt
   outputFilePath?: string; // Optional explicit output path
+  viewportWidth?: number; // Optional logical viewport width (for web screenshots)
+  viewportHeight?: number; // Optional logical viewport height (for web screenshots)
   options?: AnalysisOptions; // Optional API configuration parameters
 }
 
@@ -45,6 +48,9 @@ export interface ObjectDetectionMetadata {
   modelVersion?: string; // "gemini-2.5-flash-lite"
   responseId?: string; // "abc123..."
   fileSaveStatus?: 'saved' | 'skipped_due_to_permissions'; // File save status
+  coordinateScale: number; // Coordinate normalization scale (1000)
+  coordinateFormat: string; // Coordinate format description
+  coordinateOrigin: string; // Coordinate origin (top-left)
 }
 
 // MCP response types for different output scenarios
@@ -59,6 +65,10 @@ export interface DetectionWithFile {
     width: number;
     height: number;
     original_size: number;
+    viewport?: {
+      width: number;
+      height: number;
+    };
   };
   summary: string; // Human-readable summary with percentage coordinates
   metadata: ObjectDetectionMetadata; // Enhanced metadata
@@ -75,6 +85,10 @@ export interface DetectionWithTempFile {
     width: number;
     height: number;
     original_size: number;
+    viewport?: {
+      width: number;
+      height: number;
+    };
   };
   summary: string; // Human-readable summary with percentage coordinates
   metadata: ObjectDetectionMetadata; // Enhanced metadata
@@ -86,10 +100,17 @@ export interface DetectionOnly {
     width: number;
     height: number;
     original_size: number;
+    viewport?: {
+      width: number;
+      height: number;
+    };
   };
   summary: string; // Human-readable summary with percentage coordinates
   metadata: ObjectDetectionMetadata; // Enhanced metadata
 }
 
 // Union type for all possible response types
-export type ObjectDetectionResponse = DetectionWithFile | DetectionWithTempFile | DetectionOnly;
+export type ObjectDetectionResponse =
+  | DetectionWithFile
+  | DetectionWithTempFile
+  | DetectionOnly;
