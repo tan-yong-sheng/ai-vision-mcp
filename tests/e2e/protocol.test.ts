@@ -53,14 +53,15 @@ describe('MCP Protocol Tests', () => {
   });
 
   describe('Tools/List', () => {
-    test('should list all 4 tools', async () => {
+    test('should list all 5 tools', async () => {
       const tools = await client.listTools();
 
-      expect(tools.tools).toHaveLength(4);
-      expect(tools.tools.map((t) => t.name)).toContain('analyze_image');
-      expect(tools.tools.map((t) => t.name)).toContain('compare_images');
-      expect(tools.tools.map((t) => t.name)).toContain('detect_objects_in_image');
-      expect(tools.tools.map((t) => t.name)).toContain('analyze_video');
+      expect(tools.tools).toHaveLength(5);
+      expect(tools.tools.map(t => t.name)).toContain('analyze_image');
+      expect(tools.tools.map(t => t.name)).toContain('compare_images');
+      expect(tools.tools.map(t => t.name)).toContain('detect_objects_in_image');
+      expect(tools.tools.map(t => t.name)).toContain('analyze_video');
+      expect(tools.tools.map(t => t.name)).toContain('extract_layout_tree');
     });
 
     test('should list tools with descriptions', async () => {
@@ -75,7 +76,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should have unique tool names', async () => {
       const tools = await client.listTools();
-      const names = tools.tools.map((t) => t.name);
+      const names = tools.tools.map(t => t.name);
       const uniqueNames = new Set(names);
 
       expect(uniqueNames.size).toBe(names.length);
@@ -85,7 +86,7 @@ describe('MCP Protocol Tests', () => {
   describe('Tool Schema Validation - analyze_image', () => {
     test('should have valid input schema for analyze_image', async () => {
       const tools = await client.listTools();
-      const analyzeImage = tools.tools.find((t) => t.name === 'analyze_image');
+      const analyzeImage = tools.tools.find(t => t.name === 'analyze_image');
 
       expect(analyzeImage).toBeDefined();
       expect(analyzeImage!.inputSchema).toBeDefined();
@@ -94,7 +95,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should require imageSource and prompt for analyze_image', async () => {
       const tools = await client.listTools();
-      const analyzeImage = tools.tools.find((t) => t.name === 'analyze_image');
+      const analyzeImage = tools.tools.find(t => t.name === 'analyze_image');
 
       expect(analyzeImage!.inputSchema.required).toContain('imageSource');
       expect(analyzeImage!.inputSchema.required).toContain('prompt');
@@ -102,7 +103,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should have optional options parameter for analyze_image', async () => {
       const tools = await client.listTools();
-      const analyzeImage = tools.tools.find((t) => t.name === 'analyze_image');
+      const analyzeImage = tools.tools.find(t => t.name === 'analyze_image');
 
       const properties = analyzeImage!.inputSchema.properties as Record<
         string,
@@ -115,7 +116,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should have correct options schema structure', async () => {
       const tools = await client.listTools();
-      const analyzeImage = tools.tools.find((t) => t.name === 'analyze_image');
+      const analyzeImage = tools.tools.find(t => t.name === 'analyze_image');
 
       const properties = analyzeImage!.inputSchema.properties as Record<
         string,
@@ -136,7 +137,7 @@ describe('MCP Protocol Tests', () => {
   describe('Tool Schema Validation - compare_images', () => {
     test('should have valid input schema for compare_images', async () => {
       const tools = await client.listTools();
-      const compareImages = tools.tools.find((t) => t.name === 'compare_images');
+      const compareImages = tools.tools.find(t => t.name === 'compare_images');
 
       expect(compareImages).toBeDefined();
       expect(compareImages!.inputSchema).toBeDefined();
@@ -145,7 +146,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should require imageSources and prompt for compare_images', async () => {
       const tools = await client.listTools();
-      const compareImages = tools.tools.find((t) => t.name === 'compare_images');
+      const compareImages = tools.tools.find(t => t.name === 'compare_images');
 
       expect(compareImages!.inputSchema.required).toContain('imageSources');
       expect(compareImages!.inputSchema.required).toContain('prompt');
@@ -153,7 +154,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should have array type for imageSources', async () => {
       const tools = await client.listTools();
-      const compareImages = tools.tools.find((t) => t.name === 'compare_images');
+      const compareImages = tools.tools.find(t => t.name === 'compare_images');
 
       const properties = compareImages!.inputSchema.properties as Record<
         string,
@@ -167,7 +168,7 @@ describe('MCP Protocol Tests', () => {
     test('should have valid input schema for detect_objects_in_image', async () => {
       const tools = await client.listTools();
       const detectObjects = tools.tools.find(
-        (t) => t.name === 'detect_objects_in_image'
+        t => t.name === 'detect_objects_in_image'
       );
 
       expect(detectObjects).toBeDefined();
@@ -178,7 +179,7 @@ describe('MCP Protocol Tests', () => {
     test('should require imageSource and prompt for detect_objects_in_image', async () => {
       const tools = await client.listTools();
       const detectObjects = tools.tools.find(
-        (t) => t.name === 'detect_objects_in_image'
+        t => t.name === 'detect_objects_in_image'
       );
 
       expect(detectObjects!.inputSchema.required).toContain('imageSource');
@@ -188,7 +189,7 @@ describe('MCP Protocol Tests', () => {
     test('should have optional outputFilePath for detect_objects_in_image', async () => {
       const tools = await client.listTools();
       const detectObjects = tools.tools.find(
-        (t) => t.name === 'detect_objects_in_image'
+        t => t.name === 'detect_objects_in_image'
       );
 
       const properties = detectObjects!.inputSchema.properties as Record<
@@ -197,14 +198,16 @@ describe('MCP Protocol Tests', () => {
       >;
       expect(properties.outputFilePath).toBeDefined();
       // outputFilePath should not be in required array
-      expect(detectObjects!.inputSchema.required).not.toContain('outputFilePath');
+      expect(detectObjects!.inputSchema.required).not.toContain(
+        'outputFilePath'
+      );
     });
   });
 
   describe('Tool Schema Validation - analyze_video', () => {
     test('should have valid input schema for analyze_video', async () => {
       const tools = await client.listTools();
-      const analyzeVideo = tools.tools.find((t) => t.name === 'analyze_video');
+      const analyzeVideo = tools.tools.find(t => t.name === 'analyze_video');
 
       expect(analyzeVideo).toBeDefined();
       expect(analyzeVideo!.inputSchema).toBeDefined();
@@ -213,7 +216,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should require videoSource and prompt for analyze_video', async () => {
       const tools = await client.listTools();
-      const analyzeVideo = tools.tools.find((t) => t.name === 'analyze_video');
+      const analyzeVideo = tools.tools.find(t => t.name === 'analyze_video');
 
       expect(analyzeVideo!.inputSchema.required).toContain('videoSource');
       expect(analyzeVideo!.inputSchema.required).toContain('prompt');
@@ -221,7 +224,7 @@ describe('MCP Protocol Tests', () => {
 
     test('should have optional options parameter for analyze_video', async () => {
       const tools = await client.listTools();
-      const analyzeVideo = tools.tools.find((t) => t.name === 'analyze_video');
+      const analyzeVideo = tools.tools.find(t => t.name === 'analyze_video');
 
       const properties = analyzeVideo!.inputSchema.properties as Record<
         string,
@@ -241,9 +244,9 @@ describe('MCP Protocol Tests', () => {
       ]);
 
       // All should return the same result
-      expect(tools1.tools).toHaveLength(4);
-      expect(tools2.tools).toHaveLength(4);
-      expect(tools3.tools).toHaveLength(4);
+      expect(tools1.tools).toHaveLength(5);
+      expect(tools2.tools).toHaveLength(5);
+      expect(tools3.tools).toHaveLength(5);
     });
 
     test('should maintain connection after multiple operations', async () => {
@@ -254,7 +257,7 @@ describe('MCP Protocol Tests', () => {
 
       // Connection should still be valid
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4);
+      expect(tools.tools).toHaveLength(5);
     });
   });
 });

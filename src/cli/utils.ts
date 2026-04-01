@@ -1,5 +1,6 @@
 import type { AnalysisResult } from '../types/Providers.js';
 import type { ObjectDetectionResponse } from '../types/ObjectDetection.js';
+import type { ExtractLayoutTreeResponse } from '../types/LayoutTree.js';
 import type { VideoMetadata } from '../types/Analysis.js';
 
 export function parseOptions(options: Record<string, string>): {
@@ -54,7 +55,7 @@ export function parseOptions(options: Record<string, string>): {
 }
 
 export function formatOutput(
-  result: AnalysisResult | ObjectDetectionResponse,
+  result: AnalysisResult | ObjectDetectionResponse | ExtractLayoutTreeResponse,
   jsonMode?: boolean
 ): string {
   if (jsonMode) {
@@ -68,6 +69,10 @@ export function formatOutput(
 
   if ('detections' in result) {
     return result.summary || JSON.stringify(result.detections, null, 2);
+  }
+
+  if ('layoutTree' in result) {
+    return result.summary || JSON.stringify(result.layoutTree, null, 2);
   }
 
   return JSON.stringify(result, null, 2);

@@ -14,3 +14,7 @@ export {
   type ObjectDetectionArgs,
 } from './detect_objects_in_image.js';
 export { compare_images, type CompareImagesArgs } from './compare_images.js';
+export {
+  extract_layout_tree,
+  type ExtractLayoutTreeArgs,
+} from './extract_layout_tree.js';
