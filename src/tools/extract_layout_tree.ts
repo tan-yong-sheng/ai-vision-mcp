@@ -366,7 +366,18 @@ export async function extract_layout_tree(
         }
         break;
       } catch {
-        // keep trying
+        // Try unescaping if it looks like double-encoded JSON
+        if (candidate.includes('\\"')) {
+          try {
+            const unescaped = JSON.parse(candidate);
+            rawLayoutData = JSON.parse(unescaped);
+            parsed = true;
+            console.error('[extract_layout_tree] Successfully parsed JSON after unescaping');
+            break;
+          } catch {
+            // keep trying
+          }
+        }
       }
     }
 
