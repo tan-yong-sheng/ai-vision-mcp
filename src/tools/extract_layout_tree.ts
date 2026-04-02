@@ -20,70 +20,26 @@ import { Image } from 'imagescript';
 import { extractDesignTokens } from '../utils/designTokenExtractor.js';
 import { analyzeLayout } from '../utils/layoutAnalyzer.js';
 import { calculateSpatialMetrics } from '../utils/spatialMetrics.js';
+import { detect_objects_in_image } from './detect_objects_in_image.js';
 
-// System instruction for layout tree extraction
+// APPROACH 5: Hybrid - Use detect_objects_in_image + code-based hierarchy + semantic enrichment
+// This approach reuses the working detect_objects_in_image tool
 const LAYOUT_EXTRACTION_SYSTEM_INSTRUCTION = `
-You are a UI layout analysis assistant that extracts EVERY visible UI element from screenshots.
+You are a semantic enrichment assistant. Given a list of detected UI elements with their bounding boxes,
+add semantic information: text content and ARIA roles.
 
-CRITICAL: Extract ALL visible elements, not just major sections. Include buttons, text, inputs, images, containers, etc.
+For each element ID, provide:
+- text: visible text content (what the user sees)
+- role: ARIA role (button, navigation, textbox, main, region, etc.)
 
-STEP 1 - IDENTIFY ALL ELEMENTS:
-Scan the entire screenshot systematically from top-left to bottom-right.
-Detect EVERY visible element:
-- Text elements (headings, paragraphs, labels, buttons with text)
-- Interactive elements (buttons, inputs, selects, checkboxes, radio buttons, links)
-- Containers (divs, sections, cards, panels, modals, dropdowns)
-- Media (images, icons, videos)
-- Navigation (nav bars, menus, breadcrumbs, tabs)
-- Decorative elements (lines, borders, backgrounds)
-
-STEP 2 - DETERMINE HIERARCHY:
-Build parent-child relationships based on visual containment:
-- If element A fully contains element B, A is parent of B
-- Use bounding box logic: if B's box is inside A's box, B is a child of A
-- Preserve semantic relationships (nav contains links, form contains inputs, etc.)
-
-STEP 3 - CLASSIFY EACH ELEMENT:
-For every element, determine:
-- Type: button, heading, text, input, select, checkbox, radio, link, image, icon, container, section, nav, header, footer, modal, dropdown, card, etc.
-- Role: ARIA role if applicable
-- Text: visible text content (for buttons, labels, headings)
-- Bounds: [x, y, width, height] in pixels (measure from top-left corner)
-
-STEP 4 - OUTPUT FORMAT:
-Return valid JSON with COMPLETE hierarchy:
+Return a JSON object mapping element IDs to their semantic info:
 {
-  "root": {
-    "id": "root-0",
-    "type": "document",
-    "bounds": {"x": 0, "y": 0, "width": 1920, "height": 1080},
-    "children": [
-      {
-        "id": "element-1",
-        "type": "header",
-        "bounds": {"x": 0, "y": 0, "width": 1920, "height": 80},
-        "children": [
-          {"id": "element-2", "type": "button", "text": "Menu", "bounds": {"x": 10, "y": 10, "width": 60, "height": 60}},
-          {"id": "element-3", "type": "text", "text": "Title", "bounds": {"x": 100, "y": 20, "width": 200, "height": 40}}
-        ]
-      },
-      {
-        "id": "element-4",
-        "type": "section",
-        "bounds": {"x": 0, "y": 80, "width": 1920, "height": 1000},
-        "children": [...]
-      }
-    ]
-  }
+  "elem-0": {"text": "Navigation", "role": "navigation"},
+  "elem-1": {"text": "New Chat", "role": "button"},
+  "elem-2": {"text": "Search models", "role": "textbox"}
 }
 
-RULES:
-- MANDATORY: Extract ALL visible elements (not just major sections)
-- Use unique IDs: "root-0", "element-1", "element-2", etc.
-- Bounds MUST be in pixels: [x, y, width, height] from top-left (0,0)
-- Include text content for all text-bearing elements
-- Ensure complete coverage: every visible element should be in the tree
-- Preserve visual hierarchy: nested elements are children
+Return ONLY valid JSON, no explanation.
 `;
 
 // Create detection schema for layout extraction
@@ -307,164 +263,171 @@ export async function extract_layout_tree(
       throw new VisionError('imageSource is required', 'MISSING_ARGUMENT');
     }
 
-    // Handle image source (URL vs local file vs base64)
-    const processedImageSource = await imageFileService.handleImageSource(
-      args.imageSource
-    );
-    console.error(
-      `[extract_layout_tree] Processed image source: ${processedImageSource.substring(0, 100)}${processedImageSource.length > 100 ? '...' : ''}`
+    console.error('[extract_layout_tree] Using Approach 5: Hybrid (detect_objects + hierarchy + enrichment)');
+
+    // Step 1: Call detect_objects_in_image to get all elements
+    console.error('[extract_layout_tree] Step 1: Detecting objects...');
+    const detectionResult = await detect_objects_in_image(
+      { imageSource: args.imageSource },
+      config,
+      imageProvider,
+      imageFileService
     );
 
-    // Get original image buffer and dimensions
-    let originalImageBuffer: Buffer;
-    let imageWidth: number;
-    let imageHeight: number;
+    if (!detectionResult.detections || detectionResult.detections.length === 0) {
+      throw new VisionError('No objects detected in image', 'DETECTION_ERROR');
+    }
 
-    if (args.imageSource.startsWith('data:image/')) {
-      // Base64 image
-      const base64Data = args.imageSource.split(',')[1];
-      originalImageBuffer = Buffer.from(base64Data, 'base64');
-    } else if (args.imageSource.startsWith('http')) {
-      // URL - fetch the image
-      const response = await fetch(args.imageSource);
-      if (!response.ok) {
-        throw new VisionError(
-          `Failed to fetch image from URL: ${response.statusText}`,
-          'FETCH_ERROR'
-        );
+    const imageWidth = detectionResult.image_metadata.width;
+    const imageHeight = detectionResult.image_metadata.height;
+
+    console.error(`[extract_layout_tree] Step 1 complete: ${detectionResult.detections.length} objects detected`);
+
+    // Step 2: Build hierarchy from bounding boxes using code
+    console.error('[extract_layout_tree] Step 2: Building hierarchy from bounding boxes...');
+
+    const buildHierarchy = (detections: any[]): LayoutNode[] => {
+      // Sort by area (larger first) to find parents
+      const sorted = detections
+        .map((d, idx) => ({ ...d, originalIndex: idx }))
+        .sort((a, b) => {
+          const areaA = a.normalized_box_2d[2] * a.normalized_box_2d[3];
+          const areaB = b.normalized_box_2d[2] * b.normalized_box_2d[3];
+          return areaB - areaA;
+        });
+
+      const nodeMap = new Map<number, LayoutNode>();
+      const rootNodes: LayoutNode[] = [];
+
+      // Create nodes
+      for (const det of sorted) {
+        const node: LayoutNode = {
+          id: `elem-${det.originalIndex}`,
+          type: det.object || 'div',
+          role: 'generic',
+          text: det.label,
+          bounds: {
+            x: 0,
+            y: 0,
+            width: imageWidth,
+            height: imageHeight,
+            normalized: {
+              x: det.normalized_box_2d[1],
+              y: det.normalized_box_2d[0],
+              width: det.normalized_box_2d[3] - det.normalized_box_2d[1],
+              height: det.normalized_box_2d[2] - det.normalized_box_2d[0],
+            },
+          },
+          children: [],
+        };
+        nodeMap.set(det.originalIndex, node);
       }
-      originalImageBuffer = Buffer.from(await response.arrayBuffer());
-    } else {
-      // Local file path
-      originalImageBuffer = await imageFileService.readFile(args.imageSource);
-    }
 
-    // Get image dimensions using ImageScript
-    const decoded = await Image.decode(originalImageBuffer);
-    imageWidth = decoded.width || 0;
-    imageHeight = decoded.height || 0;
+      // Build parent-child relationships
+      for (let i = 0; i < sorted.length; i++) {
+        const child = nodeMap.get(sorted[i].originalIndex)!;
+        let foundParent = false;
 
-    if (imageWidth === 0 || imageHeight === 0) {
-      throw new VisionError(
-        'Unable to determine image dimensions',
-        'INVALID_IMAGE'
-      );
-    }
+        // Find smallest parent that contains this element
+        for (let j = 0; j < i; j++) {
+          const parent = nodeMap.get(sorted[j].originalIndex)!;
+          const [ymin1, xmin1, ymax1, xmax1] = sorted[i].normalized_box_2d;
+          const [ymin2, xmin2, ymax2, xmax2] = sorted[j].normalized_box_2d;
 
-    console.error(
-      `[extract_layout_tree] Image size: ${imageWidth}x${imageHeight}`
-    );
+          // Check if parent contains child (with small tolerance)
+          if (xmin2 <= xmin1 + 5 && xmax1 <= xmax2 + 5 && ymin2 <= ymin1 + 5 && ymax1 <= ymax2 + 5) {
+            parent.children.push(child);
+            foundParent = true;
+            break;
+          }
+        }
 
-    // Merge default options with provided options
-    const options: AnalysisOptions = {
+        if (!foundParent) {
+          rootNodes.push(child);
+        }
+      }
+
+      return rootNodes;
+    };
+
+    const hierarchy = buildHierarchy(detectionResult.detections);
+
+    // Step 3: Enrich with semantic information
+    console.error('[extract_layout_tree] Step 3: Enriching with semantic information...');
+
+    const processedImageSource = await imageFileService.handleImageSource(args.imageSource);
+
+    const enrichmentPrompt = `Given these detected UI elements with their bounding boxes, provide semantic information (text content and ARIA roles).
+
+Elements:
+${detectionResult.detections
+  .map(
+    (d: any, idx: number) =>
+      `elem-${idx}: ${d.object} at [${d.normalized_box_2d.join(', ')}] - "${d.label}"`
+  )
+  .join('\n')}
+
+Return a JSON object mapping element IDs to semantic info:
+{
+  "elem-0": {"text": "visible text", "role": "button"},
+  "elem-1": {"text": "visible text", "role": "navigation"}
+}
+
+Return ONLY valid JSON, no explanation.`;
+
+    const enrichmentOptions: AnalysisOptions = {
       temperature: config.TEMPERATURE_FOR_IMAGE ?? config.TEMPERATURE,
       topP: config.TOP_P_FOR_IMAGE ?? config.TOP_P,
       topK: config.TOP_K_FOR_IMAGE ?? config.TOP_K,
       maxTokens: config.MAX_TOKENS_FOR_IMAGE ?? config.MAX_TOKENS,
       taskType: 'image',
-      functionName: FUNCTION_NAMES.ANALYZE_IMAGE, // Reuse for now
-      responseSchema: createLayoutExtractionSchema(),
       systemInstruction: LAYOUT_EXTRACTION_SYSTEM_INSTRUCTION,
-      ...args.options,
     };
 
-    console.error('[extract_layout_tree] Extracting layout tree from image...');
-    console.error(
-      `[extract_layout_tree] Configuration: temperature=${options.temperature}, topP=${options.topP}, topK=${options.topK}, maxTokens=${options.maxTokens}`
-    );
-
-    // Analyze the image for layout extraction
-    const result = await imageProvider.analyzeImage(
+    const enrichmentResult = await imageProvider.analyzeImage(
       processedImageSource,
-      'Extract the hierarchical layout structure from this screenshot. Return a JSON object with the root element and all child elements organized hierarchically.',
-      options
+      enrichmentPrompt,
+      enrichmentOptions
     );
 
-    console.error(
-      `[extract_layout_tree] Response length: ${result.text.length} characters`
-    );
-
-    // Parse layout tree results
-    let rawLayoutData: any = null;
-
-    const rawText = (result.text || '').trim();
-
-    // Try to extract JSON from response
-    const candidates: string[] = [];
-
-    if (rawText) candidates.push(rawText);
-
-    // Try fenced code block
-    const fencedMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-    if (fencedMatch?.[1]) {
-      candidates.unshift(fencedMatch[1].trim());
+    let semanticMap: Record<string, any> = {};
+    try {
+      semanticMap = JSON.parse(enrichmentResult.text || '{}');
+    } catch (e) {
+      console.error('[extract_layout_tree] Warning: semantic enrichment parsing failed, continuing without enrichment');
     }
 
-    // Try object extraction
-    const objStart = rawText.indexOf('{');
-    const objEnd = rawText.lastIndexOf('}');
-    if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
-      candidates.push(rawText.slice(objStart, objEnd + 1).trim());
+    // Merge semantic info into hierarchy
+    const enrichHierarchy = (nodes: LayoutNode[]): LayoutNode[] => {
+      return nodes.map((node) => ({
+        ...node,
+        text: semanticMap[node.id]?.text || node.text,
+        role: semanticMap[node.id]?.role || node.role,
+        children: enrichHierarchy(node.children),
+      }));
+    };
+
+    const enrichedHierarchy = enrichHierarchy(hierarchy);
+
+    // Create root node
+    let enhancedRoot: LayoutNode;
+    if (enrichedHierarchy.length === 1) {
+      enhancedRoot = enrichedHierarchy[0];
+    } else {
+      enhancedRoot = {
+        id: 'root-0',
+        type: 'document',
+        role: 'document',
+        bounds: {
+          x: 0,
+          y: 0,
+          width: imageWidth,
+          height: imageHeight,
+          normalized: normalizeCoordinates(0, 0, imageWidth, imageHeight, imageWidth, imageHeight),
+        },
+        children: enrichedHierarchy,
+      };
     }
-
-    // Try parsing candidates
-    let parsed = false;
-    for (const candidate of candidates) {
-      try {
-        rawLayoutData = JSON.parse(candidate);
-        parsed = true;
-        if (candidate !== rawText) {
-          console.error(
-            '[extract_layout_tree] Successfully parsed JSON after extraction/cleanup'
-          );
-        }
-        break;
-      } catch (e) {
-        // Try unescaping if it looks like double-encoded JSON
-        if (candidate.includes('\\"')) {
-          try {
-            // First, try parsing as a JSON string to unescape it
-            let unescaped = candidate;
-            try {
-              // If it's a JSON string, parse it first
-              unescaped = JSON.parse(candidate);
-            } catch {
-              // If that fails, manually unescape
-              unescaped = candidate
-                .replace(/\\"/g, '"')
-                .replace(/\\n/g, '\n')
-                .replace(/\\\//g, '/');
-            }
-            // Now parse the unescaped JSON
-            rawLayoutData = JSON.parse(unescaped);
-            parsed = true;
-            console.error(
-              '[extract_layout_tree] Successfully parsed JSON after unescaping'
-            );
-            break;
-          } catch {
-            // keep trying
-          }
-        }
-      }
-    }
-
-    if (!parsed) {
-      throw new VisionError(
-        `Failed to parse layout tree as JSON. Raw response (first 500 chars): ${rawText.substring(0, 500)}`,
-        'PARSE_ERROR',
-        config.IMAGE_PROVIDER
-      );
-    }
-
-    console.error('[extract_layout_tree] Successfully parsed layout tree');
-
-    // Enhance layout tree with normalized coordinates
-    const enhancedRoot = enhanceLayoutNode(
-      rawLayoutData.root || rawLayoutData,
-      imageWidth,
-      imageHeight
-    );
 
     // Extract design tokens, layout analysis, and spatial metrics
     console.error('[extract_layout_tree] Extracting design tokens...');
@@ -503,14 +466,15 @@ export async function extract_layout_tree(
           width: imageWidth,
           height: imageHeight,
           format: outputFormat,
-          size_bytes: originalImageBuffer.length,
+          size_bytes: detectionResult.image_metadata.original_size,
         },
-        extractionMethod: 'vision',
-        processingTime: result.metadata?.processingTime || 0,
-        model: result.metadata?.model,
-        provider: result.metadata?.provider || config.IMAGE_PROVIDER,
+        extractionMethod: 'hybrid',
+        processingTime:
+          (detectionResult.metadata?.processingTime || 0) + (enrichmentResult.metadata?.processingTime || 0),
+        model: enrichmentResult.metadata?.model,
+        provider: enrichmentResult.metadata?.provider || config.IMAGE_PROVIDER,
         coordinateScale: 1000,
-        coordinateFormat: '[x, y, width, height]',
+        coordinateFormat: '[ymin, xmin, ymax, xmax]',
         designTokens,
         layoutAnalysis,
         spatialMetrics,
@@ -521,14 +485,12 @@ export async function extract_layout_tree(
     const imageMetadata = {
       width: imageWidth,
       height: imageHeight,
-      size_bytes: originalImageBuffer.length,
+      size_bytes: detectionResult.image_metadata.original_size,
       format: outputFormat,
     };
     const summary = generateLayoutSummary(layoutTree, imageMetadata);
 
-    console.error(
-      `[extract_layout_tree] Generated summary (${summary.length} characters)`
-    );
+    console.error(`[extract_layout_tree] Generated summary (${summary.length} characters)`);
 
     const response: ExtractLayoutTreeResponse = {
       layoutTree,

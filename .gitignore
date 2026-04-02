@@ -1,4 +1,10 @@
-
+.claude/*
+!.claude/agents/
+!.claude/skills/
+!.claude/rules/
+!.claude/memory/
+!.claude/plans/
+!.claude/plugins/
 
 # Dependencies
 node_modules/
