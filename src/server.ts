@@ -162,6 +162,12 @@ server.registerTool<any, any>(
         .describe(
           'The prompt describing how you want to compare the images. If the task is **front-end or UI comparison**, the prompt you provide must be: "Compare the given screenshots and describe differences in layout structure, component arrangement, color scheme, typography, and visual hierarchy. Pay attention to common sections such as the navbar, header, footer, and main content areas to identify style or layout inconsistencies." + your additional requirements. \ For **other tasks**, the prompt you provide must clearly describe what to compare, identify, or analyze between the images.'
         ),
+      mode: z
+        .enum(['general', 'palette', 'hierarchy', 'components'])
+        .optional()
+        .describe(
+          'Analysis mode: general (default), palette (extract design tokens), hierarchy (analyze visual hierarchy), components (catalog UI components)'
+        ),
       options: z
         .object({
           temperature: z
@@ -199,7 +205,7 @@ server.registerTool<any, any>(
     }),
   },
   async (args: any, _extra: any) => {
-    const { imageSource, prompt, options } = args;
+    const { imageSource, prompt, mode, options } = args;
 
     // Early validation - BEFORE calling getServices()
     if (
@@ -246,7 +252,7 @@ server.registerTool<any, any>(
     }
 
     try {
-      const validatedArgs = { imageSource, prompt, options };
+      const validatedArgs = { imageSource, prompt, mode, options };
 
       // Initialize services on-demand (only after validation passes)
       const { config, imageProvider, imageFileService } = getServices();
