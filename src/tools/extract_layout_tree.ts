@@ -23,50 +23,67 @@ import { calculateSpatialMetrics } from '../utils/spatialMetrics.js';
 
 // System instruction for layout tree extraction
 const LAYOUT_EXTRACTION_SYSTEM_INSTRUCTION = `
-You are a UI layout analysis assistant that extracts hierarchical structure from screenshots.
+You are a UI layout analysis assistant that extracts EVERY visible UI element from screenshots.
 
-STEP 1 - ANALYZE STRUCTURE:
-Identify all visible UI elements and their spatial relationships.
+CRITICAL: Extract ALL visible elements, not just major sections. Include buttons, text, inputs, images, containers, etc.
 
-STEP 2 - BUILD HIERARCHY:
-Determine parent-child relationships based on visual containment:
-- Elements fully contained within others are children
-- Use bounding box containment to determine hierarchy
-- Preserve semantic relationships (nav contains links, section contains cards, etc.)
+STEP 1 - IDENTIFY ALL ELEMENTS:
+Scan the entire screenshot systematically from top-left to bottom-right.
+Detect EVERY visible element:
+- Text elements (headings, paragraphs, labels, buttons with text)
+- Interactive elements (buttons, inputs, selects, checkboxes, radio buttons, links)
+- Containers (divs, sections, cards, panels, modals, dropdowns)
+- Media (images, icons, videos)
+- Navigation (nav bars, menus, breadcrumbs, tabs)
+- Decorative elements (lines, borders, backgrounds)
 
-STEP 3 - CLASSIFY ELEMENTS:
-For each element, determine:
-- Type: button, heading, container, input, nav, header, footer, section, article, img, video, etc.
-- Role: ARIA role if applicable (button, heading, navigation, region, etc.)
-- Text content: visible text or placeholder
-- Bounds: [x, y, width, height] in pixels
+STEP 2 - DETERMINE HIERARCHY:
+Build parent-child relationships based on visual containment:
+- If element A fully contains element B, A is parent of B
+- Use bounding box logic: if B's box is inside A's box, B is a child of A
+- Preserve semantic relationships (nav contains links, form contains inputs, etc.)
+
+STEP 3 - CLASSIFY EACH ELEMENT:
+For every element, determine:
+- Type: button, heading, text, input, select, checkbox, radio, link, image, icon, container, section, nav, header, footer, modal, dropdown, card, etc.
+- Role: ARIA role if applicable
+- Text: visible text content (for buttons, labels, headings)
+- Bounds: [x, y, width, height] in pixels (measure from top-left corner)
 
 STEP 4 - OUTPUT FORMAT:
-Return a valid JSON object with hierarchical structure:
+Return valid JSON with COMPLETE hierarchy:
 {
   "root": {
     "id": "root-0",
     "type": "document",
-    "role": "main",
     "bounds": {"x": 0, "y": 0, "width": 1920, "height": 1080},
     "children": [
       {
         "id": "element-1",
         "type": "header",
-        "role": "banner",
         "bounds": {"x": 0, "y": 0, "width": 1920, "height": 80},
+        "children": [
+          {"id": "element-2", "type": "button", "text": "Menu", "bounds": {"x": 10, "y": 10, "width": 60, "height": 60}},
+          {"id": "element-3", "type": "text", "text": "Title", "bounds": {"x": 100, "y": 20, "width": 200, "height": 40}}
+        ]
+      },
+      {
+        "id": "element-4",
+        "type": "section",
+        "bounds": {"x": 0, "y": 80, "width": 1920, "height": 1000},
         "children": [...]
       }
     ]
   }
 }
 
-Rules:
+RULES:
+- MANDATORY: Extract ALL visible elements (not just major sections)
 - Use unique IDs: "root-0", "element-1", "element-2", etc.
-- Bounds are in pixels (x, y, width, height)
-- Include text content for interactive elements
-- Preserve semantic hierarchy
-- Ensure all elements are accounted for
+- Bounds MUST be in pixels: [x, y, width, height] from top-left (0,0)
+- Include text content for all text-bearing elements
+- Ensure complete coverage: every visible element should be in the tree
+- Preserve visual hierarchy: nested elements are children
 `;
 
 // Create detection schema for layout extraction
@@ -113,8 +130,14 @@ function enhanceLayoutNode(
   imageHeight: number,
   idPrefix: string = 'element'
 ): LayoutNode {
-  const nodeId = node.id || `${idPrefix}-${Math.random().toString(36).substr(2, 9)}`;
-  const bounds = node.bounds || { x: 0, y: 0, width: imageWidth, height: imageHeight };
+  const nodeId =
+    node.id || `${idPrefix}-${Math.random().toString(36).substr(2, 9)}`;
+  const bounds = node.bounds || {
+    x: 0,
+    y: 0,
+    width: imageWidth,
+    height: imageHeight,
+  };
 
   const normalized = normalizeCoordinates(
     bounds.x,
@@ -139,7 +162,12 @@ function enhanceLayoutNode(
       normalized,
     },
     children: (node.children || []).map((child: any, index: number) =>
-      enhanceLayoutNode(child, imageWidth, imageHeight, `${nodeId}-child-${index}`)
+      enhanceLayoutNode(
+        child,
+        imageWidth,
+        imageHeight,
+        `${nodeId}-child-${index}`
+      )
     ),
     properties: node.properties,
   };
@@ -201,7 +229,12 @@ function generateLayoutSummary(
     const tokens = layoutTree.metadata.designTokens;
     summary.push(`\n## DESIGN TOKENS:\n`);
     if (tokens.colors && tokens.colors.length > 0) {
-      summary.push(`Colors: ${tokens.colors.length} unique (${tokens.colors.slice(0, 3).map((c: any) => c.value).join(', ')}${tokens.colors.length > 3 ? ', ...' : ''})`);
+      summary.push(
+        `Colors: ${tokens.colors.length} unique (${tokens.colors
+          .slice(0, 3)
+          .map((c: any) => c.value)
+          .join(', ')}${tokens.colors.length > 3 ? ', ...' : ''})`
+      );
     }
     if (tokens.typography && tokens.typography.length > 0) {
       summary.push(`Typography: ${tokens.typography.length} unique styles`);
@@ -217,10 +250,14 @@ function generateLayoutSummary(
     summary.push(`\n## LAYOUT ANALYSIS:\n`);
     summary.push(`Layout Type: ${analysis.primaryLayout}`);
     if (analysis.alignmentPatterns && analysis.alignmentPatterns.length > 0) {
-      summary.push(`Alignment Patterns: ${analysis.alignmentPatterns.join(', ')}`);
+      summary.push(
+        `Alignment Patterns: ${analysis.alignmentPatterns.join(', ')}`
+      );
     }
     if (analysis.gridInfo) {
-      summary.push(`Grid: ${analysis.gridInfo.rows || 1}×${analysis.gridInfo.columns}`);
+      summary.push(
+        `Grid: ${analysis.gridInfo.rows || 1}×${analysis.gridInfo.columns}`
+      );
     }
     summary.push(`Hierarchy Depth: ${analysis.hierarchy.depth}`);
   }
@@ -230,12 +267,20 @@ function generateLayoutSummary(
     const metrics = layoutTree.metadata.spatialMetrics;
     summary.push(`\n## SPATIAL METRICS:\n`);
     if (metrics.alignmentMetrics && metrics.alignmentMetrics.length > 0) {
-      const horizontalCount = metrics.alignmentMetrics.filter((m: any) => m.type === 'horizontal').length;
-      const verticalCount = metrics.alignmentMetrics.filter((m: any) => m.type === 'vertical').length;
-      summary.push(`Alignment Groups: ${horizontalCount} horizontal, ${verticalCount} vertical`);
+      const horizontalCount = metrics.alignmentMetrics.filter(
+        (m: any) => m.type === 'horizontal'
+      ).length;
+      const verticalCount = metrics.alignmentMetrics.filter(
+        (m: any) => m.type === 'vertical'
+      ).length;
+      summary.push(
+        `Alignment Groups: ${horizontalCount} horizontal, ${verticalCount} vertical`
+      );
     }
     if (metrics.spacingConsistency) {
-      summary.push(`Spacing Consistency: ${metrics.spacingConsistency.variance.toFixed(1)}px variance`);
+      summary.push(
+        `Spacing Consistency: ${metrics.spacingConsistency.variance.toFixed(1)}px variance`
+      );
     }
     if (metrics.collisions && metrics.collisions.length > 0) {
       summary.push(`Overlapping Elements: ${metrics.collisions.length}`);
@@ -263,7 +308,9 @@ export async function extract_layout_tree(
     }
 
     // Handle image source (URL vs local file vs base64)
-    const processedImageSource = await imageFileService.handleImageSource(args.imageSource);
+    const processedImageSource = await imageFileService.handleImageSource(
+      args.imageSource
+    );
     console.error(
       `[extract_layout_tree] Processed image source: ${processedImageSource.substring(0, 100)}${processedImageSource.length > 100 ? '...' : ''}`
     );
@@ -298,10 +345,15 @@ export async function extract_layout_tree(
     imageHeight = decoded.height || 0;
 
     if (imageWidth === 0 || imageHeight === 0) {
-      throw new VisionError('Unable to determine image dimensions', 'INVALID_IMAGE');
+      throw new VisionError(
+        'Unable to determine image dimensions',
+        'INVALID_IMAGE'
+      );
     }
 
-    console.error(`[extract_layout_tree] Image size: ${imageWidth}x${imageHeight}`);
+    console.error(
+      `[extract_layout_tree] Image size: ${imageWidth}x${imageHeight}`
+    );
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
@@ -362,17 +414,33 @@ export async function extract_layout_tree(
         rawLayoutData = JSON.parse(candidate);
         parsed = true;
         if (candidate !== rawText) {
-          console.error('[extract_layout_tree] Successfully parsed JSON after extraction/cleanup');
+          console.error(
+            '[extract_layout_tree] Successfully parsed JSON after extraction/cleanup'
+          );
         }
         break;
-      } catch {
+      } catch (e) {
         // Try unescaping if it looks like double-encoded JSON
         if (candidate.includes('\\"')) {
           try {
-            const unescaped = JSON.parse(candidate);
+            // First, try parsing as a JSON string to unescape it
+            let unescaped = candidate;
+            try {
+              // If it's a JSON string, parse it first
+              unescaped = JSON.parse(candidate);
+            } catch {
+              // If that fails, manually unescape
+              unescaped = candidate
+                .replace(/\\"/g, '"')
+                .replace(/\\n/g, '\n')
+                .replace(/\\\//g, '/');
+            }
+            // Now parse the unescaped JSON
             rawLayoutData = JSON.parse(unescaped);
             parsed = true;
-            console.error('[extract_layout_tree] Successfully parsed JSON after unescaping');
+            console.error(
+              '[extract_layout_tree] Successfully parsed JSON after unescaping'
+            );
             break;
           } catch {
             // keep trying
@@ -392,7 +460,11 @@ export async function extract_layout_tree(
     console.error('[extract_layout_tree] Successfully parsed layout tree');
 
     // Enhance layout tree with normalized coordinates
-    const enhancedRoot = enhanceLayoutNode(rawLayoutData.root || rawLayoutData, imageWidth, imageHeight);
+    const enhancedRoot = enhanceLayoutNode(
+      rawLayoutData.root || rawLayoutData,
+      imageWidth,
+      imageHeight
+    );
 
     // Extract design tokens, layout analysis, and spatial metrics
     console.error('[extract_layout_tree] Extracting design tokens...');
@@ -454,7 +526,9 @@ export async function extract_layout_tree(
     };
     const summary = generateLayoutSummary(layoutTree, imageMetadata);
 
-    console.error(`[extract_layout_tree] Generated summary (${summary.length} characters)`);
+    console.error(
+      `[extract_layout_tree] Generated summary (${summary.length} characters)`
+    );
 
     const response: ExtractLayoutTreeResponse = {
       layoutTree,
