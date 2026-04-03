@@ -451,7 +451,22 @@ export class GeminiProvider extends BaseVisionProvider {
       let content: any;
       let uploadDuration = 0;
 
-      if (
+      if (videoSource.startsWith('data:video/')) {
+        // Handle inline binary data for videos <100MB
+        const matches = videoSource.match(/^data:video\/([a-zA-Z0-9\-+.]+);base64,(.+)$/);
+        if (!matches) {
+          throw new Error('Invalid inline video data format');
+        }
+        const mimeType = `video/${matches[1]}`;
+        const base64Data = matches[2];
+
+        content = {
+          inlineData: {
+            mimeType,
+            data: base64Data,
+          },
+        };
+      } else if (
         videoSource.startsWith('files/') ||
         videoSource.includes('generativelanguage.googleapis.com')
       ) {

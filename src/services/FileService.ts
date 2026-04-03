@@ -9,6 +9,7 @@ import type { FileUploadStrategy } from '../types/Providers.js';
 import { FileUploadFactory } from '../file-upload/factory/FileUploadFactory.js';
 import { GeminiProvider } from '../providers/gemini/GeminiProvider.js';
 import { ConfigService } from './ConfigService.js';
+import { redactUrl, redactError } from '../utils/redact.js';
 import {
   FileUploadError,
   UnsupportedFileTypeError,
@@ -33,22 +34,16 @@ export class FileService {
   }
 
   async handleImageSource(imageSource: string): Promise<string> {
-    console.error(
-      `[FileService] handleImageSource input: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
-    );
-
     // If it's already a file reference, return as-is
     if (
       imageSource.startsWith('files/') ||
       imageSource.includes('generativelanguage.googleapis.com')
     ) {
-      console.error(`[FileService] Returning existing file reference`);
       return imageSource;
     }
 
     // If it's a GCS URI, return as-is
     if (this.isGcsUri(imageSource)) {
-      console.error(`[FileService] Returning GCS URI`);
       return imageSource;
     }
 
@@ -57,26 +52,17 @@ export class FileService {
 
     // Choose processing method based on size threshold
     const threshold = this.configService.getGeminiFilesApiThreshold();
-    console.error(
-      `[FileService] Buffer size: ${buffer.length}, Threshold: ${threshold}`
-    );
 
     if (buffer.length <= threshold) {
       // Use inline data for small images
-      const result = `data:${mimeType};base64,${buffer.toString('base64')}`;
-      console.error(
-        `[FileService] Returning inline data URL: ${result.substring(0, 100)}...`
-      );
-      return result;
+      return `data:${mimeType};base64,${buffer.toString('base64')}`;
     } else {
       // Use Files API for large images
-      const result = await this.uploadFile(
+      return await this.uploadFile(
         buffer,
         filename || `image.${this.getFileExtension(mimeType)}`,
         mimeType
       );
-      console.error(`[FileService] Returning file URI: ${result}`);
-      return result;
     }
   }
 
@@ -86,17 +72,44 @@ export class FileService {
       return videoSource;
     }
 
-    // If it's a local file path, upload to storage
-    if (this.isLocalFilePath(videoSource)) {
-      return await this.handleLocalFile(videoSource);
-    }
-
     // If it's a file reference (files/...), return as-is
     if (videoSource.startsWith('files/')) {
       return videoSource;
     }
 
+    // If it's a local file path, check size and decide between inline or Files API
+    if (this.isLocalFilePath(videoSource)) {
+      return await this.handleLocalVideoFile(videoSource);
+    }
+
     throw new FileUploadError(`Invalid video source format: ${videoSource}`);
+  }
+
+  private async handleLocalVideoFile(filePath: string): Promise<string> {
+    try {
+      const normalizedPath = path.normalize(filePath);
+      await fs.access(normalizedPath);
+      const buffer = await fs.readFile(normalizedPath);
+      const filename = path.basename(normalizedPath);
+      const mimeType = this.getMimeType(filename, buffer);
+
+      // Fail fast if MIME type is unknown
+      if (!mimeType.startsWith('video/')) {
+        throw new FileUploadError(
+          `Cannot process local video: unknown MIME type "${mimeType}". File: ${filename}`
+        );
+      }
+
+      // Always upload local videos to avoid memory bloat from base64 expansion
+      return await this.uploadFile(buffer, filename, mimeType);
+    } catch (error) {
+      if (error instanceof FileUploadError) {
+        throw error;
+      }
+      throw new FileUploadError(
+        `Failed to process local video file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   async uploadFile(
@@ -165,31 +178,71 @@ export class FileService {
     }
 
     if (this.isPublicUrl(imageSource)) {
-      // Handle URL images
-      try {
-        // Decode URL-encoded characters to handle escaped sequences like \&
-        const decodedUrl = imageSource.replace(/\\&/g, '&');
-        console.error(`[FileService] Fetching URL: ${decodedUrl}`);
+      // Handle URL images with retry logic
+      const maxRetries = 3;
+      const timeoutMs = 30000; // 30 seconds
+      const retryDelays = [1000, 2000, 4000]; // 1s, 2s, 4s exponential backoff
 
-        const response = await fetch(decodedUrl);
-        if (!response.ok) {
-          throw new FileUploadError(
-            `Failed to fetch image from URL: ${decodedUrl} (Status: ${response.status})`
-          );
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          // Decode URL-encoded characters to handle escaped sequences like \&
+          const decodedUrl = imageSource.replace(/\\&/g, '&');
+          const redactedUrl = redactUrl(decodedUrl);
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          try {
+            const response = await fetch(decodedUrl, {
+              signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+              // Fail fast on 4xx errors (except 429 which is retryable)
+              if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                throw new FileUploadError(
+                  `Failed to fetch image from ${redactedUrl} (Status: ${response.status})`
+                );
+              }
+              throw new FileUploadError(
+                `Failed to fetch image from ${redactedUrl} (Status: ${response.status})`
+              );
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const filename = decodedUrl.split('/').pop() || 'image.jpg';
+            const mimeType = this.getMimeType(filename, buffer);
+            return { buffer, mimeType, filename };
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            throw fetchError;
+          }
+        } catch (error) {
+          const isLastAttempt = attempt === maxRetries - 1;
+          const errorMsg = redactError(error);
+
+          // Check if this is a terminal error (4xx except 429)
+          if (error instanceof FileUploadError && error.message.includes('Status: 4')) {
+            const statusMatch = error.message.match(/Status: (\d+)/);
+            if (statusMatch) {
+              const status = parseInt(statusMatch[1], 10);
+              if (status >= 400 && status < 500 && status !== 429) {
+                throw error; // Fail fast on terminal 4xx errors
+              }
+            }
+          }
+
+          if (isLastAttempt) {
+            throw new FileUploadError(
+              `Failed to download image from URL after ${maxRetries} attempts: ${errorMsg}`
+            );
+          }
+
+          const delayMs = retryDelays[attempt];
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const filename = decodedUrl.split('/').pop() || 'image.jpg';
-        const mimeType = this.getMimeType(filename, buffer);
-        console.error(
-          `[FileService] Successfully fetched image - size: ${buffer.length}, mimeType: ${mimeType}`
-        );
-        return { buffer, mimeType, filename };
-      } catch (error) {
-        console.error(`[FileService] Error fetching URL:`, error);
-        throw new FileUploadError(
-          `Failed to download image from URL: ${error instanceof Error ? error.message : String(error)}`
-        );
       }
     }
 
@@ -210,51 +263,6 @@ export class FileService {
     }
 
     throw new FileUploadError(`Invalid image source format: ${imageSource}`);
-  }
-
-  private async handleBase64Image(base64Data: string): Promise<string> {
-    try {
-      // Extract the base64 content and MIME type
-      const matches = base64Data.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-      if (!matches) {
-        throw new FileUploadError('Invalid base64 image format');
-      }
-
-      const mimeType = `image/${matches[1]}`;
-      const buffer = Buffer.from(matches[2], 'base64');
-
-      return await this.uploadFile(buffer, `image.${matches[1]}`, mimeType);
-    } catch (error) {
-      throw new FileUploadError(
-        `Failed to process base64 image: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-
-  private async handleLocalFile(filePath: string): Promise<string> {
-    try {
-      // Normalize file path for cross-platform compatibility
-      const normalizedPath = path.normalize(filePath);
-
-      // Check if file exists
-      await fs.access(normalizedPath);
-
-      // Read file
-      const buffer = await fs.readFile(normalizedPath);
-      const filename = path.basename(normalizedPath);
-
-      // Determine MIME type
-      const mimeType = this.getMimeType(filename, buffer);
-
-      return await this.uploadFile(buffer, filename, mimeType);
-    } catch (error) {
-      if (error instanceof FileUploadError) {
-        throw error;
-      }
-      throw new FileUploadError(
-        `Failed to process local file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
   }
 
   private isPublicUrl(url: string): boolean {
