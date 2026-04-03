@@ -1,0 +1,201 @@
+{
+  "experiment_id": "v8",
+  "timestamp": "2026-04-02T16:18:41.126273Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        173,
+        323,
+        209,
+        359
+      ],
+      "box_2d": [
+        310,
+        311,
+        374,
+        346
+      ],
+      "blur_radius": 3,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        279,
+        433,
+        317,
+        471
+      ],
+      "box_2d": [
+        500,
+        417,
+        568,
+        454
+      ],
+      "blur_radius": 1,
+      "apply_noise": false,
+      "reduce_contrast": true
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        228,
+        327,
+        266,
+        365
+      ],
+      "box_2d": [
+        408,
+        315,
+        476,
+        352
+      ],
+      "blur_radius": 3,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        234,
+        366,
+        282,
+        414
+      ],
+      "box_2d": [
+        419,
+        353,
+        505,
+        399
+      ],
+      "blur_radius": 1,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        260,
+        582,
+        304,
+        626
+      ],
+      "box_2d": [
+        465,
+        561,
+        544,
+        604
+      ],
+      "blur_radius": 3,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        255,
+        507,
+        301,
+        553
+      ],
+      "box_2d": [
+        456,
+        489,
+        539,
+        533
+      ],
+      "blur_radius": 1,
+      "apply_noise": false,
+      "reduce_contrast": true
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        229,
+        556,
+        255,
+        582
+      ],
+      "box_2d": [
+        410,
+        536,
+        456,
+        561
+      ],
+      "blur_radius": 3,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        388,
+        780,
+        426,
+        818
+      ],
+      "box_2d": [
+        695,
+        752,
+        763,
+        789
+      ],
+      "blur_radius": 2,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        365,
+        830,
+        393,
+        858
+      ],
+      "box_2d": [
+        654,
+        801,
+        704,
+        828
+      ],
+      "blur_radius": 2,
+      "apply_noise": true,
+      "reduce_contrast": true
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        431,
+        744,
+        469,
+        782
+      ],
+      "box_2d": [
+        772,
+        718,
+        840,
+        754
+      ],
+      "blur_radius": 1,
+      "apply_noise": true,
+      "reduce_contrast": true
+    }
+  ]
+}

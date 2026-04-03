@@ -1,0 +1,156 @@
+{
+  "experiment_id": "ultra_v5",
+  "timestamp": "2026-04-02T17:26:46.673534Z",
+  "mode": "ultra_hard",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red box",
+      "color": "red",
+      "abs_box_2d": [
+        210,
+        624,
+        304,
+        718
+      ],
+      "box_2d": [
+        376,
+        602,
+        544,
+        693
+      ]
+    },
+    {
+      "label": "blue box",
+      "color": "blue",
+      "abs_box_2d": [
+        170,
+        509,
+        262,
+        601
+      ],
+      "box_2d": [
+        304,
+        491,
+        469,
+        580
+      ]
+    },
+    {
+      "label": "green box",
+      "color": "green",
+      "abs_box_2d": [
+        305,
+        539,
+        409,
+        643
+      ],
+      "box_2d": [
+        546,
+        520,
+        732,
+        620
+      ]
+    },
+    {
+      "label": "yellow box",
+      "color": "yellow",
+      "abs_box_2d": [
+        178,
+        764,
+        278,
+        864
+      ],
+      "box_2d": [
+        318,
+        737,
+        498,
+        833
+      ]
+    },
+    {
+      "label": "purple box",
+      "color": "purple",
+      "abs_box_2d": [
+        81,
+        752,
+        195,
+        866
+      ],
+      "box_2d": [
+        145,
+        725,
+        349,
+        835
+      ]
+    },
+    {
+      "label": "orange box",
+      "color": "orange",
+      "abs_box_2d": [
+        94,
+        717,
+        202,
+        825
+      ],
+      "box_2d": [
+        168,
+        692,
+        362,
+        796
+      ]
+    },
+    {
+      "label": "pink box",
+      "color": "pink",
+      "abs_box_2d": [
+        395,
+        716,
+        471,
+        792
+      ],
+      "box_2d": [
+        707,
+        691,
+        844,
+        764
+      ]
+    },
+    {
+      "label": "cyan box",
+      "color": "cyan",
+      "abs_box_2d": [
+        377,
+        602,
+        469,
+        694
+      ],
+      "box_2d": [
+        675,
+        581,
+        840,
+        669
+      ]
+    },
+    {
+      "label": "red box",
+      "color": "red",
+      "abs_box_2d": [
+        337,
+        609,
+        437,
+        709
+      ],
+      "box_2d": [
+        603,
+        587,
+        783,
+        684
+      ]
+    }
+  ]
+}

@@ -487,10 +487,17 @@ export abstract class BaseVisionProvider implements VisionProvider {
    * Gemini 2.5 series uses thinkingBudget (number of tokens)
    * Gemini 3 series uses thinkingLevel (MINIMAL, LOW, MEDIUM, HIGH)
    */
-  protected getThinkingConfig(model: string):
+  protected getThinkingConfig(
+    model: string
+  ):
     | { type: 'budget'; value: number }
     | { type: 'level'; value: 'MINIMAL' | 'LOW' | 'MEDIUM' | 'HIGH' }
     | undefined {
+    // Models that don't support thinking configuration
+    if (model.includes('gemma-4')) {
+      return undefined;
+    }
+
     // Gemini 2.5 series - uses thinkingBudget
     if (model.includes('gemini-2.5')) {
       if (

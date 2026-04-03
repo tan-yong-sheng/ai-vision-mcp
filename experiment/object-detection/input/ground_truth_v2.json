@@ -1,0 +1,123 @@
+{
+  "experiment_id": "v2",
+  "timestamp": "2026-04-02T16:05:41.283545Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red circle",
+      "color": "red",
+      "abs_box_2d": [
+        170,
+        66,
+        254,
+        150
+      ],
+      "box_2d": [
+        304,
+        63,
+        455,
+        144
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        96,
+        885,
+        152,
+        941
+      ],
+      "box_2d": [
+        172,
+        854,
+        272,
+        908
+      ]
+    },
+    {
+      "label": "green circle",
+      "color": "green",
+      "abs_box_2d": [
+        276,
+        7,
+        362,
+        93
+      ],
+      "box_2d": [
+        494,
+        6,
+        648,
+        89
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        198,
+        428,
+        252,
+        482
+      ],
+      "box_2d": [
+        354,
+        413,
+        451,
+        465
+      ]
+    },
+    {
+      "label": "purple circle",
+      "color": "purple",
+      "abs_box_2d": [
+        443,
+        108,
+        527,
+        192
+      ],
+      "box_2d": [
+        793,
+        104,
+        944,
+        185
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        174,
+        766,
+        250,
+        842
+      ],
+      "box_2d": [
+        311,
+        739,
+        448,
+        812
+      ]
+    },
+    {
+      "label": "pink circle",
+      "color": "pink",
+      "abs_box_2d": [
+        276,
+        689,
+        384,
+        797
+      ],
+      "box_2d": [
+        494,
+        665,
+        688,
+        769
+      ]
+    }
+  ]
+}

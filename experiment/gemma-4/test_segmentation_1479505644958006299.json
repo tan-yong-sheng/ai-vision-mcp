@@ -1,0 +1,79 @@
+{
+  "model": "gemma-4-31b-it",
+  "mode": "segmentation",
+  "detections": [
+    {
+      "box_2d": [
+        461,
+        249,
+        572,
+        336
+      ],
+      "label": "car",
+      "confidence": 0.95
+    },
+    {
+      "box_2d": [
+        478,
+        617,
+        557,
+        691
+      ],
+      "label": "car",
+      "confidence": 0.9
+    },
+    {
+      "box_2d": [
+        475,
+        448,
+        522,
+        483
+      ],
+      "label": "car",
+      "confidence": 0.8
+    },
+    {
+      "box_2d": [
+        478,
+        425,
+        515,
+        448
+      ],
+      "label": "car",
+      "confidence": 0.75
+    },
+    {
+      "box_2d": [
+        466,
+        536,
+        522,
+        586
+      ],
+      "label": "car",
+      "confidence": 0.85
+    }
+  ],
+  "image_metadata": {
+    "width": 480,
+    "height": 300,
+    "size_bytes": 46596,
+    "format": "JPEG"
+  },
+  "processing_time_ms": 31335.04605293274,
+  "metadata": {
+    "model": "gemma-4-31b-it",
+    "provider": "google",
+    "mode": "segmentation",
+    "processingTime": 31335.04605293274,
+    "fileType": "image/jpeg",
+    "fileSize": 46596,
+    "modelVersion": "gemma-4-31b-it",
+    "responseId": "b0169926-2f31-439b-bf6a-fbe3daadd19b",
+    "experiment_id": "1479505644958006299",
+    "coordinateScale": 1000,
+    "coordinateFormat": "[ymin, xmin, ymax, xmax]",
+    "coordinateOrigin": "top-left",
+    "detectionMethod": "vision",
+    "timestamp": "2026-04-03T07:30:39.775574Z"
+  }
+}

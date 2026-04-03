@@ -1,0 +1,44 @@
+{
+  "experiment_id": "ultra_v1_grid",
+  "timestamp": "2026-04-02T17:18:13.533735Z",
+  "mode": "pybullet",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "yellow box",
+      "color": "yellow",
+      "abs_box_2d": [
+        116,
+        155,
+        396,
+        467
+      ],
+      "box_2d": [
+        207,
+        149,
+        709,
+        450
+      ]
+    },
+    {
+      "label": "purple box",
+      "color": "purple",
+      "abs_box_2d": [
+        116,
+        310,
+        396,
+        622
+      ],
+      "box_2d": [
+        207,
+        299,
+        709,
+        600
+      ]
+    }
+  ]
+}

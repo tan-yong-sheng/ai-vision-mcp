@@ -1,0 +1,28 @@
+{
+  "experiment_id": "ultra_v1_test",
+  "timestamp": "2026-04-02T17:17:03.840598Z",
+  "mode": "pybullet",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "yellow box",
+      "color": "yellow",
+      "abs_box_2d": [
+        183,
+        510,
+        494,
+        856
+      ],
+      "box_2d": [
+        327,
+        492,
+        885,
+        826
+      ]
+    }
+  ]
+}

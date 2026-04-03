@@ -1,0 +1,171 @@
+{
+  "experiment_id": "v6",
+  "timestamp": "2026-04-02T16:10:15.397366Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red circle",
+      "color": "red",
+      "abs_box_2d": [
+        75,
+        217,
+        193,
+        335
+      ],
+      "box_2d": [
+        134,
+        209,
+        345,
+        323
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        84,
+        440,
+        140,
+        496
+      ],
+      "box_2d": [
+        150,
+        424,
+        250,
+        478
+      ]
+    },
+    {
+      "label": "green circle",
+      "color": "green",
+      "abs_box_2d": [
+        355,
+        703,
+        443,
+        791
+      ],
+      "box_2d": [
+        636,
+        678,
+        793,
+        763
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        373,
+        398,
+        423,
+        448
+      ],
+      "box_2d": [
+        668,
+        384,
+        758,
+        432
+      ]
+    },
+    {
+      "label": "purple circle",
+      "color": "purple",
+      "abs_box_2d": [
+        296,
+        751,
+        380,
+        835
+      ],
+      "box_2d": [
+        530,
+        724,
+        681,
+        805
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        329,
+        475,
+        365,
+        511
+      ],
+      "box_2d": [
+        589,
+        458,
+        654,
+        493
+      ]
+    },
+    {
+      "label": "pink circle",
+      "color": "pink",
+      "abs_box_2d": [
+        221,
+        433,
+        293,
+        505
+      ],
+      "box_2d": [
+        396,
+        417,
+        525,
+        487
+      ]
+    },
+    {
+      "label": "cyan rectangle",
+      "color": "cyan",
+      "abs_box_2d": [
+        260,
+        226,
+        324,
+        290
+      ],
+      "box_2d": [
+        465,
+        218,
+        580,
+        279
+      ]
+    },
+    {
+      "label": "brown circle",
+      "color": "brown",
+      "abs_box_2d": [
+        309,
+        233,
+        419,
+        343
+      ],
+      "box_2d": [
+        553,
+        224,
+        750,
+        331
+      ]
+    },
+    {
+      "label": "gray rectangle",
+      "color": "gray",
+      "abs_box_2d": [
+        312,
+        482,
+        378,
+        548
+      ],
+      "box_2d": [
+        559,
+        465,
+        677,
+        528
+      ]
+    }
+  ]
+}

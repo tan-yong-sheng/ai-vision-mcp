@@ -1,0 +1,119 @@
+{
+  "model": "gemini-robotics-er-1.5",
+  "mode": "segmentation",
+  "detections": [
+    {
+      "box_2d": [
+        557,
+        424,
+        599,
+        464
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "green square"
+    },
+    {
+      "box_2d": [
+        642,
+        608,
+        729,
+        689
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "green square"
+    },
+    {
+      "box_2d": [
+        659,
+        453,
+        747,
+        500
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "blue square"
+    },
+    {
+      "box_2d": [
+        659,
+        470,
+        707,
+        514
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "yellow square"
+    },
+    {
+      "box_2d": [
+        659,
+        370,
+        747,
+        420
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "red square"
+    },
+    {
+      "box_2d": [
+        538,
+        730,
+        619,
+        770
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "red square"
+    },
+    {
+      "box_2d": [
+        560,
+        720,
+        642,
+        760
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "purple square"
+    },
+    {
+      "box_2d": [
+        599,
+        720,
+        681,
+        760
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "yellow square"
+    },
+    {
+      "box_2d": [
+        608,
+        710,
+        689,
+        750
+      ],
+      "mask": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVR42mNgGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUbAKRsEoGAWjYBSMglEwCgAASgAB+1/1+AAAAABJRU5ErkJggg==",
+      "label": "blue square"
+    }
+  ],
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "size_bytes": 1237715,
+    "format": "PNG"
+  },
+  "processing_time_ms": 25717.788219451904,
+  "metadata": {
+    "model": "gemini-robotics-er-1.5",
+    "provider": "google",
+    "mode": "segmentation",
+    "processingTime": 25717.788219451904,
+    "fileType": "image/png",
+    "fileSize": 1237715,
+    "modelVersion": "gemini-robotics-er-1.5",
+    "responseId": "f888e97c-d073-490f-8229-b780c88d8e08",
+    "experiment_id": "v7",
+    "coordinateScale": 1000,
+    "coordinateFormat": "[ymin, xmin, ymax, xmax]",
+    "coordinateOrigin": "top-left",
+    "detectionMethod": "vision",
+    "timestamp": "2026-04-02T16:50:16.412096Z"
+  }
+}

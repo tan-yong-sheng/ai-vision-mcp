@@ -1,0 +1,28 @@
+{
+  "experiment_id": "ultra_pybullet_v1",
+  "timestamp": "2026-04-02T17:22:27.711016Z",
+  "mode": "pybullet",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "orange box",
+      "color": "orange",
+      "abs_box_2d": [
+        0,
+        0,
+        557,
+        1035
+      ],
+      "box_2d": [
+        0,
+        0,
+        998,
+        999
+      ]
+    }
+  ]
+}

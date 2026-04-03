@@ -1,0 +1,267 @@
+{
+  "experiment_id": "v12",
+  "timestamp": "2026-04-02T16:21:18.511789Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        100,
+        489,
+        144,
+        533
+      ],
+      "box_2d": [
+        179,
+        472,
+        258,
+        514
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        84,
+        495,
+        104,
+        515
+      ],
+      "box_2d": [
+        150,
+        477,
+        186,
+        497
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        79,
+        490,
+        123,
+        534
+      ],
+      "box_2d": [
+        141,
+        472,
+        220,
+        515
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        89,
+        372,
+        115,
+        398
+      ],
+      "box_2d": [
+        159,
+        359,
+        206,
+        384
+      ]
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        292,
+        219,
+        336,
+        263
+      ],
+      "box_2d": [
+        523,
+        211,
+        602,
+        253
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        318,
+        82,
+        338,
+        102
+      ],
+      "box_2d": [
+        569,
+        79,
+        605,
+        98
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        360,
+        229,
+        384,
+        253
+      ],
+      "box_2d": [
+        645,
+        221,
+        688,
+        244
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        312,
+        160,
+        338,
+        186
+      ],
+      "box_2d": [
+        559,
+        154,
+        605,
+        179
+      ]
+    },
+    {
+      "label": "purple rectangle",
+      "color": "purple",
+      "abs_box_2d": [
+        227,
+        115,
+        265,
+        153
+      ],
+      "box_2d": [
+        406,
+        111,
+        474,
+        147
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        242,
+        203,
+        266,
+        227
+      ],
+      "box_2d": [
+        433,
+        195,
+        476,
+        219
+      ]
+    },
+    {
+      "label": "pink rectangle",
+      "color": "pink",
+      "abs_box_2d": [
+        210,
+        96,
+        252,
+        138
+      ],
+      "box_2d": [
+        376,
+        92,
+        451,
+        133
+      ]
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        381,
+        696,
+        411,
+        726
+      ],
+      "box_2d": [
+        682,
+        671,
+        736,
+        700
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        348,
+        638,
+        378,
+        668
+      ],
+      "box_2d": [
+        623,
+        615,
+        677,
+        644
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        367,
+        705,
+        403,
+        741
+      ],
+      "box_2d": [
+        657,
+        680,
+        722,
+        715
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        337,
+        627,
+        371,
+        661
+      ],
+      "box_2d": [
+        603,
+        605,
+        664,
+        638
+      ]
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        394,
+        839,
+        426,
+        871
+      ],
+      "box_2d": [
+        706,
+        809,
+        763,
+        840
+      ]
+    }
+  ]
+}

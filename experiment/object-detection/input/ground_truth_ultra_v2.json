@@ -1,0 +1,140 @@
+{
+  "experiment_id": "ultra_v2",
+  "timestamp": "2026-04-02T17:25:08.486429Z",
+  "mode": "ultra_hard",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red box",
+      "color": "red",
+      "abs_box_2d": [
+        355,
+        807,
+        465,
+        917
+      ],
+      "box_2d": [
+        636,
+        778,
+        833,
+        885
+      ]
+    },
+    {
+      "label": "blue box",
+      "color": "blue",
+      "abs_box_2d": [
+        286,
+        860,
+        388,
+        962
+      ],
+      "box_2d": [
+        512,
+        830,
+        695,
+        928
+      ]
+    },
+    {
+      "label": "green box",
+      "color": "green",
+      "abs_box_2d": [
+        98,
+        161,
+        168,
+        231
+      ],
+      "box_2d": [
+        175,
+        155,
+        301,
+        222
+      ]
+    },
+    {
+      "label": "yellow box",
+      "color": "yellow",
+      "abs_box_2d": [
+        61,
+        152,
+        181,
+        272
+      ],
+      "box_2d": [
+        109,
+        146,
+        324,
+        262
+      ]
+    },
+    {
+      "label": "purple box",
+      "color": "purple",
+      "abs_box_2d": [
+        260,
+        200,
+        364,
+        304
+      ],
+      "box_2d": [
+        465,
+        193,
+        652,
+        293
+      ]
+    },
+    {
+      "label": "orange box",
+      "color": "orange",
+      "abs_box_2d": [
+        205,
+        298,
+        249,
+        342
+      ],
+      "box_2d": [
+        367,
+        287,
+        446,
+        330
+      ]
+    },
+    {
+      "label": "pink box",
+      "color": "pink",
+      "abs_box_2d": [
+        434,
+        334,
+        516,
+        416
+      ],
+      "box_2d": [
+        777,
+        322,
+        924,
+        401
+      ]
+    },
+    {
+      "label": "cyan box",
+      "color": "cyan",
+      "abs_box_2d": [
+        460,
+        338,
+        522,
+        400
+      ],
+      "box_2d": [
+        824,
+        326,
+        935,
+        386
+      ]
+    }
+  ]
+}

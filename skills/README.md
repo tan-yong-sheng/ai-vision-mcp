@@ -8,8 +8,6 @@ This directory contains reusable agent skills for the AI Vision MCP project, com
 skills/
 └── ai-vision-mcp/
     ├── SKILL.md              # Main skill definition with YAML frontmatter
-    ├── scripts/              # Optional executable scripts
-    └── references/           # Optional supporting documentation
 ```
 
 ## Skill: ai-vision-mcp

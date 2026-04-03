@@ -1,0 +1,21 @@
+{
+  "experiment_id": "1479505644958006299",
+  "timestamp": "2026-04-02T18:05:59.796089Z",
+  "ground_truth_path": "/workspaces/ai-vision-mcp/experiment/object-detection-v2/input/ground_truth_1479505644958006299.json",
+  "api_output_path": "/workspaces/ai-vision-mcp/experiment/object-detection-v2/output/test_segmentation_1479505644958006299.json",
+  "api_response_id": "e1229efc-5bb6-4681-8d1e-7617657b785f",
+  "ground_truth_count": 9,
+  "api_detections_count": 25,
+  "metrics": {
+    "matched_count": 4,
+    "unmatched_gt_count": 5,
+    "unmatched_detections_count": 21,
+    "precision": 0.16,
+    "recall": 0.444,
+    "f1_score": 0.235,
+    "avg_iou": 0.675,
+    "coverage_pct": 44.4,
+    "spillover_pct": 84.0,
+    "accuracy_score": 37.7
+  }
+}

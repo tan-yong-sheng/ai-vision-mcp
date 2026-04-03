@@ -22,8 +22,8 @@ import type {
 import { ImageAnnotator } from '../utils/imageAnnotator.js';
 import { Image } from 'imagescript';
 
-// System instruction for object detection with web context awareness
-const DETECTION_SYSTEM_INSTRUCTION = `
+// Base system instruction for object detection
+const BASE_DETECTION_INSTRUCTION = `
 You are a visual detection assistant that names detected objects based on image context.
 
 STEP 1 - DETECT CONTEXT:
@@ -70,83 +70,53 @@ Knowledge Graph MID:
 - Omit if uncertain or for generic objects
 `;
 
-// Detection schema equivalent to the one in gemini_object_detection.js
-const createDetectionSchema = (provider: string) => {
-  if (provider === 'google') {
-    // Google GenAI schema format
-    return {
+function buildDetectionSystemInstruction(): string {
+  return BASE_DETECTION_INSTRUCTION;
+}
+
+// Detection schema for object detection
+const createDetectionSchema = () => {
+  const baseProperties = {
+    object: {
+      type: 'string',
+      description: 'Generic category for detected object element.',
+    },
+    label: {
+      type: 'string',
+      description: 'Descriptive label or instance-specific detail.',
+    },
+    normalized_box_2d: {
       type: 'array',
+      minItems: 4,
+      maxItems: 4,
       items: {
-        type: 'object',
-        properties: {
-          object: {
-            type: 'string',
-            description: 'Generic category for detected object element.',
-          },
-          label: {
-            type: 'string',
-            description: 'Descriptive label or instance-specific detail.',
-          },
-          normalized_box_2d: {
-            type: 'array',
-            minItems: 4,
-            maxItems: 4,
-            items: {
-              type: 'integer',
-            },
-            description:
-              'Bounding box coordinates [ymin, xmin, ymax, xmax], normalized to 0-1000',
-          },
-          confidence: {
-            type: 'number',
-            description: 'Detection confidence score (0.0-1.0)',
-          },
-          mid: {
-            type: 'string',
-            description: 'Optional Knowledge Graph Machine ID (e.g., /m/02j81)',
-          },
-        },
-        required: ['object', 'label', 'normalized_box_2d', 'confidence'],
+        type: 'integer',
       },
-    };
-  } else {
-    // Vertex AI and other providers - standard JSON schema
-    return {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          object: {
-            type: 'string',
-            description: 'Generic category for detected object element.',
-          },
-          label: {
-            type: 'string',
-            description: 'Descriptive label or instance-specific detail.',
-          },
-          normalized_box_2d: {
-            type: 'array',
-            minItems: 4,
-            maxItems: 4,
-            items: {
-              type: 'integer',
-            },
-            description:
-              'Bounding box coordinates [ymin, xmin, ymax, xmax], normalized to 0-1000',
-          },
-          confidence: {
-            type: 'number',
-            description: 'Detection confidence score (0.0-1.0)',
-          },
-          mid: {
-            type: 'string',
-            description: 'Optional Knowledge Graph Machine ID (e.g., /m/02j81)',
-          },
-        },
-        required: ['object', 'label', 'normalized_box_2d', 'confidence'],
-      },
-    };
-  }
+      description:
+        'Bounding box coordinates [ymin, xmin, ymax, xmax], normalized to 0-1000',
+    },
+    confidence: {
+      type: 'number',
+      description: 'Detection confidence score (0.0-1.0)',
+    },
+    mid: {
+      type: 'string',
+      description: 'Optional Knowledge Graph Machine ID (e.g., /m/02j81)',
+    },
+  };
+
+  const requiredFields = ['object', 'label', 'normalized_box_2d', 'confidence'];
+
+  const schema = {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: baseProperties,
+      required: requiredFields,
+    },
+  };
+
+  return schema;
 };
 
 export type { ObjectDetectionArgs } from '../types/ObjectDetection.js';
@@ -407,6 +377,9 @@ export async function detect_objects_in_image(
     // Use the provided prompt as the detection query
     const detectionPrompt = args.prompt;
 
+    // Build system instruction
+    const systemInstruction = buildDetectionSystemInstruction();
+
     // Merge default options with provided options
     const options: AnalysisOptions = {
       temperature:
@@ -428,9 +401,9 @@ export async function detect_objects_in_image(
       taskType: 'image',
       functionName: FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE,
       // Add structured output configuration for object detection
-      responseSchema: createDetectionSchema(config.IMAGE_PROVIDER),
+      responseSchema: createDetectionSchema(),
       // Add system instruction to guide the model's behavior
-      systemInstruction: DETECTION_SYSTEM_INSTRUCTION,
+      systemInstruction: systemInstruction,
       ...args.options, // User options override defaults
     };
 

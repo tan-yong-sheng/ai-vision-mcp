@@ -1,0 +1,187 @@
+{
+  "experiment_id": "v5",
+  "timestamp": "2026-04-02T16:09:32.679709Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red circle",
+      "color": "red",
+      "abs_box_2d": [
+        271,
+        486,
+        377,
+        592
+      ],
+      "box_2d": [
+        485,
+        469,
+        675,
+        571
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        358,
+        814,
+        412,
+        868
+      ],
+      "box_2d": [
+        641,
+        785,
+        738,
+        837
+      ]
+    },
+    {
+      "label": "green circle",
+      "color": "green",
+      "abs_box_2d": [
+        264,
+        140,
+        348,
+        224
+      ],
+      "box_2d": [
+        473,
+        135,
+        623,
+        216
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        213,
+        810,
+        281,
+        878
+      ],
+      "box_2d": [
+        381,
+        781,
+        503,
+        847
+      ]
+    },
+    {
+      "label": "purple circle",
+      "color": "purple",
+      "abs_box_2d": [
+        255,
+        370,
+        347,
+        462
+      ],
+      "box_2d": [
+        456,
+        357,
+        621,
+        445
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        276,
+        219,
+        322,
+        265
+      ],
+      "box_2d": [
+        494,
+        211,
+        577,
+        255
+      ]
+    },
+    {
+      "label": "pink circle",
+      "color": "pink",
+      "abs_box_2d": [
+        77,
+        164,
+        157,
+        244
+      ],
+      "box_2d": [
+        137,
+        158,
+        281,
+        235
+      ]
+    },
+    {
+      "label": "cyan rectangle",
+      "color": "cyan",
+      "abs_box_2d": [
+        199,
+        893,
+        259,
+        953
+      ],
+      "box_2d": [
+        356,
+        861,
+        464,
+        919
+      ]
+    },
+    {
+      "label": "brown circle",
+      "color": "brown",
+      "abs_box_2d": [
+        121,
+        118,
+        219,
+        216
+      ],
+      "box_2d": [
+        216,
+        113,
+        392,
+        208
+      ]
+    },
+    {
+      "label": "gray rectangle",
+      "color": "gray",
+      "abs_box_2d": [
+        299,
+        370,
+        335,
+        406
+      ],
+      "box_2d": [
+        535,
+        357,
+        600,
+        391
+      ]
+    },
+    {
+      "label": "red circle",
+      "color": "red",
+      "abs_box_2d": [
+        107,
+        753,
+        221,
+        867
+      ],
+      "box_2d": [
+        191,
+        726,
+        396,
+        836
+      ]
+    }
+  ]
+}

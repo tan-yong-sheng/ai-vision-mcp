@@ -1,0 +1,251 @@
+{
+  "experiment_id": "v20",
+  "timestamp": "2026-04-02T16:28:04.440267Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        381,
+        643,
+        417,
+        679
+      ],
+      "box_2d": [
+        682,
+        620,
+        747,
+        655
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        314,
+        680,
+        342,
+        708
+      ],
+      "box_2d": [
+        562,
+        656,
+        612,
+        683
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        317,
+        621,
+        359,
+        663
+      ],
+      "box_2d": [
+        568,
+        599,
+        643,
+        639
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        298,
+        524,
+        336,
+        562
+      ],
+      "box_2d": [
+        534,
+        505,
+        602,
+        542
+      ]
+    },
+    {
+      "label": "purple rectangle",
+      "color": "purple",
+      "abs_box_2d": [
+        374,
+        670,
+        414,
+        710
+      ],
+      "box_2d": [
+        670,
+        646,
+        741,
+        685
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        319,
+        502,
+        343,
+        526
+      ],
+      "box_2d": [
+        571,
+        484,
+        614,
+        507
+      ]
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        290,
+        517,
+        330,
+        557
+      ],
+      "box_2d": [
+        519,
+        499,
+        591,
+        537
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        254,
+        378,
+        290,
+        414
+      ],
+      "box_2d": [
+        455,
+        364,
+        519,
+        399
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        218,
+        403,
+        246,
+        431
+      ],
+      "box_2d": [
+        390,
+        388,
+        440,
+        416
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        362,
+        530,
+        382,
+        550
+      ],
+      "box_2d": [
+        648,
+        511,
+        684,
+        530
+      ]
+    },
+    {
+      "label": "purple rectangle",
+      "color": "purple",
+      "abs_box_2d": [
+        235,
+        418,
+        279,
+        462
+      ],
+      "box_2d": [
+        421,
+        403,
+        500,
+        445
+      ]
+    },
+    {
+      "label": "orange rectangle",
+      "color": "orange",
+      "abs_box_2d": [
+        241,
+        413,
+        269,
+        441
+      ],
+      "box_2d": [
+        431,
+        398,
+        482,
+        425
+      ]
+    },
+    {
+      "label": "pink rectangle",
+      "color": "pink",
+      "abs_box_2d": [
+        258,
+        534,
+        302,
+        578
+      ],
+      "box_2d": [
+        462,
+        515,
+        541,
+        557
+      ]
+    },
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        51,
+        472,
+        95,
+        516
+      ],
+      "box_2d": [
+        91,
+        455,
+        170,
+        498
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        118,
+        581,
+        138,
+        601
+      ],
+      "box_2d": [
+        211,
+        560,
+        247,
+        580
+      ]
+    }
+  ]
+}

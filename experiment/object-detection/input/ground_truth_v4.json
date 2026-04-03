@@ -1,0 +1,91 @@
+{
+  "experiment_id": "v4",
+  "timestamp": "2026-04-02T16:07:23.764182Z",
+  "image_metadata": {
+    "width": 1036,
+    "height": 558,
+    "format": "PNG"
+  },
+  "ground_truth_objects": [
+    {
+      "label": "red rectangle",
+      "color": "red",
+      "abs_box_2d": [
+        80,
+        80,
+        180,
+        180
+      ],
+      "box_2d": [
+        143,
+        77,
+        322,
+        173
+      ]
+    },
+    {
+      "label": "blue rectangle",
+      "color": "blue",
+      "abs_box_2d": [
+        80,
+        250,
+        180,
+        350
+      ],
+      "box_2d": [
+        143,
+        241,
+        322,
+        337
+      ]
+    },
+    {
+      "label": "green rectangle",
+      "color": "green",
+      "abs_box_2d": [
+        80,
+        420,
+        180,
+        520
+      ],
+      "box_2d": [
+        143,
+        405,
+        322,
+        501
+      ]
+    },
+    {
+      "label": "yellow rectangle",
+      "color": "yellow",
+      "abs_box_2d": [
+        320,
+        150,
+        420,
+        250
+      ],
+      "box_2d": [
+        573,
+        144,
+        752,
+        241
+      ]
+    },
+    {
+      "label": "purple rectangle",
+      "color": "purple",
+      "abs_box_2d": [
+        320,
+        400,
+        420,
+        500
+      ],
+      "box_2d": [
+        573,
+        386,
+        752,
+        482
+      ]
+    }
+  ]
+}

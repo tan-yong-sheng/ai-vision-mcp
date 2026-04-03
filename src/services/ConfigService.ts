@@ -3,6 +3,8 @@
  */
 
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import type {
   Config,
   GeminiConfig,
@@ -21,8 +23,30 @@ import {
 } from '../constants/FunctionNames.js';
 import { validateConfig, formatZodError } from '../utils/validation.js';
 
-// Load environment variables
-dotenv.config();
+/**
+ * Search up the directory tree for .env file (equivalent to Python's find_dotenv)
+ */
+function findDotEnv(startDir: string = process.cwd()): string | null {
+  let currentDir = startDir;
+  const root = path.parse(currentDir).root;
+
+  while (currentDir !== root) {
+    const envPath = path.join(currentDir, '.env');
+    if (fs.existsSync(envPath)) {
+      return envPath;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  return null;
+}
+
+// Find and load environment variables from .env file
+const envPath = findDotEnv();
+if (envPath) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
 
 export class ConfigService {
   private static instance: ConfigService;
@@ -58,14 +82,20 @@ export class ConfigService {
 
     const cfg = this.config;
 
-    const resolve = (taskType: 'image' | 'video', functionName: FunctionName): string => {
+    const resolve = (
+      taskType: 'image' | 'video',
+      functionName: FunctionName
+    ): string => {
       const fnSpecific = this.getModelForFunction(functionName);
       if (fnSpecific) return fnSpecific;
 
-      const taskSpecific = taskType === 'image' ? cfg.IMAGE_MODEL : cfg.VIDEO_MODEL;
+      const taskSpecific =
+        taskType === 'image' ? cfg.IMAGE_MODEL : cfg.VIDEO_MODEL;
       if (taskSpecific) return taskSpecific;
 
-      return taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-3-flash-preview';
+      return taskType === 'image'
+        ? 'gemini-2.5-flash-lite'
+        : 'gemini-3-flash-preview';
     };
 
     void this.logger.info(
@@ -80,13 +110,17 @@ export class ConfigService {
         function_models: {
           ANALYZE_IMAGE_MODEL: cfg.ANALYZE_IMAGE_MODEL ?? null,
           COMPARE_IMAGES_MODEL: cfg.COMPARE_IMAGES_MODEL ?? null,
-          DETECT_OBJECTS_IN_IMAGE_MODEL: cfg.DETECT_OBJECTS_IN_IMAGE_MODEL ?? null,
+          DETECT_OBJECTS_IN_IMAGE_MODEL:
+            cfg.DETECT_OBJECTS_IN_IMAGE_MODEL ?? null,
           ANALYZE_VIDEO_MODEL: cfg.ANALYZE_VIDEO_MODEL ?? null,
         },
         resolved_models: {
           analyze_image: resolve('image', FUNCTION_NAMES.ANALYZE_IMAGE),
           compare_images: resolve('image', FUNCTION_NAMES.COMPARE_IMAGES),
-          detect_objects_in_image: resolve('image', FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE),
+          detect_objects_in_image: resolve(
+            'image',
+            FUNCTION_NAMES.DETECT_OBJECTS_IN_IMAGE
+          ),
           analyze_video: resolve('video', FUNCTION_NAMES.ANALYZE_VIDEO),
         },
       },
