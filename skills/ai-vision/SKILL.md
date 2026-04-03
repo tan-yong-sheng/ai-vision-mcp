@@ -107,10 +107,20 @@ ai-vision analyze-image image.jpg --prompt "analyze" --json
 
 ### compare-images
 
-Compare 2-4 images side-by-side to identify differences, similarities, or changes.
+Compare 2-4 images side-by-side to identify differences, similarities, or changes. Supports URLs, local files, base64 data, GCS URIs, and file references.
 
 ```bash
 ai-vision compare-images <source1> <source2> [source3] [source4] --prompt <text> [options]
+```
+
+**Options:**
+
+```
+--temperature <num>          Temperature 0-2 (default: 0.7)
+--top-p <num>                Top P 0-1
+--top-k <num>                Top K 1-100
+--max-tokens <num>           Max output tokens
+--json                       Output raw JSON instead of formatted text
 ```
 
 **Examples:**
@@ -124,6 +134,9 @@ ai-vision compare-images v1.png v2.png v3.png --prompt "which is best?"
 
 # Visual regression testing
 ai-vision compare-images baseline.png current.png --prompt "find visual bugs" --json
+
+# Compare images from different sources
+ai-vision compare-images https://example.com/v1.png ./local-v2.png gs://bucket/v3.png --prompt "compare all versions"
 ```
 
 ### detect-objects
@@ -134,6 +147,19 @@ Detect and identify objects in an image with bounding boxes and confidence score
 ai-vision detect-objects <source> --prompt <text> [--output <path>] [options]
 ```
 
+**Options:**
+
+```
+--output <path>              Save annotated image to explicit path (optional)
+--viewport-width <number>    Logical viewport width for web screenshots
+--viewport-height <number>   Logical viewport height for web screenshots
+--temperature <num>          Temperature 0-2 (default: 0.7)
+--top-p <num>                Top P 0-1
+--top-k <num>                Top K 1-100
+--max-tokens <num>           Max output tokens
+--json                       Output raw JSON instead of formatted text
+```
+
 **Examples:**
 
 ```bash
@@ -142,6 +168,9 @@ ai-vision detect-objects photo.jpg --prompt "find all cars"
 
 # Save annotated image with bounding boxes drawn
 ai-vision detect-objects scene.jpg --prompt "detect people" --output annotated.jpg
+
+# Detect web elements with viewport dimensions
+ai-vision detect-objects screenshot.png --prompt "find buttons" --viewport-width 1920 --viewport-height 1080
 
 # Get JSON output
 ai-vision detect-objects image.jpg --prompt "find text" --json
@@ -156,17 +185,36 @@ Returns:
 
 ### analyze-video
 
-Analyze video content frame-by-frame or as a whole.
+Analyze video content frame-by-frame or as a whole. Supports URLs, local files, and YouTube videos.
 
 ```bash
 ai-vision analyze-video <source> --prompt <text> [options]
 ```
 
+**Options:**
+
+```
+--start-offset <time>        Start time for video clipping (e.g., "40s", "2m30s", "00:02:30")
+--end-offset <time>          End time for video clipping (e.g., "80s", "3m", "00:03:00")
+--fps <number>               Frame sampling rate (0.1-30, default: 1)
+--temperature <num>          Temperature 0-2 (default: 0.7)
+--top-p <num>                Top P 0-1
+--top-k <num>                Top K 1-100
+--max-tokens <num>           Max output tokens
+--json                       Output raw JSON instead of formatted text
+```
+
 **Examples:**
 
 ```bash
-# Analyze video
+# Analyze local video
 ai-vision analyze-video recording.mp4 --prompt "describe what happens"
+
+# Analyze YouTube video with context validation
+ai-vision analyze-video https://www.youtube.com/watch?v=dQw4w9WgXcQ --prompt "summarize content"
+
+# Analyze video segment with custom frame rate
+ai-vision analyze-video video.mp4 --prompt "detect bugs" --start-offset 1m --end-offset 3m --fps 2
 
 # Analyze Playwright recording
 ai-vision analyze-video playwright-video.webm --prompt "detect interaction bugs"
@@ -195,6 +243,8 @@ All commands accept multiple input formats:
 - **Local files**: `./path/to/image.jpg`
 - **Base64 data**: `data:image/jpeg;base64,...`
 - **GCS URIs** (Vertex AI): `gs://bucket/path/to/image.jpg`
+- **File references**: `files/...` (reuse previously uploaded files)
+- **YouTube URLs** (analyze-video only): `https://www.youtube.com/watch?v=...`
 
 ## Use Cases
 
