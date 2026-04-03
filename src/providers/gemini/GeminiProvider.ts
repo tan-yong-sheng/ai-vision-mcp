@@ -452,7 +452,7 @@ export class GeminiProvider extends BaseVisionProvider {
       let uploadDuration = 0;
 
       if (videoSource.startsWith('data:video/')) {
-        // Handle inline binary data for videos <100MB
+        // Handle inline binary data for videos ≤50MB
         const matches = videoSource.match(/^data:video\/([a-zA-Z0-9\-+.]+);base64,(.+)$/);
         if (!matches) {
           throw new Error('Invalid inline video data format');

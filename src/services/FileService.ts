@@ -100,8 +100,16 @@ export class FileService {
         );
       }
 
-      // Always upload local videos to avoid memory bloat from base64 expansion
-      return await this.uploadFile(buffer, filename, mimeType);
+      // Inline threshold: 50MB for safe base64 transport
+      const inlineThreshold = 50 * 1024 * 1024;
+
+      if (buffer.length <= inlineThreshold) {
+        // Use inline binary data for videos ≤50MB
+        return `data:${mimeType};base64,${buffer.toString('base64')}`;
+      } else {
+        // Use Files API for videos >50MB
+        return await this.uploadFile(buffer, filename, mimeType);
+      }
     } catch (error) {
       if (error instanceof FileUploadError) {
         throw error;
