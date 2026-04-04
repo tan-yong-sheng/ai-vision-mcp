@@ -246,6 +246,34 @@ All commands accept multiple input formats:
 - **File references**: `files/...` (reuse previously uploaded files)
 - **YouTube URLs** (analyze-video only): `https://www.youtube.com/watch?v=...`
 
+### Supported file formats
+
+**Images**
+- `jpg`, `jpeg`
+- `png`
+- `bmp`
+- `gif`
+- `webp`
+
+**Videos**
+- `mp4`
+- `mov`
+- `avi`
+- `webm`
+- `flv`
+- `mpeg`
+- `mpg`
+- `wmv`
+- `3gp`
+
+**Accepted MIME aliases**
+- Images: `image/jpeg`, `image/png`, `image/bmp`, `image/gif`, `image/webp`
+- Videos: `video/mp4`, `video/mov`, `video/quicktime`, `video/avi`, `video/x-msvideo`, `video/mpeg`, `video/mpg`, `video/webm`, `video/x-flv`, `video/wmv`, `video/x-ms-wmv`, `video/3gpp`
+
+**Remote video handling**
+- Remote video URLs under 50MB are downloaded and passed inline as `data:video/...;base64,...`
+- Remote video URLs at or above 50MB use the Files API upload path
+
 ## Use Cases
 
 ### Design System Analysis

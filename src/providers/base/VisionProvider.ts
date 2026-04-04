@@ -416,7 +416,9 @@ export abstract class BaseVisionProvider implements VisionProvider {
     functionName: FunctionName | undefined
   ): string {
     const systemDefault =
-      taskType === 'image' ? 'gemini-2.5-flash-lite' : 'gemini-3-flash-preview';
+      taskType === 'image'
+        ? ConfigService.getDefaultImageModel()
+        : ConfigService.getDefaultVideoModel();
 
     const enabled =
       process.env.AI_VISION_LOG_MODELS === '1' ||
@@ -509,6 +511,19 @@ export abstract class BaseVisionProvider implements VisionProvider {
       } else if (model.includes('gemini-2.5-pro')) {
         // For pro models, use minimum thinking budget (cannot disable)
         return { type: 'budget', value: 128 };
+      }
+    }
+
+    // Gemini 3.1 series - uses thinkingLevel
+    if (model.includes('gemini-3.1')) {
+      if (model.includes('flash-lite')) {
+        // For Gemini 3.1 Flash Lite Preview, MINIMAL is closest to "off"
+        return { type: 'level', value: 'MINIMAL' };
+      }
+
+      if (model.includes('pro')) {
+        // For Gemini 3.1 Pro, LOW is the minimum (cannot use MINIMAL)
+        return { type: 'level', value: 'LOW' };
       }
     }
 

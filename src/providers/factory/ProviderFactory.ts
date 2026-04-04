@@ -38,10 +38,9 @@ export class VisionProviderFactory {
       const provider = factory();
 
       // Set default models if not configured
-      const defaultModels = this.getDefaultModels(providerName);
       provider.setModel(
-        config.IMAGE_MODEL || defaultModels.image,
-        config.VIDEO_MODEL || defaultModels.video
+        config.IMAGE_MODEL || ConfigService.getDefaultImageModel(),
+        config.VIDEO_MODEL || ConfigService.getDefaultVideoModel()
       );
 
       return provider;
@@ -102,24 +101,6 @@ export class VisionProviderFactory {
   }
 
   /**
-   * Get default models for each provider
-   */
-  private static getDefaultModels(providerName: string): {
-    image: string;
-    video: string;
-  } {
-    const config = ConfigService.getInstance().getConfig();
-
-    // Resolution priority:
-    // 1. IMAGE_MODEL/VIDEO_MODEL (if set) - User's explicit choice
-    // 2. Hardcoded defaults - Last resort
-    return {
-      image: config.IMAGE_MODEL || 'gemini-2.5-flash-lite',
-      video: config.VIDEO_MODEL || 'gemini-3-flash-preview',
-    };
-  }
-
-  /**
    * Initialize default providers
    */
   static initializeDefaultProviders(): void {
@@ -159,10 +140,9 @@ export class VisionProviderFactory {
       const provider = factory();
 
       // Set default models if not configured
-      const defaultModels = this.getDefaultModels(providerName);
       provider.setModel(
-        config.IMAGE_MODEL || defaultModels.image,
-        config.VIDEO_MODEL || defaultModels.video
+        config.IMAGE_MODEL || ConfigService.getDefaultImageModel(),
+        config.VIDEO_MODEL || ConfigService.getDefaultVideoModel()
       );
 
       return provider;

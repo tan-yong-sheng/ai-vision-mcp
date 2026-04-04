@@ -36,7 +36,7 @@ export interface ObjectDetectionArgs {
 
 // Enhanced metadata interface for object detection responses
 export interface ObjectDetectionMetadata {
-  model: string; // "gemini-2.5-flash-lite"
+  model: string; // "gemini-3.1-flash-lite-preview"
   provider: string; // "google" | "vertex_ai"
   usage?: {
     promptTokenCount: number;
@@ -46,7 +46,7 @@ export interface ObjectDetectionMetadata {
   processingTime: number; // milliseconds
   fileType?: string; // "image/png"
   fileSize?: number; // bytes
-  modelVersion?: string; // "gemini-2.5-flash-lite"
+  modelVersion?: string; // "gemini-3.1-flash-lite-preview"
   responseId?: string; // "abc123..."
   fileSaveStatus?: 'saved' | 'skipped_due_to_permissions'; // File save status
   coordinateScale: number; // Coordinate normalization scale (1000)

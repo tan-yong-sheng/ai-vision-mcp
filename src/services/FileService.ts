@@ -3,13 +3,17 @@
  */
 
 import fs from 'fs/promises';
+import fsSync from 'node:fs';
+import os from 'node:os';
 import path from 'path';
-import fetch from 'node-fetch';
+import { Readable } from 'node:stream';
+import fetch, { type Response } from 'node-fetch';
 import type { FileUploadStrategy } from '../types/Providers.js';
 import { FileUploadFactory } from '../file-upload/factory/FileUploadFactory.js';
 import { GeminiProvider } from '../providers/gemini/GeminiProvider.js';
 import { ConfigService } from './ConfigService.js';
 import { redactUrl, redactError } from '../utils/redact.js';
+import { isYouTubeUrl } from '../utils/youtube.js';
 import {
   FileUploadError,
   UnsupportedFileTypeError,
@@ -17,6 +21,9 @@ import {
 } from '../types/Errors.js';
 
 export class FileService {
+  private static readonly REMOTE_VIDEO_INLINE_THRESHOLD = 50 * 1024 * 1024;
+  private static readonly REMOTE_VIDEO_TIMEOUT_MS = 30000;
+
   private uploadStrategy: FileUploadStrategy;
   private configService: ConfigService;
 
@@ -67,14 +74,27 @@ export class FileService {
   }
 
   async handleVideoSource(videoSource: string): Promise<string> {
-    // If it's already a public URL or GCS URI, return as-is
-    if (this.isPublicUrl(videoSource) || this.isGcsUri(videoSource)) {
+    // If it's already a file reference, return as-is
+    if (
+      videoSource.startsWith('files/') ||
+      videoSource.includes('generativelanguage.googleapis.com')
+    ) {
       return videoSource;
     }
 
-    // If it's a file reference (files/...), return as-is
-    if (videoSource.startsWith('files/')) {
+    // If it's a GCS URI, return as-is
+    if (this.isGcsUri(videoSource)) {
       return videoSource;
+    }
+
+    // If it's a YouTube URL, let the provider handle it directly
+    if (this.isPublicUrl(videoSource) && isYouTubeUrl(videoSource)) {
+      return videoSource;
+    }
+
+    // If it's a remote HTTP(S) video, decide between inline data and upload
+    if (this.isPublicUrl(videoSource)) {
+      return await this.handleRemoteVideoFile(videoSource);
     }
 
     // If it's a local file path, check size and decide between inline or Files API
@@ -117,6 +137,170 @@ export class FileService {
       throw new FileUploadError(
         `Failed to process local video file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
       );
+    }
+  }
+
+  private async handleRemoteVideoFile(videoUrl: string): Promise<string> {
+    const inlineThreshold = FileService.REMOTE_VIDEO_INLINE_THRESHOLD;
+    const timeoutMs = FileService.REMOTE_VIDEO_TIMEOUT_MS;
+    const decodedUrl = videoUrl.replace(/\\&/g, '&');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let response: Response | null = null;
+    let responseBody: (Readable & { destroy?: () => void }) | null = null;
+
+    try {
+      response = (await fetch(decodedUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      })) as Response;
+      responseBody = response.body as (Readable & { destroy?: () => void }) | null;
+
+      if (!response.ok || !responseBody) {
+        responseBody?.destroy?.();
+        return videoUrl;
+      }
+
+      const contentLengthHeader = response.headers.get('content-length');
+      const contentLength = contentLengthHeader ? Number(contentLengthHeader) : null;
+      const filename = path.basename(
+        decodedUrl.split('?')[0].split('/').pop() || 'video.mp4'
+      );
+      const contentType = response.headers.get('content-type')?.split(';')[0];
+
+      if (contentLength !== null && Number.isFinite(contentLength)) {
+        if (contentLength >= inlineThreshold) {
+          responseBody.destroy?.();
+          return await this.uploadRemoteVideoStream(
+            decodedUrl,
+            filename,
+            contentType ?? null,
+            videoUrl
+          );
+        }
+      }
+
+      const streamBuffer = await this.readVideoStreamWithLimit(
+        responseBody,
+        inlineThreshold
+      );
+      if (!streamBuffer) {
+        return await this.uploadRemoteVideoStream(
+          decodedUrl,
+          filename,
+          contentType ?? null,
+          videoUrl
+        );
+      }
+
+      const mimeType =
+        contentType && contentType.startsWith('video/')
+          ? contentType
+          : this.getMimeType(filename, streamBuffer);
+
+      if (!mimeType.startsWith('video/')) {
+        return videoUrl;
+      }
+
+      return `data:${mimeType};base64,${streamBuffer.toString('base64')}`;
+    } catch {
+      return videoUrl;
+    } finally {
+      responseBody?.destroy?.();
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private async readVideoStreamWithLimit(
+    stream: Readable & { destroy?: () => void },
+    limit: number
+  ): Promise<Buffer | null> {
+    const chunks: Buffer[] = [];
+    let totalSize = 0;
+
+    try {
+      for await (const chunk of stream as AsyncIterable<Buffer | string>) {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        totalSize += buffer.length;
+
+        if (totalSize > limit) {
+          stream.destroy?.();
+          return null;
+        }
+
+        chunks.push(buffer);
+      }
+
+      return Buffer.concat(chunks);
+    } catch {
+      stream.destroy?.();
+      return null;
+    }
+  }
+
+  private async uploadRemoteVideoStream(
+    videoUrl: string,
+    filename: string,
+    contentType: string | null,
+    fallbackUrl: string
+  ): Promise<string> {
+    const timeoutMs = FileService.REMOTE_VIDEO_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-vision-video-'));
+    const tempPath = path.join(tempDir, filename);
+    const writeStream = fsSync.createWriteStream(tempPath);
+
+    try {
+      const response = await fetch(videoUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+
+      if (!response.ok || !response.body) {
+        return fallbackUrl;
+      }
+
+      const bodyStream = response.body as Readable & {
+        destroy?: () => void;
+      };
+      await new Promise<void>((resolve, reject) => {
+        bodyStream.on('data', (chunk: Buffer | string) => {
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          if (!writeStream.write(buffer)) {
+            bodyStream.pause();
+            writeStream.once('drain', () => bodyStream.resume());
+          }
+        });
+
+        bodyStream.on('end', () => {
+          writeStream.end();
+        });
+
+        bodyStream.on('error', reject);
+        writeStream.on('error', reject);
+        writeStream.on('finish', () => resolve());
+      });
+
+      bodyStream.destroy?.();
+
+      const buffer = await fs.readFile(tempPath);
+      const mimeType =
+        contentType && contentType.startsWith('video/')
+          ? contentType
+          : this.getMimeType(filename, buffer);
+
+      if (!mimeType.startsWith('video/')) {
+        return fallbackUrl;
+      }
+
+      return await this.uploadFile(buffer, filename, mimeType);
+    } catch {
+      return fallbackUrl;
+    } finally {
+      clearTimeout(timeoutId);
+      writeStream.destroy();
+      await fs.rm(tempDir, { recursive: true, force: true });
     }
   }
 
@@ -316,14 +500,15 @@ export class FileService {
   private isSupportedFileType(mimeType: string): boolean {
     const allowedImageTypes = this.configService.getAllowedImageFormats();
     const allowedVideoTypes = this.configService.getAllowedVideoFormats();
+    const normalizedMimeType = this.normalizeMimeType(mimeType);
 
-    if (mimeType.startsWith('image/')) {
-      const extension = mimeType.split('/')[1];
+    if (normalizedMimeType.startsWith('image/')) {
+      const extension = normalizedMimeType.split('/')[1];
       return allowedImageTypes.includes(extension);
     }
 
-    if (mimeType.startsWith('video/')) {
-      const extension = mimeType.split('/')[1];
+    if (normalizedMimeType.startsWith('video/')) {
+      const extension = normalizedMimeType.split('/')[1];
       return allowedVideoTypes.includes(extension);
     }
 
@@ -334,6 +519,19 @@ export class FileService {
     const imageTypes = this.configService.getAllowedImageFormats();
     const videoTypes = this.configService.getAllowedVideoFormats();
     return [...imageTypes, ...videoTypes];
+  }
+
+  private normalizeMimeType(mimeType: string): string {
+    const aliases: Record<string, string> = {
+      'video/quicktime': 'video/mov',
+      'video/x-msvideo': 'video/avi',
+      'video/x-ms-wmv': 'video/wmv',
+      'video/x-mpeg': 'video/mpeg',
+      'video/x-mpg': 'video/mpg',
+      'video/x-flv': 'video/x-flv',
+    };
+
+    return aliases[mimeType] || mimeType;
   }
 
   private getMaxFileSize(mimeType: string): number {
@@ -366,6 +564,8 @@ export class FileService {
       mp4: 'video/mp4',
       mov: 'video/quicktime',
       avi: 'video/x-msvideo',
+      mpeg: 'video/mpeg',
+      mpg: 'video/mpg',
       mkv: 'video/x-matroska',
       webm: 'video/webm',
       flv: 'video/x-flv',
@@ -472,11 +672,16 @@ export class FileService {
       'image/heic': 'heic',
       'image/heif': 'heif',
       'video/mp4': 'mp4',
+      'video/mov': 'mov',
       'video/quicktime': 'mov',
+      'video/avi': 'avi',
       'video/x-msvideo': 'avi',
+      'video/mpeg': 'mpeg',
+      'video/mpg': 'mpg',
       'video/x-matroska': 'mkv',
       'video/webm': 'webm',
       'video/x-flv': 'flv',
+      'video/wmv': 'wmv',
       'video/x-ms-wmv': 'wmv',
       'video/3gpp': '3gp',
       'video/x-m4v': 'm4v',

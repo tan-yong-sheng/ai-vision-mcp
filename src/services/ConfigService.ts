@@ -50,6 +50,8 @@ if (envPath) {
 
 export class ConfigService {
   private static instance: ConfigService;
+  private static readonly DEFAULT_IMAGE_MODEL = 'gemini-3.1-flash-lite-preview';
+  private static readonly DEFAULT_VIDEO_MODEL = 'gemini-3.1-flash-lite-preview';
   private config: Config;
   private loggedSummary = false;
   private logger = LoggerService.getInstance('ai-vision-mcp');
@@ -94,8 +96,8 @@ export class ConfigService {
       if (taskSpecific) return taskSpecific;
 
       return taskType === 'image'
-        ? 'gemini-2.5-flash-lite'
-        : 'gemini-3-flash-preview';
+        ? ConfigService.getDefaultImageModel()
+        : ConfigService.getDefaultVideoModel();
     };
 
     void this.logger.info(
@@ -386,8 +388,8 @@ export class ConfigService {
     return {
       apiKey: this.config.GEMINI_API_KEY,
       baseUrl: this.config.GEMINI_BASE_URL!,
-      imageModel: this.config.IMAGE_MODEL || 'gemini-3.1-flash-lite-preview',
-      videoModel: this.config.VIDEO_MODEL || 'gemini-3.1-flash-lite-preview',
+      imageModel: this.config.IMAGE_MODEL || ConfigService.getDefaultImageModel(),
+      videoModel: this.config.VIDEO_MODEL || ConfigService.getDefaultVideoModel(),
     } as GeminiConfig;
   }
 
@@ -406,8 +408,8 @@ export class ConfigService {
         this.config.VERTEX_ENDPOINT || 'https://aiplatform.googleapis.com',
       clientEmail: this.config.VERTEX_CLIENT_EMAIL,
       privateKey: this.config.VERTEX_PRIVATE_KEY,
-      imageModel: this.config.IMAGE_MODEL || 'gemini-3.1-flash-lite-preview',
-      videoModel: this.config.VIDEO_MODEL || 'gemini-3.1-flash-lite-preview',
+      imageModel: this.config.IMAGE_MODEL || ConfigService.getDefaultImageModel(),
+      videoModel: this.config.VIDEO_MODEL || ConfigService.getDefaultVideoModel(),
     };
   }
 
@@ -680,12 +682,30 @@ export class ConfigService {
 
   public getAllowedImageFormats(): string[] {
     return (
-      this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'gif', 'webp']
+      this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp']
     );
   }
 
   public getAllowedVideoFormats(): string[] {
-    return this.config.ALLOWED_VIDEO_FORMATS || ['mp4', 'mov', 'avi', 'webm'];
+    return this.config.ALLOWED_VIDEO_FORMATS || [
+      'mp4',
+      'mov',
+      'avi',
+      'x-flv',
+      'webm',
+      'mpeg',
+      'mpg',
+      'wmv',
+      '3gp',
+    ];
+  }
+
+  public static getDefaultImageModel(): string {
+    return ConfigService.DEFAULT_IMAGE_MODEL;
+  }
+
+  public static getDefaultVideoModel(): string {
+    return ConfigService.DEFAULT_VIDEO_MODEL;
   }
 
   public getMaxImagesForComparison(): number {

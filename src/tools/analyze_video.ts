@@ -11,6 +11,7 @@ import { VisionError } from '../types/Errors.js';
 import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
 import { isYouTubeUrl, fetchYouTubeDuration } from '../utils/youtube.js';
 import { validateVideoContext } from '../utils/videoTokens.js';
+import { ConfigService } from '../services/ConfigService.js';
 
 export interface AnalyzeVideoArgs {
   videoSource: string; // Can be URL or local file path
@@ -85,7 +86,8 @@ export async function analyze_video(
 
           if (durationSeconds !== null) {
             // Get the model name being used for video analysis
-            const modelName = config.VIDEO_MODEL || 'gemini-3-flash-preview';
+            const modelName =
+              config.VIDEO_MODEL || ConfigService.getDefaultVideoModel();
 
             const validation = validateVideoContext({
               durationSeconds,
