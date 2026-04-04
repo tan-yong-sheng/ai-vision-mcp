@@ -132,6 +132,10 @@ export class ConfigService {
 
   private loadConfig(): Config {
     try {
+      // Track which providers are explicitly set vs defaulted
+      const imageProviderExplicitlySet = !!process.env.IMAGE_PROVIDER;
+      const videoProviderExplicitlySet = !!process.env.VIDEO_PROVIDER;
+
       const rawConfig: Record<string, unknown> = {
         IMAGE_PROVIDER: process.env.IMAGE_PROVIDER || 'google',
         VIDEO_PROVIDER: process.env.VIDEO_PROVIDER || 'google',
@@ -320,6 +324,7 @@ export class ConfigService {
 
       const config = validateConfig(rawConfig);
       this.validateRequiredFields(config);
+      this.logProviderWarnings(config, imageProviderExplicitlySet, videoProviderExplicitlySet);
       return config;
     } catch (error) {
       if (error instanceof Error && error.name === 'ZodError') {
@@ -370,6 +375,51 @@ export class ConfigService {
           'GCS_BUCKET_NAME is required when using Vertex AI provider'
         );
       }
+    }
+  }
+
+  private logProviderWarnings(
+    config: Config,
+    imageProviderExplicitlySet: boolean,
+    videoProviderExplicitlySet: boolean
+  ): void {
+    // Warn if IMAGE_PROVIDER defaults to google
+    if (!imageProviderExplicitlySet && config.IMAGE_PROVIDER === 'google') {
+      void this.logger.warn(
+        {
+          msg: 'IMAGE_PROVIDER defaults to google (Gemini API). Ensure GEMINI_API_KEY is set.',
+        },
+        'config'
+      );
+    }
+
+    // Warn if VIDEO_PROVIDER defaults to google
+    if (!videoProviderExplicitlySet && config.VIDEO_PROVIDER === 'google') {
+      void this.logger.warn(
+        {
+          msg: 'VIDEO_PROVIDER defaults to google (Gemini API). Ensure GEMINI_API_KEY is set.',
+        },
+        'config'
+      );
+    }
+
+    // Warn if vertex_ai is explicitly set
+    if (imageProviderExplicitlySet && config.IMAGE_PROVIDER === 'vertex_ai') {
+      void this.logger.warn(
+        {
+          msg: 'IMAGE_PROVIDER set to vertex_ai. Required env vars: VERTEX_CLIENT_EMAIL, VERTEX_PRIVATE_KEY, VERTEX_PROJECT_ID, GCS_BUCKET_NAME',
+        },
+        'config'
+      );
+    }
+
+    if (videoProviderExplicitlySet && config.VIDEO_PROVIDER === 'vertex_ai') {
+      void this.logger.warn(
+        {
+          msg: 'VIDEO_PROVIDER set to vertex_ai. Required env vars: VERTEX_CLIENT_EMAIL, VERTEX_PRIVATE_KEY, VERTEX_PROJECT_ID, GCS_BUCKET_NAME',
+        },
+        'config'
+      );
     }
   }
 
