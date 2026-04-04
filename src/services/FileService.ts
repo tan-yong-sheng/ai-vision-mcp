@@ -15,6 +15,13 @@ import { ConfigService } from './ConfigService.js';
 import { redactUrl, redactError } from '../utils/redact.js';
 import { isYouTubeUrl } from '../utils/youtube.js';
 import {
+  isFileReferenceSource,
+  isGcsUri,
+  isHttpUrl,
+  isRemoteVideoUrl,
+  normalizeMimeType,
+} from '../utils/mediaSources.js';
+import {
   FileUploadError,
   UnsupportedFileTypeError,
   FileSizeExceededError,
@@ -41,16 +48,7 @@ export class FileService {
   }
 
   async handleImageSource(imageSource: string): Promise<string> {
-    // If it's already a file reference, return as-is
-    if (
-      imageSource.startsWith('files/') ||
-      imageSource.includes('generativelanguage.googleapis.com')
-    ) {
-      return imageSource;
-    }
-
-    // If it's a GCS URI, return as-is
-    if (this.isGcsUri(imageSource)) {
+    if (isFileReferenceSource(imageSource) || isGcsUri(imageSource)) {
       return imageSource;
     }
 
@@ -74,26 +72,15 @@ export class FileService {
   }
 
   async handleVideoSource(videoSource: string): Promise<string> {
-    // If it's already a file reference, return as-is
-    if (
-      videoSource.startsWith('files/') ||
-      videoSource.includes('generativelanguage.googleapis.com')
-    ) {
+    if (isFileReferenceSource(videoSource) || isGcsUri(videoSource)) {
       return videoSource;
     }
 
-    // If it's a GCS URI, return as-is
-    if (this.isGcsUri(videoSource)) {
+    if (isHttpUrl(videoSource) && isYouTubeUrl(videoSource)) {
       return videoSource;
     }
 
-    // If it's a YouTube URL, let the provider handle it directly
-    if (this.isPublicUrl(videoSource) && isYouTubeUrl(videoSource)) {
-      return videoSource;
-    }
-
-    // If it's a remote HTTP(S) video, decide between inline data and upload
-    if (this.isPublicUrl(videoSource)) {
+    if (isRemoteVideoUrl(videoSource)) {
       return await this.handleRemoteVideoFile(videoSource);
     }
 
@@ -161,6 +148,7 @@ export class FileService {
         return videoUrl;
       }
 
+
       const contentLengthHeader = response.headers.get('content-length');
       const contentLength = contentLengthHeader ? Number(contentLengthHeader) : null;
       const filename = path.basename(
@@ -183,8 +171,7 @@ export class FileService {
       const streamBuffer = await this.readVideoStreamWithLimit(
         responseBody,
         inlineThreshold
-      );
-      if (!streamBuffer) {
+      );      if (!streamBuffer) {
         return await this.uploadRemoteVideoStream(
           decodedUrl,
           filename,
@@ -522,16 +509,7 @@ export class FileService {
   }
 
   private normalizeMimeType(mimeType: string): string {
-    const aliases: Record<string, string> = {
-      'video/quicktime': 'video/mov',
-      'video/x-msvideo': 'video/avi',
-      'video/x-ms-wmv': 'video/wmv',
-      'video/x-mpeg': 'video/mpeg',
-      'video/x-mpg': 'video/mpg',
-      'video/x-flv': 'video/x-flv',
-    };
-
-    return aliases[mimeType] || mimeType;
+    return normalizeMimeType(mimeType);
   }
 
   private getMaxFileSize(mimeType: string): number {

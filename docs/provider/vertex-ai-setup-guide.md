@@ -112,6 +112,9 @@ gcloud services enable storage-component.googleapis.com
 # Enable IAM API (for service account management)
 gcloud services enable iam.googleapis.com
 
+# Enable gemini api key on Vertex AI 
+gcloud services enable generativelanguage.googleapis.com
+
 # Enable Service Usage API
 gcloud services enable serviceusage.googleapis.com
 
@@ -634,7 +637,8 @@ echo "Enabling required APIs..."
 gcloud services enable aiplatform.googleapis.com \
   storage-api.googleapis.com \
   storage-component.googleapis.com \
-  iam.googleapis.com
+  iam.googleapis.com \
+  generativelanguage.googleapis.com
 
 # Create bucket
 BUCKET_NAME="ai-vision-mcp-${PROJECT_ID}"

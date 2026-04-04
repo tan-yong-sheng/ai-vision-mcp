@@ -24,6 +24,11 @@ import {
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
 import { processVideoSource } from '../../utils/videoSourceHandler.js';
+import {
+  getImageMimeType,
+  getImageMimeTypeFromUrl,
+  downloadRemoteImageFile,
+} from '../../utils/imageSourceHandler.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -116,7 +121,7 @@ export class VertexAIProvider extends BaseVisionProvider {
         imageSource.includes('generativelanguage.googleapis.com')
       ) {
         const fileUri = imageSource;
-        const mimeType = this.getImageMimeTypeFromUrl(imageSource);
+        const mimeType = getImageMimeTypeFromUrl(imageSource);
 
         const model = this.resolveModelForFunction(
           'image',
@@ -191,7 +196,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       }
 
       const imageData = await this.getImageData(imageSource);
-      const mimeType = this.getImageMimeType(imageSource, imageData);
+      const mimeType = getImageMimeType(imageSource, imageData);
 
       const model = this.resolveModelForFunction(
         'image',
@@ -289,7 +294,7 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
 
         const imageData = await this.getImageData(imageSource);
-        const mimeType = this.getImageMimeType(imageSource, imageData);
+        const mimeType = getImageMimeType(imageSource, imageData);
         totalFileSize += imageData.length;
 
         imageParts.push({
@@ -602,36 +607,6 @@ export class VertexAIProvider extends BaseVisionProvider {
     }
   }
 
-  private getImageMimeType(source: string, buffer: Buffer): string {
-    if (source.startsWith('data:image/')) {
-      return source.split(':')[1].split(';')[0];
-    }
-
-    // Try to get MIME type from URL extension first
-    if (source.startsWith('http')) {
-      const urlMimeType = this.getImageMimeTypeFromUrl(source);
-      if (urlMimeType !== 'image/jpeg') {
-        return urlMimeType; // Return if we found a specific type
-      }
-    }
-
-    // Simple detection based on file signature
-    const signatures: Record<string, string> = {
-      'image/png': '\x89PNG\r\n\x1a\n',
-      'image/jpeg': '\xff\xd8\xff',
-      'image/gif': 'GIF87a',
-      'image/webp': 'RIFF',
-    };
-
-    for (const [mimeType, signature] of Object.entries(signatures)) {
-      if (buffer.subarray(0, signature.length).toString() === signature) {
-        return mimeType;
-      }
-    }
-
-    return 'image/jpeg'; // Default fallback
-  }
-
   private handleError(error: unknown, operation: string): Error {
     if (error instanceof Error) {
       if (
@@ -762,22 +737,5 @@ export class VertexAIProvider extends BaseVisionProvider {
     }
 
     return result;
-  }
-
-  /**
-   * Get image MIME type from URL extension
-   */
-  private getImageMimeTypeFromUrl(url: string): string {
-    const extension = url.split('.').pop()?.toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      bmp: 'image/bmp',
-      tiff: 'image/tiff',
-    };
-    return mimeTypes[extension || ''] || 'image/jpeg';
   }
 }

@@ -78,8 +78,8 @@ jobs:
           NODE_ENV: test
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
-          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
-          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3-flash-preview' }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-3.1-flash-lite-preview' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3.1-flash-lite-preview' }}
           LOG_LEVEL: error
 
       - name: Upload test results
@@ -122,8 +122,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
-          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3-flash-preview' }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-3.1-flash-lite-preview' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3.1-flash-lite-preview' }}
           LOG_LEVEL: error
 
       - name: Upload test results
@@ -166,8 +166,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-2.5-flash-lite' }}
-          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3-flash-preview' }}
+          IMAGE_MODEL: ${{ secrets.IMAGE_MODEL || 'gemini-3.1-flash-lite-preview' }}
+          VIDEO_MODEL: ${{ secrets.VIDEO_MODEL || 'gemini-3.1-flash-lite-preview' }}
           LOG_LEVEL: error
 
       - name: Upload test results

@@ -51,6 +51,13 @@ npx ai-vision-mcp <command> [options]
 
 Set up your provider credentials:
 
+**Provider selection**
+`ai-vision` automatically reads `IMAGE_PROVIDER` and `VIDEO_PROVIDER` from the environment.
+
+Use `google` for Gemini and `vertex_ai` for Vertex AI:
+- `IMAGE_PROVIDER="google"` or `IMAGE_PROVIDER="vertex_ai"`
+- `VIDEO_PROVIDER="google"` or `VIDEO_PROVIDER="vertex_ai"`
+
 **Google AI Studio (Recommended)**
 ```bash
 export IMAGE_PROVIDER="google"
@@ -69,6 +76,7 @@ export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KE
 export VERTEX_PROJECT_ID="your-gcp-project-id"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
+The CLI will load these automatically when `IMAGE_PROVIDER` and `VIDEO_PROVIDER` are set to `vertex_ai`.
 
 ## Commands
 

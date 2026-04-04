@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ai-vision-local-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "dist/index.js"
+      ],
+      "env": {}
+    }
+  }
+}

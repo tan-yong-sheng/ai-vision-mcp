@@ -7,3 +7,4 @@ export * from './retry.js';
 export * from './videoTokens.js';
 export * from './youtube.js';
 export * from './mediaSources.js';
+export * from './imageSourceHandler.js';

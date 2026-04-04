@@ -31,6 +31,11 @@ import {
   isYouTubeUrl,
 } from '../../utils/mediaSources.js';
 import { processVideoSource } from '../../utils/videoSourceHandler.js';
+import {
+  getImageMimeType,
+  getImageMimeTypeFromUrl,
+  downloadRemoteImageFile,
+} from '../../utils/imageSourceHandler.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -149,7 +154,7 @@ export class GeminiProvider extends BaseVisionProvider {
           });
 
         const filename = imageSource.split('/').pop() || 'image.jpg';
-        mimeType = this.getImageMimeTypeFromUrl(imageSource);
+        mimeType = getImageMimeTypeFromUrl(imageSource);
         fileSize = imageData.length;
 
         const { result: uploadedFile, duration: uploadFileDuration } =
@@ -304,7 +309,7 @@ export class GeminiProvider extends BaseVisionProvider {
             });
 
           const filename = imageSource.split('/').pop() || `image${i + 1}.jpg`;
-          mimeType = this.getImageMimeTypeFromUrl(imageSource);
+          mimeType = getImageMimeTypeFromUrl(imageSource);
           fileSize = imageData.length;
 
           const { result: uploadedFile, duration: uploadFileDuration } =
@@ -825,44 +830,6 @@ export class GeminiProvider extends BaseVisionProvider {
 
   getApiKey(): string {
     return this.config.apiKey;
-  }
-
-  private getImageMimeType(source: string, buffer?: Buffer): string {
-    if (source.startsWith('data:image/')) {
-      return source.split(':')[1].split(';')[0];
-    }
-
-    // Simple detection based on file signature
-    const signatures: Record<string, string> = {
-      'image/png': '\x89PNG\r\n\x1a\n',
-      'image/jpeg': '\xff\xd8\xff',
-      'image/gif': 'GIF87a',
-      'image/webp': 'RIFF',
-    };
-
-    if (buffer) {
-      for (const [mimeType, signature] of Object.entries(signatures)) {
-        if (buffer.slice(0, signature.length).toString() === signature) {
-          return mimeType;
-        }
-      }
-    }
-
-    return 'image/jpeg'; // Default fallback
-  }
-
-  private getImageMimeTypeFromUrl(url: string): string {
-    const extension = url.split('.').pop()?.toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      bmp: 'image/bmp',
-      tiff: 'image/tiff',
-    };
-    return mimeTypes[extension || ''] || 'image/jpeg';
   }
 
   private getVideoMimeTypeFromUrl(url: string): string {
