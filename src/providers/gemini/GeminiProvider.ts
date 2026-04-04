@@ -25,6 +25,12 @@ import {
 } from '../../types/Errors.js';
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
+import {
+  describeMediaSource,
+  isFileReferenceSource,
+  isYouTubeUrl,
+} from '../../utils/mediaSources.js';
+import { processVideoSource } from '../../utils/videoSourceHandler.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -96,22 +102,7 @@ export class GeminiProvider extends BaseVisionProvider {
   ): Promise<AnalysisResult> {
     try {
       console.error(
-        `[GeminiProvider] Received imageSource: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
-      );
-      console.error(
-        `[GeminiProvider] ImageSource starts with data:image: ${imageSource.startsWith('data:image/')}`
-      );
-      console.error(
-        `[GeminiProvider] ImageSource starts with http: ${imageSource.startsWith('http')}`
-      );
-      console.error(
-        `[GeminiProvider] ImageSource starts with gs: ${imageSource.startsWith('gs://')}`
-      );
-      console.error(
-        `[GeminiProvider] ImageSource starts with files/: ${imageSource.startsWith('files/')}`
-      );
-      console.error(
-        `[GeminiProvider] ImageSource contains generativelanguage: ${imageSource.includes('generativelanguage.googleapis.com')}`
+        `[GeminiProvider] Received image source kind: ${describeMediaSource(imageSource)}`
       );
 
       let content: any;
@@ -137,8 +128,7 @@ export class GeminiProvider extends BaseVisionProvider {
           },
         };
       } else if (imageSource.startsWith('gs://')) {
-        // GCS URIs can be passed directly using file_data
-        mimeType = 'image/jpeg'; // Default, will be detected if needed
+        mimeType = 'image/jpeg';
         content = {
           fileData: {
             fileUri: imageSource,
@@ -146,7 +136,6 @@ export class GeminiProvider extends BaseVisionProvider {
           },
         };
       } else if (imageSource.startsWith('http')) {
-        // Download image from URL and upload to Files API
         const { result: imageData, duration: downloadDuration } =
           await this.measureAsync(async () => {
             const response = await fetch(imageSource);
@@ -175,23 +164,12 @@ export class GeminiProvider extends BaseVisionProvider {
             mimeType,
           },
         };
-      } else if (
-        imageSource.startsWith('files/') ||
-        imageSource.includes('generativelanguage.googleapis.com')
-      ) {
-        // Handle Files API references - for newer SDK, we can use file references directly
-        let fileUri: string;
-        if (imageSource.startsWith('files/')) {
-          fileUri = this.buildFileUri(imageSource);
-        } else {
-          fileUri = imageSource;
-        }
-
-        // Wait for file to be processed if needed
+      } else if (isFileReferenceSource(imageSource)) {
+        const fileUri = imageSource;
         const fileId = fileUri.split('/').pop()!;
         await this.waitForFileProcessing(fileId);
 
-        mimeType = 'image/jpeg'; // Default, will be detected if needed
+        mimeType = 'image/jpeg';
         content = {
           fileData: {
             fileUri,
@@ -245,10 +223,10 @@ export class GeminiProvider extends BaseVisionProvider {
         model,
         usage
           ? {
-              promptTokenCount: usage.promptTokenCount || 0,
-              candidatesTokenCount: usage.candidatesTokenCount || 0,
-              totalTokenCount: usage.totalTokenCount || 0,
-            }
+            promptTokenCount: usage.promptTokenCount || 0,
+            candidatesTokenCount: usage.candidatesTokenCount || 0,
+            totalTokenCount: usage.totalTokenCount || 0,
+          }
           : undefined,
         processingDuration + analysisDuration,
         content.fileData?.mimeType || content.inlineData?.mimeType,
@@ -341,23 +319,12 @@ export class GeminiProvider extends BaseVisionProvider {
               mimeType,
             },
           };
-        } else if (
-          imageSource.startsWith('files/') ||
-          imageSource.includes('generativelanguage.googleapis.com')
-        ) {
-          // Handle Files API references
-          let fileUri: string;
-          if (imageSource.startsWith('files/')) {
-            fileUri = this.buildFileUri(imageSource);
-          } else {
-            fileUri = imageSource;
-          }
-
-          // Wait for file to be processed if needed
+        } else if (isFileReferenceSource(imageSource)) {
+          const fileUri = imageSource;
           const fileId = fileUri.split('/').pop()!;
           await this.waitForFileProcessing(fileId);
 
-          mimeType = 'image/jpeg'; // Default, will be detected if needed
+          mimeType = 'image/jpeg';
           content = {
             fileData: {
               fileUri,
@@ -426,10 +393,10 @@ export class GeminiProvider extends BaseVisionProvider {
         model,
         usage
           ? {
-              promptTokenCount: usage.promptTokenCount || 0,
-              candidatesTokenCount: usage.candidatesTokenCount || 0,
-              totalTokenCount: usage.totalTokenCount || 0,
-            }
+            promptTokenCount: usage.promptTokenCount || 0,
+            candidatesTokenCount: usage.candidatesTokenCount || 0,
+            totalTokenCount: usage.totalTokenCount || 0,
+          }
           : undefined,
         totalProcessingDuration + analysisDuration,
         'image/multiple',
@@ -451,90 +418,49 @@ export class GeminiProvider extends BaseVisionProvider {
       let content: any;
       let uploadDuration = 0;
 
-      if (videoSource.startsWith('data:video/')) {
-        // Handle inline binary data for videos ≤50MB
-        const matches = videoSource.match(/^data:video\/([a-zA-Z0-9\-+.]+);base64,(.+)$/);
-        if (!matches) {
-          throw new Error('Invalid inline video data format');
-        }
-        const mimeType = `video/${matches[1]}`;
-        const base64Data = matches[2];
+      // Process the video source using shared utility
+      const { fileUri, mimeType, uploadDuration: processDuration, isInlineData } =
+        await processVideoSource(videoSource);
 
+      // For GeminiProvider, if we got inline data from a non-YouTube HTTP URL,
+      // upload it to Gemini Files API instead of using inline data
+      if (isInlineData && videoSource.startsWith('http') && !isYouTubeUrl(videoSource)) {
+        // Extract base64 data from data URI
+        const base64Data = fileUri.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        const filename = videoSource.split('/').pop() || 'video.mp4';
+
+        const { result: uploadedFile, duration: uploadFileDuration } =
+          await this.measureAsync(async () => {
+            return await this.uploadFile(buffer, filename, mimeType);
+          });
+
+        uploadDuration = processDuration + uploadFileDuration;
+        content = {
+          fileData: {
+            fileUri: uploadedFile.uri!,
+            mimeType,
+          },
+        };
+      } else if (isInlineData) {
+        // For local files or inline data, use inline format
+        const base64Data = fileUri.split(',')[1];
         content = {
           inlineData: {
             mimeType,
             data: base64Data,
           },
         };
-      } else if (
-        videoSource.startsWith('files/') ||
-        videoSource.includes('generativelanguage.googleapis.com')
-      ) {
-        // Use existing file reference - check this FIRST before other http checks
-        // videoSource could be either "files/3lahndmttgdq" or full Google API URL
-        const fileUri = videoSource.startsWith('files/')
-          ? this.buildVideoUri(videoSource)
-          : videoSource;
-
-        content = {
-          fileData: {
-            fileUri: fileUri,
-            mimeType: 'video/mp4',
-          },
-        };
-      } else if (videoSource.startsWith('http')) {
-        // Check if it's a YouTube URL
-        if (
-          videoSource.includes('youtube.com') ||
-          videoSource.includes('youtu.be')
-        ) {
-          // YouTube URLs can be passed directly
-          content = {
-            fileData: {
-              fileUri: videoSource,
-              mimeType: 'video/mp4',
-            },
-          };
-        } else {
-          // For other video URLs, download and upload to Files API
-          const { result: videoData, duration: downloadDuration } =
-            await this.measureAsync(async () => {
-              const response = await fetch(videoSource);
-              if (!response.ok) {
-                throw new NetworkError(
-                  `Failed to fetch video from URL: ${videoSource}`
-                );
-              }
-              const arrayBuffer = await response.arrayBuffer();
-              return Buffer.from(arrayBuffer);
-            });
-
-          const filename = videoSource.split('/').pop() || 'video.mp4';
-          const mimeType = this.getVideoMimeType(videoSource, videoData);
-
-          const { result: uploadedFile, duration: uploadFileDuration } =
-            await this.measureAsync(async () => {
-              return await this.uploadFile(videoData, filename, mimeType);
-            });
-
-          uploadDuration = downloadDuration + uploadFileDuration;
-          content = {
-            fileData: {
-              fileUri: uploadedFile.uri!,
-              mimeType,
-            },
-          };
-        }
-      } else if (videoSource.startsWith('gs://')) {
-        // GCS URIs can be passed directly
-        content = {
-          fileData: {
-            fileUri: videoSource,
-            mimeType: 'video/mp4',
-          },
-        };
+        uploadDuration = processDuration;
       } else {
-        throw new Error('Invalid video source format');
+        // For GCS URIs, YouTube URLs, and file references, use fileData
+        content = {
+          fileData: {
+            fileUri,
+            mimeType,
+          },
+        };
+        uploadDuration = processDuration;
       }
 
       const model = this.resolveModelForFunction(
@@ -582,13 +508,13 @@ export class GeminiProvider extends BaseVisionProvider {
         model,
         usage
           ? {
-              promptTokenCount: usage.promptTokenCount || 0,
-              candidatesTokenCount: usage.candidatesTokenCount || 0,
-              totalTokenCount: usage.totalTokenCount || 0,
-            }
+            promptTokenCount: usage.promptTokenCount || 0,
+            candidatesTokenCount: usage.candidatesTokenCount || 0,
+            totalTokenCount: usage.totalTokenCount || 0,
+          }
           : undefined,
         uploadDuration + analysisDuration,
-        content.fileData?.mimeType,
+        content.fileData?.mimeType || content.inlineData?.mimeType,
         undefined, // fileSize not available for video
         response.modelVersion,
         response.responseId
@@ -779,14 +705,6 @@ export class GeminiProvider extends BaseVisionProvider {
     }
 
     return result;
-  }
-
-  private buildFileUri(fileId: string): string {
-    // Remove any leading 'files/' prefix if present
-    const cleanFileId = fileId.startsWith('files/')
-      ? fileId.replace('files/', '')
-      : fileId;
-    return `${this.baseUrl}/v1beta/files/${cleanFileId}`;
   }
 
   private buildVideoUri(videoSource: string): string {

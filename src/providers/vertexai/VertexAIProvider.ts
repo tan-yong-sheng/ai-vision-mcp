@@ -23,6 +23,7 @@ import {
 } from '../../types/Errors.js';
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
+import { processVideoSource } from '../../utils/videoSourceHandler.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -110,6 +111,85 @@ export class VertexAIProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
+      if (
+        imageSource.startsWith('files/') ||
+        imageSource.includes('generativelanguage.googleapis.com')
+      ) {
+        const fileUri = imageSource;
+        const mimeType = this.getImageMimeTypeFromUrl(imageSource);
+
+        const model = this.resolveModelForFunction(
+          'image',
+          options?.functionName
+        );
+
+        const enabled =
+          process.env.AI_VISION_LOG_MODELS === '1' ||
+          process.env.LOG_LEVEL === 'debug';
+        if (enabled) {
+          void this.logger.info(
+            {
+              msg: 'Vertex AI request (image)',
+              projectId: this.config.projectId,
+              location: this.config.location,
+              model,
+              functionName: options?.functionName ?? null,
+            },
+            'models'
+          );
+        }
+
+        const { result: response, duration } = await this.measureAsync(
+          async () => {
+            return await this.client.models.generateContent({
+              model,
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    {
+                      fileData: {
+                        mimeType,
+                        fileUri,
+                      },
+                    },
+                    { text: prompt },
+                  ],
+                },
+              ],
+              config: this.buildConfigWithOptions(
+                'image',
+                options?.functionName,
+                options
+              ),
+            });
+          }
+        );
+
+        const text = response.text || '';
+        const usage = response.usageMetadata;
+
+        return this.createAnalysisResult(
+          text,
+          model,
+          usage &&
+            usage.promptTokenCount &&
+            usage.candidatesTokenCount &&
+            usage.totalTokenCount
+            ? {
+                promptTokenCount: usage.promptTokenCount,
+                candidatesTokenCount: usage.candidatesTokenCount,
+                totalTokenCount: usage.totalTokenCount,
+              }
+            : undefined,
+          duration,
+          mimeType,
+          undefined,
+          response.modelVersion,
+          response.responseId
+        );
+      }
+
       const imageData = await this.getImageData(imageSource);
       const mimeType = this.getImageMimeType(imageSource, imageData);
 
@@ -297,36 +377,8 @@ export class VertexAIProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      let fileUri: string;
-      let mimeType = 'video/mp4'; // Default, will be detected if possible
-
-      if (videoSource.startsWith('gs://')) {
-        // Already a GCS URI
-        fileUri = videoSource;
-        mimeType = this.getVideoMimeTypeFromUrl(videoSource);
-      } else if (videoSource.startsWith('http')) {
-        // Check if it's a YouTube URL - these can be passed directly
-        if (
-          videoSource.includes('youtube.com') ||
-          videoSource.includes('youtu.be')
-        ) {
-          fileUri = videoSource;
-          mimeType = 'video/mp4'; // YouTube is always MP4
-        } else {
-          // For other HTTP URLs, would need to upload to GCS first
-          throw new Error(
-            'Direct URL processing not supported for Vertex AI (except YouTube). Please upload to GCS first.'
-          );
-        }
-      } else if (videoSource.startsWith('files/')) {
-        // File reference - should be a GCS URI
-        fileUri = videoSource;
-        mimeType = this.getVideoMimeTypeFromUrl(videoSource);
-      } else {
-        throw new Error(
-          'Invalid video source format for Vertex AI. Expected GCS URI or YouTube URL.'
-        );
-      }
+      const { fileUri, mimeType, uploadDuration, isInlineData } =
+        await processVideoSource(videoSource);
 
       const model = this.resolveModelForFunction(
         'video',
@@ -352,22 +404,29 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Build video metadata for the request if provided
       const videoMetadata = this.buildVideoMetadata(options?.videoMetadata);
 
-      const { result: response, duration } = await this.measureAsync(
-        async () => {
+      // Build the content part based on whether it's inline data or file reference
+      const videoPart = isInlineData
+        ? {
+            inlineData: {
+              mimeType,
+              data: fileUri.split(',')[1], // Extract base64 data from data URI
+            },
+          }
+        : {
+            fileData: {
+              mimeType,
+              fileUri,
+            },
+          };
+
+      const { result: response, duration: analysisDuration } =
+        await this.measureAsync(async () => {
           return await this.client.models.generateContent({
             model,
             contents: [
               {
                 role: 'user',
-                parts: [
-                  {
-                    fileData: {
-                      mimeType,
-                      fileUri,
-                    },
-                  },
-                  { text: prompt },
-                ],
+                parts: [videoPart, { text: prompt }],
               },
             ],
             config: this.buildConfigWithOptions(
@@ -377,8 +436,7 @@ export class VertexAIProvider extends BaseVisionProvider {
             ),
             ...(videoMetadata && { videoMetadata }),
           });
-        }
-      );
+        });
 
       const text = response.text || '';
       const usage = response.usageMetadata;
@@ -396,7 +454,7 @@ export class VertexAIProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        duration,
+        uploadDuration + analysisDuration,
         mimeType,
         undefined, // fileSize not available for video
         response.modelVersion,
@@ -407,11 +465,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     }
   }
 
-  async uploadFile(
-    _buffer: Buffer,
-    _filename: string,
-    _mimeType: string
-  ): Promise<UploadedFile> {
+  async uploadFile(): Promise<UploadedFile> {
     // Vertex AI requires external storage for all files
     // This method should integrate with a storage service
     throw new FileUploadError(
@@ -420,7 +474,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     );
   }
 
-  async downloadFile(_fileId: string): Promise<Buffer> {
+  async downloadFile(): Promise<Buffer> {
     // For Vertex AI, files are stored in GCS
     // This would need to integrate with GCS client
     throw new Error(
@@ -428,7 +482,7 @@ export class VertexAIProvider extends BaseVisionProvider {
     );
   }
 
-  async deleteFile(_fileId: string): Promise<void> {
+  async deleteFile(): Promise<void> {
     // For Vertex AI, files are stored in GCS
     // This would need to integrate with GCS client
     throw new Error(
@@ -711,25 +765,6 @@ export class VertexAIProvider extends BaseVisionProvider {
   }
 
   /**
-   * Get video MIME type from URL extension
-   */
-  private getVideoMimeTypeFromUrl(url: string): string {
-    const extension = url.split('.').pop()?.toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      mp4: 'video/mp4',
-      mov: 'video/quicktime',
-      avi: 'video/x-msvideo',
-      mkv: 'video/x-matroska',
-      webm: 'video/webm',
-      flv: 'video/x-flv',
-      wmv: 'video/x-ms-wmv',
-      '3gp': 'video/3gpp',
-      m4v: 'video/mp4',
-    };
-    return mimeTypes[extension || ''] || 'video/mp4';
-  }
-
-  /**
    * Get image MIME type from URL extension
    */
   private getImageMimeTypeFromUrl(url: string): string {
@@ -744,44 +779,5 @@ export class VertexAIProvider extends BaseVisionProvider {
       tiff: 'image/tiff',
     };
     return mimeTypes[extension || ''] || 'image/jpeg';
-  }
-
-  /**
-   * Detect video MIME type from buffer (file signature)
-   */
-  private getVideoMimeType(source: string, buffer: Buffer): string {
-    // Try to detect from file extension
-    const extension = source.split('.').pop()?.toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      mp4: 'video/mp4',
-      mov: 'video/quicktime',
-      avi: 'video/x-msvideo',
-      mkv: 'video/x-matroska',
-      webm: 'video/webm',
-      flv: 'video/x-flv',
-      wmv: 'video/x-ms-wmv',
-      '3gp': 'video/3gpp',
-      m4v: 'video/mp4',
-    };
-
-    if (extension && mimeTypes[extension]) {
-      return mimeTypes[extension];
-    }
-
-    // Simple detection based on file signature
-    const signatures: Record<string, string> = {
-      'video/mp4': '\x00\x00\x00\x18ftypmp42',
-      'video/webm': '\x1a\x45\xdf\xa3',
-      'video/avi': 'RIFF',
-      'video/mov': '\x00\x00\x00\x14ftyp',
-    };
-
-    for (const [mimeType, signature] of Object.entries(signatures)) {
-      if (buffer.subarray(0, signature.length).toString() === signature) {
-        return mimeType;
-      }
-    }
-
-    return 'video/mp4'; // Default fallback
   }
 }
