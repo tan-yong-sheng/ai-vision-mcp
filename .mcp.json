@@ -6,7 +6,10 @@
       "args": [
         "dist/index.js"
       ],
-      "env": {}
+      "env": {
+        "IMAGE_PROVIDER": "google",
+        "VIDEO_PROVIDER": "google"
+      }
     }
   }
 }
