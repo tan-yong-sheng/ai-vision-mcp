@@ -14,3 +14,4 @@ export {
   type ObjectDetectionArgs,
 } from './detect_objects_in_image.js';
 export { compare_images, type CompareImagesArgs } from './compare_images.js';
+export { audit_design, type AuditDesignArgs } from './audit_design.js';

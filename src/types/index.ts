@@ -16,6 +16,7 @@ export type {
 
 // Export all other types normally
 export * from './Analysis.js';
+export * from './DesignAudit.js';
 export type {
   StorageProvider,
   StorageFile,

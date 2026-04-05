@@ -4,6 +4,7 @@ import { runAnalyzeImage } from './commands/analyze-image.js';
 import { runCompareImages } from './commands/compare-images.js';
 import { runDetectObjects } from './commands/detect-objects.js';
 import { runAnalyzeVideo } from './commands/analyze-video.js';
+import { runAuditDesign } from './commands/audit-design.js';
 
 export async function runCli(args: string[]): Promise<void> {
   const command = args[0];
@@ -25,6 +26,9 @@ export async function runCli(args: string[]): Promise<void> {
       break;
     case 'analyze-video':
       await runAnalyzeVideo(commandArgs, config);
+      break;
+    case 'audit-design':
+      await runAuditDesign(commandArgs, config);
       break;
     case 'help':
     case '--help':
@@ -49,6 +53,7 @@ Commands:
   compare-images <sources...>  Compare multiple images (2-4)
   detect-objects <source>      Detect objects in an image
   analyze-video <source>       Analyze a video
+  audit-design <source>        Audit design compliance (pixel metrics + Gemini critique)
 
 Global Options:
   --prompt <text>              The analysis prompt (required for some commands)
@@ -63,5 +68,6 @@ Examples:
   ai-vision analyze-image https://example.com/img.jpg --prompt "describe"
   ai-vision compare-images img1.jpg img2.jpg --prompt "find differences" --json
   ai-vision detect-objects photo.jpg --prompt "find all cars" --output annotated.jpg
+  ai-vision audit-design design.png --prompt "check accessibility"
 `);
 }

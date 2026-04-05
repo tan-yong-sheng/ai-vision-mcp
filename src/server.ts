@@ -13,6 +13,7 @@ import {
   compare_images,
   analyze_video,
   detect_objects_in_image,
+  audit_design,
 } from './tools/index.js';
 import { VisionError } from './types/Errors.js';
 
@@ -786,6 +787,146 @@ server.registerTool<any, any>(
                 error: true,
                 message: errorMessage,
                 tool: 'analyze_video',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Register audit_design tool
+server.registerTool<any, any>(
+  'audit_design',
+  {
+    title: 'Audit Design',
+    description:
+      'Perform design compliance auditing with pixel-level analysis (K-means colors, Sobel edges, WCAG contrast) and the critique of Vision Language Model.',
+    inputSchema: z.object({
+      imageSource: z
+        .string()
+        .describe(
+          'Image source - can be a URL, base64 data (data:image/...), or local file path'
+        ),
+      prompt: z
+        .string()
+        .optional()
+        .describe(
+          'Optional custom audit prompt to supplement the default design audit criteria'
+        ),
+      options: z
+        .object({
+          temperature: z
+            .number()
+            .min(0)
+            .max(2)
+            .optional()
+            .describe(
+              'Controls randomness in the response (0.0 = deterministic, 2.0 = very random)'
+            ),
+          topP: z
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
+            .describe('Nucleus sampling parameter (0.0-1.0)'),
+          topK: z
+            .number()
+            .int()
+            .min(1)
+            .max(100)
+            .optional()
+            .describe('Top-k sampling parameter (1-100)'),
+          maxTokens: z
+            .number()
+            .int()
+            .min(1)
+            .max(8192)
+            .optional()
+            .describe(
+              'Maximum number of tokens to generate in the response. For design audits, 1000-1500 tokens typically sufficient.'
+            ),
+        })
+        .optional(),
+    }),
+  },
+  async (args: any, _extra: any) => {
+    const { imageSource, prompt, options } = args;
+
+    // Early validation - BEFORE calling getServices()
+    if (
+      !imageSource ||
+      (typeof imageSource === 'string' && imageSource.trim() === '')
+    ) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: 'imageSource is required',
+                tool: 'audit_design',
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      const validatedArgs = { imageSource, prompt, options };
+
+      // Initialize services on-demand (only after validation passes)
+      const { config, imageProvider, imageFileService } = getServices();
+
+      const result = await audit_design(
+        validatedArgs,
+        config,
+        imageProvider,
+        imageFileService
+      );
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      void logger.error(
+        { msg: 'Error executing audit_design tool', error: String(error) },
+        'tools/audit_design'
+      );
+
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof VisionError) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.provider) {
+          errorMessage += ` (Provider: ${error.provider})`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                error: true,
+                message: errorMessage,
+                tool: 'audit_design',
               },
               null,
               2
