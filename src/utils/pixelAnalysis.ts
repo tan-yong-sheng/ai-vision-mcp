@@ -65,9 +65,9 @@ export function extractDominantColors(
 
   const toHex = (n: number) => n.toString(16).padStart(2, '0');
 
-  return result.centroids
-    .map((c: any, i: number) => {
-      const [r, g, b] = (c.centroid as number[]).map(Math.round);
+  return (result.centroids as number[][])
+    .map((centroid: number[], i: number) => {
+      const [r, g, b] = centroid.map(Math.round);
       return {
         hex: `#${toHex(r)}${toHex(g)}${toHex(b)}`,
         rgb: { r, g, b },
