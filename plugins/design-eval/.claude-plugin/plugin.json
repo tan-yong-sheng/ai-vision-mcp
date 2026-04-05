@@ -1,0 +1,77 @@
+{
+  "name": "design-eval",
+  "displayName": "Design Evaluation Suite",
+  "version": "1.0.0",
+  "description": "Comprehensive design audit, accessibility, and consistency evaluation using Gemini CLI",
+  "author": {
+    "name": "Design Evaluation Team"
+  },
+  "keywords": ["design", "accessibility", "wcag", "ui-ux", "audit", "design-system"],
+  "license": "Apache-2.0",
+  "commands": [
+    {
+      "name": "audit-design",
+      "displayName": "Audit Design",
+      "description": "Full design audit across heuristics, accessibility, visual consistency, and design system"
+    },
+    {
+      "name": "accessibility-check",
+      "displayName": "Accessibility Check",
+      "description": "Deep WCAG 2.1/3.0 compliance review"
+    },
+    {
+      "name": "visual-consistency",
+      "displayName": "Visual Consistency",
+      "description": "Design system token validation and visual consistency check"
+    },
+    {
+      "name": "component-audit",
+      "displayName": "Component Audit",
+      "description": "Component reusability and pattern analysis"
+    },
+    {
+      "name": "design-debt-report",
+      "displayName": "Design Debt Report",
+      "description": "Custom vs system component ratio analysis"
+    }
+  ],
+  "agents": [
+    {
+      "name": "design-auditor",
+      "displayName": "Design Auditor",
+      "description": "Comprehensive design evaluation orchestrator"
+    },
+    {
+      "name": "a11y-specialist",
+      "displayName": "A11y Specialist",
+      "description": "Accessibility compliance expert"
+    },
+    {
+      "name": "design-system-reviewer",
+      "displayName": "Design System Reviewer",
+      "description": "Design system governance and maturity assessment"
+    },
+    {
+      "name": "visual-tester",
+      "displayName": "Visual Tester",
+      "description": "Visual regression and consistency testing"
+    }
+  ],
+  "skills": [
+    {
+      "name": "design-audit-framework",
+      "displayName": "Design Audit Framework",
+      "description": "Guidance on conducting design audits using Nielsen heuristics and WCAG standards"
+    },
+    {
+      "name": "visual-testing",
+      "displayName": "Visual Testing",
+      "description": "Playwright visual testing and visual regression patterns"
+    },
+    {
+      "name": "design-system-governance",
+      "displayName": "Design System Governance",
+      "description": "Design system governance, maturity models, and best practices"
+    }
+  ]
+}
