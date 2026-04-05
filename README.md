@@ -364,7 +364,46 @@ MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192     # High token limit for JSON
 ```
 
 
-### 4) `analyze_video`
+### 4) `audit_design`
+
+Audits UI/UX design compliance with pixel-level analysis and AI critique.
+
+This tool provides automated design compliance auditing using pure TypeScript/JavaScript pixel analysis combined with Gemini Vision API critique. It extracts dominant colors, detects visual complexity, validates WCAG contrast ratios, and generates actionable design recommendations.
+
+**Inspired by:** [Automating UX/UI Design Analysis with Python, Machine Learning, and LLMs](https://medium.com/@jadeygraham96/automating-ux-ui-design-analysis-with-python-machine-learning-and-llms-1fa1440b719b) by Jade Graham
+
+**Parameters:**
+- `imageSource` (string): URL, base64 data, or file path to the design image
+- `prompt` (string, optional): Custom audit context or focus areas
+- `options` (object, optional): Analysis options including temperature and max tokens
+
+**Features:**
+- **Dominant Colors**: K-means clustering to extract 5 primary colors
+- **Edge Complexity**: Sobel operator for visual structure analysis
+- **WCAG Contrast**: W3C relative luminance formula validation (AA/AAA)
+- **Luminance Stats**: Mean brightness and standard deviation calculations
+- **Design Issues**: Automated detection of contrast, complexity, and brightness problems
+- **AI Critique**: Gemini-powered recommendations for design improvements
+
+**Examples:**
+
+1. **Basic design audit:**
+```json
+{
+  "imageSource": "https://example.com/design.png",
+  "prompt": "Audit this design for accessibility and visual hierarchy"
+}
+```
+
+2. **Audit local design file:**
+```json
+{
+  "imageSource": "C:\\Users\\username\\Downloads\\ui_design.png",
+  "prompt": "Check WCAG AA compliance"
+}
+```
+
+### 5) `analyze_video`
 
 Analyzes a video using AI and returns a detailed description.
 
@@ -580,4 +619,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Google for the Gemini and Vertex AI APIs
 - The Model Context Protocol team for the MCP framework
+- Jade Graham for the [design analysis methodology](https://medium.com/@jadeygraham96/automating-ux-ui-design-analysis-with-python-machine-learning-and-llms-1fa1440b719b) that inspired the `audit_design` tool
 - All contributors and users of this project

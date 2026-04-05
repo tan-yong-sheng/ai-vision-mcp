@@ -65,6 +65,10 @@ export interface Config {
   TOP_P_FOR_ANALYZE_VIDEO?: number;
   TOP_K_FOR_ANALYZE_VIDEO?: number;
   MAX_TOKENS_FOR_ANALYZE_VIDEO?: number;
+  TEMPERATURE_FOR_AUDIT_DESIGN?: number;
+  TOP_P_FOR_AUDIT_DESIGN?: number;
+  TOP_K_FOR_AUDIT_DESIGN?: number;
+  MAX_TOKENS_FOR_AUDIT_DESIGN?: number;
 
   // File processing configuration
   MAX_IMAGE_SIZE?: number;

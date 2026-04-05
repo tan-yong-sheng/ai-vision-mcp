@@ -176,6 +176,10 @@ export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBg...\n-----
 | `TOP_P_FOR_ANALYZE_VIDEO` | No | Top-p for analyze_video | 0.0–1.0 | Uses `TOP_P_FOR_VIDEO` |
 | `TOP_K_FOR_ANALYZE_VIDEO` | No | Top-k for analyze_video | 1–100 | Uses `TOP_K_FOR_VIDEO` |
 | `MAX_TOKENS_FOR_ANALYZE_VIDEO` | No | Max tokens for analyze_video | 1–8192 | Uses `MAX_TOKENS_FOR_VIDEO` |
+| `TEMPERATURE_FOR_AUDIT_DESIGN` | No | Temperature for audit_design | 0.0–2.0 | `0.0` (deterministic) |
+| `TOP_P_FOR_AUDIT_DESIGN` | No | Top-p for audit_design | 0.0–1.0 | `0.95` |
+| `TOP_K_FOR_AUDIT_DESIGN` | No | Top-k for audit_design | 1–100 | `30` |
+| `MAX_TOKENS_FOR_AUDIT_DESIGN` | No | Max tokens for audit_design | 1–8192 | `1500` |
 
 ### File Processing Configuration
 
@@ -253,7 +257,9 @@ export GEMINI_API_KEY="your-gemini-api-key"
 export TEMPERATURE_FOR_ANALYZE_IMAGE=0.1      # Precise image analysis
 export TEMPERATURE_FOR_COMPARE_IMAGES=0.5     # More creative comparisons
 export TEMPERATURE_FOR_DETECT_OBJECTS_IN_IMAGE=0.0  # Deterministic detection
+export TEMPERATURE_FOR_AUDIT_DESIGN=0.0       # Deterministic design auditing
 export MAX_TOKENS_FOR_DETECT_OBJECTS_IN_IMAGE=8192   # High token limit for JSON
+export MAX_TOKENS_FOR_AUDIT_DESIGN=1500       # Detailed design critique
 
 # Function-specific models
 export ANALYZE_IMAGE_MODEL="gemini-2.5-flash-lite"

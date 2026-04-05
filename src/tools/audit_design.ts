@@ -2,6 +2,14 @@
  * MCP Tool: audit_design
  * Performs design compliance auditing with pixel-level analysis and Gemini critique
  * Pure TypeScript/JavaScript — zero native binaries
+ *
+ * Inspired by: "Automating UX/UI Design Analysis with Python, Machine Learning, and LLMs"
+ * by Jade Graham
+ * https://medium.com/@jadeygraham96/automating-ux-ui-design-analysis-with-python-machine-learning-and-llms-1fa1440b719b
+ *
+ * This TypeScript implementation adapts the original Python approach using pure JavaScript
+ * pixel analysis (K-means clustering, Sobel edge detection, WCAG contrast validation)
+ * combined with Gemini Vision API for design critique.
  */
 
 import type { AnalysisOptions, AnalysisResult } from '../types/Providers.js';
@@ -220,19 +228,19 @@ export async function audit_design(
     // Merge default options with provided options
     const options: AnalysisOptions = {
       temperature:
-        config.TEMPERATURE_FOR_ANALYZE_IMAGE ??
+        config.TEMPERATURE_FOR_AUDIT_DESIGN ??
         config.TEMPERATURE_FOR_IMAGE ??
         config.TEMPERATURE,
       topP:
-        config.TOP_P_FOR_ANALYZE_IMAGE ??
+        config.TOP_P_FOR_AUDIT_DESIGN ??
         config.TOP_P_FOR_IMAGE ??
         config.TOP_P,
       topK:
-        config.TOP_K_FOR_ANALYZE_IMAGE ??
+        config.TOP_K_FOR_AUDIT_DESIGN ??
         config.TOP_K_FOR_IMAGE ??
         config.TOP_K,
       maxTokens:
-        config.MAX_TOKENS_FOR_ANALYZE_IMAGE ??
+        config.MAX_TOKENS_FOR_AUDIT_DESIGN ??
         config.MAX_TOKENS_FOR_IMAGE ??
         config.MAX_TOKENS,
       taskType: 'image',

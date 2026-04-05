@@ -262,6 +262,18 @@ export class ConfigService {
         MAX_TOKENS_FOR_ANALYZE_VIDEO: process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO
           ? parseInt(process.env.MAX_TOKENS_FOR_ANALYZE_VIDEO, 10)
           : undefined,
+        TEMPERATURE_FOR_AUDIT_DESIGN: process.env.TEMPERATURE_FOR_AUDIT_DESIGN
+          ? parseFloat(process.env.TEMPERATURE_FOR_AUDIT_DESIGN)
+          : 0, // Default to 0 for deterministic design auditing
+        TOP_P_FOR_AUDIT_DESIGN: process.env.TOP_P_FOR_AUDIT_DESIGN
+          ? parseFloat(process.env.TOP_P_FOR_AUDIT_DESIGN)
+          : undefined,
+        TOP_K_FOR_AUDIT_DESIGN: process.env.TOP_K_FOR_AUDIT_DESIGN
+          ? parseInt(process.env.TOP_K_FOR_AUDIT_DESIGN, 10)
+          : undefined,
+        MAX_TOKENS_FOR_AUDIT_DESIGN: process.env.MAX_TOKENS_FOR_AUDIT_DESIGN
+          ? parseInt(process.env.MAX_TOKENS_FOR_AUDIT_DESIGN, 10)
+          : undefined,
 
         // File processing configuration
         MAX_IMAGE_SIZE: process.env.MAX_IMAGE_SIZE

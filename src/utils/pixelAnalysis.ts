@@ -1,6 +1,16 @@
 /**
  * Pure TypeScript pixel analysis utilities for design auditing
  * Zero native binaries — uses imagescript for decoding and inline math for analysis
+ *
+ * Inspired by: "Automating UX/UI Design Analysis with Python, Machine Learning, and LLMs"
+ * by Jade Graham
+ * https://medium.com/@jadeygraham96/automating-ux-ui-design-analysis-with-python-machine-learning-and-llms-1fa1440b719b
+ *
+ * Implements the following analyses:
+ * - K-means color clustering (dominant colors)
+ * - Sobel edge detection (visual complexity)
+ * - Luminance statistics (brightness analysis)
+ * - WCAG 2.1 contrast validation
  */
 
 import { Image } from 'imagescript';
