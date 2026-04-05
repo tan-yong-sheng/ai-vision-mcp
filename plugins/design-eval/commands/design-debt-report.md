@@ -14,18 +14,23 @@ Analyze custom component usage, design system adoption, and calculate design deb
 |----------|-------------|---------|
 | `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--threshold` | Design debt threshold percentage (triggers warning) | `--threshold 30` |
+| `--userPrompt` | Optional user context to focus audit on specific concerns | `--userPrompt "Identify high-impact custom components"` |
+| `--temperature` | AI response temperature (0.0–2.0, default: 0.0 for deterministic) | `--temperature 0.1` |
+| `--top-p` | Top-p sampling (0.0–1.0) | `--top-p 0.9` |
+| `--top-k` | Top-k sampling (1–100) | `--top-k 40` |
+| `--max-tokens` | Maximum output tokens (default: 2500) | `--max-tokens 3000` |
 
 ## Examples
 
 ```bash
-# Generate design debt report with default threshold (remote image)
+# Generate design debt report with default threshold
 /design-eval:design-debt-report --imageSource https://example.com/design.jpg
 
-# Generate report with custom 40% threshold (local file)
-/design-eval:design-debt-report --imageSource ./screenshots/design.png --threshold 40
+# With custom threshold and user focus
+/design-eval:design-debt-report --imageSource ./screenshots/design.png --threshold 40 --userPrompt "Focus on button component duplication"
 
-# Generate report with data URI
-/design-eval:design-debt-report --imageSource data:image/png;base64,...
+# With parameter tuning
+/design-eval:design-debt-report --imageSource https://example.com/design.jpg --temperature 0.1 --max-tokens 3000
 ```
 
 ## Backend Execution
@@ -51,12 +56,29 @@ Supports all input formats:
 ```bash
 # Translate domain parameters to ai-vision CLI call
 # Design debt analysis focuses on custom vs system component ratio
+# --userPrompt is wrapped inside the prompt
+# --temperature, --top-p, --top-k, --max-tokens control AI behavior
 
 ai-vision analyze-image "$IMAGESOURCE" \
-  --prompt "Analyze design system adoption and design debt. Identify: 1) Custom vs system component ratio, 2) Component adoption metrics, 3) Design system maturity level (1-4), 4) Debt drivers and root causes, 5) Governance health assessment. For each custom component, explain why it was created instead of using system components. Calculate design debt score and provide strategic recommendations for improvement." \
-  --max-tokens 2500 \
+  --prompt "Analyze design system adoption and design debt. Identify: 1) Custom vs system component ratio, 2) Component adoption metrics, 3) Design system maturity level (1-4), 4) Debt drivers and root causes, 5) Governance health assessment. For each custom component, explain why it was created instead of using system components. Calculate design debt score and provide strategic recommendations for improvement.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 ```
+
+### Parameter Defaults
+
+If not provided by user:
+- `--temperature`: 0.0 (deterministic, consistent findings)
+- `--top-p`: 0.95
+- `--top-k`: 30
+- `--max-tokens`: 2500
+- `--threshold`: 30
+- `--userPrompt`: (empty, no additional focus)
 
 ### Processing
 

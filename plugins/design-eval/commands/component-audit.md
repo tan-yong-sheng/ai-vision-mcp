@@ -14,18 +14,23 @@ Analyze component reusability, pattern consistency, and design debt across your 
 |----------|-------------|---------|
 | `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--scope` | Directory scope for component analysis (optional) | `--scope src/components` |
+| `--userPrompt` | Optional user context to focus audit on specific concerns | `--userPrompt "Identify high-impact duplicates"` |
+| `--temperature` | AI response temperature (0.0–2.0, default: 0.0 for deterministic) | `--temperature 0.1` |
+| `--top-p` | Top-p sampling (0.0–1.0) | `--top-p 0.9` |
+| `--top-k` | Top-k sampling (1–100) | `--top-k 40` |
+| `--max-tokens` | Maximum output tokens (default: 2500) | `--max-tokens 3000` |
 
 ## Examples
 
 ```bash
-# Analyze components in default scope (remote image)
+# Analyze all components
 /design-eval:component-audit --imageSource https://example.com/components.jpg
 
-# Analyze components in specific directory (local file)
-/design-eval:component-audit --imageSource ./screenshots/components.png --scope src/components
+# Analyze specific directory with user focus
+/design-eval:component-audit --imageSource ./screenshots/components.png --scope src/components --userPrompt "Find button component variations"
 
-# Analyze components in nested scope
-/design-eval:component-audit --imageSource ./screenshots/all-components.png --scope src/features/*/components
+# With parameter tuning
+/design-eval:component-audit --imageSource https://example.com/components.jpg --temperature 0.1 --max-tokens 3000
 ```
 
 ## Backend Execution
@@ -51,12 +56,28 @@ Supports all input formats:
 ```bash
 # Translate domain parameters to ai-vision CLI call
 # Component analysis prompt focuses on reusability and patterns
+# --userPrompt is wrapped inside the prompt
+# --temperature, --top-p, --top-k, --max-tokens control AI behavior
 
 ai-vision analyze-image "$IMAGESOURCE" \
-  --prompt "Analyze component reusability and patterns. Identify: 1) Duplicate or near-identical components, 2) Component nesting and composition patterns, 3) Prop/API consistency across similar components, 4) Naming conventions and clarity, 5) Component documentation completeness. For each finding provide: component names/selectors, issue description, reusability impact, consolidation opportunity. Calculate reusability metrics." \
-  --max-tokens 2500 \
+  --prompt "Analyze component reusability and patterns. Identify: 1) Duplicate or near-identical components, 2) Component nesting and composition patterns, 3) Prop/API consistency across similar components, 4) Naming conventions and clarity, 5) Component documentation completeness. For each finding provide: component names/selectors, issue description, reusability impact, consolidation opportunity. Calculate reusability metrics.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 ```
+
+### Parameter Defaults
+
+If not provided by user:
+- `--temperature`: 0.0 (deterministic, consistent findings)
+- `--top-p`: 0.95
+- `--top-k`: 30
+- `--max-tokens`: 2500
+- `--userPrompt`: (empty, no additional focus)
 
 ### Processing
 

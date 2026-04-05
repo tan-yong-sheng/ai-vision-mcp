@@ -14,18 +14,26 @@ Validate design system token compliance and check visual consistency across comp
 |----------|-------------|---------|
 | `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--design-system` | Path to design system definition (JSON or YAML) | `--design-system ./design-system.json` |
+| `--userPrompt` | Optional user context to focus audit on specific concerns | `--userPrompt "Check spacing consistency"` |
+| `--temperature` | AI response temperature (0.0–2.0, default: 0.0 for deterministic) | `--temperature 0.1` |
+| `--top-p` | Top-p sampling (0.0–1.0) | `--top-p 0.9` |
+| `--top-k` | Top-k sampling (1–100) | `--top-k 40` |
+| `--max-tokens` | Maximum output tokens (default: 2000) | `--max-tokens 2500` |
 
 ## Examples
 
 ```bash
-# Check visual consistency with design system (remote image)
-/design-eval:visual-consistency --imageSource https://example.com/design.jpg --design-system ./design-system.json
+# Check visual consistency (infer tokens from usage)
+/design-eval:visual-consistency --imageSource https://example.com/design.jpg
 
-# Check visual consistency without explicit design system (local file)
-/design-eval:visual-consistency --imageSource ./screenshots/design.png
+# With design system definition
+/design-eval:visual-consistency --imageSource ./screenshots/design.png --design-system ./design-system.json
 
-# Check with data URI
-/design-eval:visual-consistency --imageSource data:image/png;base64,...
+# With user focus
+/design-eval:visual-consistency --imageSource https://example.com/design.jpg --userPrompt "Verify color palette consistency"
+
+# With parameter tuning
+/design-eval:visual-consistency --imageSource ./design.jpg --temperature 0.1 --max-tokens 2500
 ```
 
 ## Backend Execution
@@ -51,19 +59,40 @@ Supports all input formats:
 ```bash
 # Translate domain parameters to ai-vision CLI call
 # --design-system parameter determines validation scope
+# --userPrompt is wrapped inside the prompt
+# --temperature, --top-p, --top-k, --max-tokens control AI behavior
 
 # Without design system definition (infer tokens from usage)
 ai-vision audit-design "$IMAGESOURCE" \
-  --prompt "Analyze visual consistency and design tokens. Extract and catalog: color palette (primary, secondary, neutral, semantic colors), typography (font families, sizes, weights, line heights), spacing (margin, padding, gap values), shape (border radius, shadows, strokes), motion (transition durations, easing). Identify inconsistencies and deviations from inferred patterns." \
-  --max-tokens 2000 \
+  --prompt "Analyze visual consistency and design tokens. Extract and catalog: color palette (primary, secondary, neutral, semantic colors), typography (font families, sizes, weights, line heights), spacing (margin, padding, gap values), shape (border radius, shadows, strokes), motion (transition durations, easing). Identify inconsistencies and deviations from inferred patterns.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 
 # With design system definition (validate against tokens)
 ai-vision audit-design "$IMAGESOURCE" \
-  --prompt "Validate visual consistency against design system tokens. Compare actual usage to expected values for: color palette tokens, typography tokens, spacing tokens, shape tokens, motion tokens. For each violation, provide: token name, expected value, actual value, affected elements, remediation guidance. Calculate overall consistency score." \
-  --max-tokens 2500 \
+  --prompt "Validate visual consistency against design system tokens. Compare actual usage to expected values for: color palette tokens, typography tokens, spacing tokens, shape tokens, motion tokens. For each violation, provide: token name, expected value, actual value, affected elements, remediation guidance. Calculate overall consistency score.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 ```
+
+### Parameter Defaults
+
+If not provided by user:
+- `--temperature`: 0.0 (deterministic, consistent findings)
+- `--top-p`: 0.95
+- `--top-k`: 30
+- `--max-tokens`: 2000
+- `--userPrompt`: (empty, no additional focus)
 
 ### Processing
 

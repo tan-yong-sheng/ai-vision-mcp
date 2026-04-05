@@ -14,21 +14,26 @@ Conduct a comprehensive design audit analyzing usability heuristics, accessibili
 |----------|-------------|---------|
 | `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--depth` | Audit depth: quick (overview), standard (detailed), deep (comprehensive) | `--depth deep` |
+| `--userPrompt` | Optional user context to focus audit on specific concerns | `--userPrompt "Focus on mobile responsiveness"` |
+| `--temperature` | AI response temperature (0.0–2.0, default: 0.0 for deterministic) | `--temperature 0.1` |
+| `--top-p` | Top-p sampling (0.0–1.0) | `--top-p 0.9` |
+| `--top-k` | Top-k sampling (1–100) | `--top-k 40` |
+| `--max-tokens` | Maximum output tokens (default: 2000) | `--max-tokens 3000` |
 
 ## Examples
 
 ```bash
-# Quick overview with remote image
-/design-eval:audit-design --imageSource https://example.com/design.jpg --depth quick
+# Standard audit
+/design-eval:audit-design --imageSource https://example.com/design.jpg
 
-# Standard audit with local file
-/design-eval:audit-design --imageSource ./screenshots/design.png
+# Deep audit with user focus
+/design-eval:audit-design --imageSource ./screenshots/design.png --depth deep --userPrompt "Prioritize accessibility issues"
 
-# Deep audit with data URI
-/design-eval:audit-design --imageSource data:image/png;base64,iVBORw0KGgo... --depth deep
+# With parameter tuning
+/design-eval:audit-design --imageSource https://example.com/design.jpg --temperature 0.1 --max-tokens 2500
 
-# Standard audit with GCS URI (Vertex AI)
-/design-eval:audit-design --imageSource gs://my-bucket/design.jpg
+# All options
+/design-eval:audit-design --imageSource ./design.jpg --depth standard --userPrompt "Mobile-first design" --temperature 0.2 --max-tokens 2000
 ```
 
 ## Backend Execution
@@ -54,25 +59,51 @@ Supports all input formats:
 ```bash
 # Translate domain parameters to ai-vision CLI call
 # --depth parameter determines prompt scope
+# --userPrompt is wrapped inside the depth-based prompt
+# --temperature, --top-p, --top-k, --max-tokens control AI behavior
 
 # Quick depth: basic heuristics check
 ai-vision audit-design "$IMAGESOURCE" \
-  --prompt "Conduct a quick design audit focusing on Nielsen's 10 usability heuristics. Identify critical issues only." \
-  --max-tokens 1000 \
+  --prompt "Conduct a quick design audit focusing on Nielsen's 10 usability heuristics. Identify critical issues only.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 
 # Standard depth: comprehensive audit (default)
 ai-vision audit-design "$IMAGESOURCE" \
-  --prompt "Conduct a comprehensive design audit analyzing: 1) Nielsen's 10 usability heuristics, 2) WCAG 2.1 accessibility compliance, 3) Visual consistency and design tokens, 4) Component reusability and patterns. Provide findings organized by category with severity levels." \
-  --max-tokens 2000 \
+  --prompt "Conduct a comprehensive design audit analyzing: 1) Nielsen's 10 usability heuristics, 2) WCAG 2.1 accessibility compliance, 3) Visual consistency and design tokens, 4) Component reusability and patterns. Provide findings organized by category with severity levels.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 
 # Deep depth: exhaustive analysis
 ai-vision audit-design "$IMAGESOURCE" \
-  --prompt "Conduct an exhaustive design audit analyzing: 1) Nielsen's 10 usability heuristics with detailed explanations, 2) WCAG 2.1 Level AA accessibility compliance with specific violations, 3) Visual consistency including color contrast ratios and typography, 4) Component reusability with duplication analysis, 5) Design system maturity assessment. Provide comprehensive findings with remediation guidance." \
-  --max-tokens 3000 \
+  --prompt "Conduct an exhaustive design audit analyzing: 1) Nielsen's 10 usability heuristics with detailed explanations, 2) WCAG 2.1 Level AA accessibility compliance with specific violations, 3) Visual consistency including color contrast ratios and typography, 4) Component reusability with duplication analysis, 5) Design system maturity assessment. Provide comprehensive findings with remediation guidance.
+  
+ADDITIONAL FOCUS: $USERPROMPT" \
+  --temperature "$TEMPERATURE" \
+  --top-p "$TOP_P" \
+  --top-k "$TOP_K" \
+  --max-tokens "$MAX_TOKENS" \
   --json
 ```
+
+### Parameter Defaults
+
+If not provided by user:
+- `--temperature`: 0.0 (deterministic, consistent findings)
+- `--top-p`: 0.95
+- `--top-k`: 30
+- `--max-tokens`: 2000 (quick), 2000 (standard), 3000 (deep)
+- `--userPrompt`: (empty, no additional focus)
 
 ### Processing
 
