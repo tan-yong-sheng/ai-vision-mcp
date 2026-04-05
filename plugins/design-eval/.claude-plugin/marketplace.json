@@ -1,0 +1,21 @@
+{
+  "name": "design-eval",
+  "owner": {
+    "name": "tan-yong-sheng"
+  },
+  "metadata": {
+    "description": "Comprehensive UI/UX design evaluation plugin with accessibility, visual consistency, component analysis, and design debt assessment.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "design-eval",
+      "description": "Conduct comprehensive design audits analyzing usability heuristics, accessibility compliance, visual consistency, and design system adherence.",
+      "version": "1.0.0",
+      "author": {
+        "name": "tan-yong-sheng"
+      },
+      "source": "./plugins/design-eval"
+    }
+  ]
+}
