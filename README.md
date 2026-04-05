@@ -252,11 +252,16 @@ Analyzes an image using AI and returns a detailed description.
 **Parameters:**
 - `imageSource` (string): URL, base64 data, or file path to the image
 - `prompt` (string): Question or instruction for the AI
+- `mode` (string, optional): Analysis mode - one of:
+  - `general` (default) - General image analysis
+  - `palette` - Extract design tokens (colors, spacing, typography)
+  - `hierarchy` - Analyze visual hierarchy and eye flow
+  - `components` - Catalog UI components and design system maturity
 - `options` (object, optional): Analysis options including temperature and max tokens
 
 **Examples:**
 
-1. **Analyze image from URL:**
+1. **General image analysis:**
 ```json
 {
   "imageSource": "https://plus.unsplash.com/premium_photo-1710965560034-778eedc929ff",
@@ -264,11 +269,30 @@ Analyzes an image using AI and returns a detailed description.
 }
 ```
 
-2. **Analyze local image file:**
+2. **Extract design tokens:**
 ```json
 {
-  "imageSource": "C:\\Users\\username\\Downloads\\image.jpg",
-  "prompt": "What is this image about? Describe what you see in detail."
+  "imageSource": "https://example.com/design.png",
+  "prompt": "Extract all design tokens from this screenshot",
+  "mode": "palette"
+}
+```
+
+3. **Analyze visual hierarchy:**
+```json
+{
+  "imageSource": "C:\\Users\\username\\Downloads\\ui_mockup.png",
+  "prompt": "Analyze the visual hierarchy and eye flow",
+  "mode": "hierarchy"
+}
+```
+
+4. **Component inventory:**
+```json
+{
+  "imageSource": "https://example.com/design-system.png",
+  "prompt": "List all UI components and evaluate design system maturity",
+  "mode": "components"
 }
 ```
 

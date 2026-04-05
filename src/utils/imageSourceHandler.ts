@@ -7,6 +7,13 @@ import fs from 'fs/promises';
 import fetch from 'node-fetch';
 import { NetworkError } from '../types/Errors.js';
 
+export interface ProcessedImageSource {
+  fileUri: string;
+  mimeType: string;
+  isInlineData: boolean;
+  processingDuration: number;
+}
+
 /**
  * Get image MIME type from URL extension
  */
@@ -33,23 +40,49 @@ export function getImageMimeType(source: string, buffer?: Buffer): string {
     return source.split(':')[1].split(';')[0];
   }
 
-  // Simple detection based on file signature
-  const signatures: Record<string, string> = {
-    'image/png': '\x89PNG\r\n\x1a\n',
-    'image/jpeg': '\xff\xd8\xff',
-    'image/gif': 'GIF87a',
-    'image/webp': 'RIFF',
-  };
-
   if (buffer) {
-    for (const [mimeType, signature] of Object.entries(signatures)) {
-      if (buffer.slice(0, signature.length).toString() === signature) {
-        return mimeType;
-      }
+    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    if (buffer.length >= 8 &&
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47) {
+      return 'image/png';
+    }
+
+    // JPEG signature: FF D8 FF
+    if (buffer.length >= 3 &&
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        buffer[2] === 0xff) {
+      return 'image/jpeg';
+    }
+
+    // GIF signature: 47 49 46 38 (GIF8)
+    if (buffer.length >= 4 &&
+        buffer[0] === 0x47 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x38) {
+      return 'image/gif';
+    }
+
+    // WebP signature: RIFF ... WEBP
+    if (buffer.length >= 12 &&
+        buffer[0] === 0x52 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x46 &&
+        buffer[8] === 0x57 &&
+        buffer[9] === 0x45 &&
+        buffer[10] === 0x42 &&
+        buffer[11] === 0x50) {
+      return 'image/webp';
     }
   }
 
-  return 'image/jpeg'; // Default fallback
+  // Fall back to extension-based detection
+  return getImageMimeTypeFromUrl(source);
 }
 
 /**
@@ -96,4 +129,92 @@ export async function downloadRemoteImageFile(
       `Failed to download image from URL: ${url}`
     );
   }
+}
+
+/**
+ * Process an image source and return standardized format
+ * Handles: data URIs, GCS URIs, HTTP URLs, file references, generativelanguage.googleapis.com URIs, and local files
+ * Does NOT handle provider-specific uploads (caller decides)
+ */
+export async function processImageSource(
+  imageSource: string
+): Promise<ProcessedImageSource> {
+  // Validate input
+  if (!imageSource || typeof imageSource !== 'string') {
+    throw new Error('Invalid image source: must be a non-empty string');
+  }
+
+  let processingDuration = 0;
+
+  // Inline data URI - pass through directly
+  if (imageSource.startsWith('data:image/')) {
+    const matches = imageSource.match(/^data:image\/([a-zA-Z0-9\-+.]+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error('Invalid data URI format: must be data:image/type;base64,<base64-data>');
+    }
+
+    const mimeType = `image/${matches[1]}`;
+    return {
+      fileUri: imageSource,
+      mimeType,
+      isInlineData: true,
+      processingDuration: 0,
+    };
+  }
+
+  // GCS URI - pass through directly
+  if (imageSource.startsWith('gs://')) {
+    return {
+      fileUri: imageSource,
+      mimeType: getImageMimeTypeFromUrl(imageSource),
+      isInlineData: false,
+      processingDuration: 0,
+    };
+  }
+
+  // File reference (Gemini Files API)
+  if (imageSource.startsWith('files/')) {
+    return {
+      fileUri: imageSource,
+      mimeType: 'image/jpeg',
+      isInlineData: false,
+      processingDuration: 0,
+    };
+  }
+
+  // generativelanguage.googleapis.com URI
+  if (imageSource.includes('generativelanguage.googleapis.com')) {
+    return {
+      fileUri: imageSource,
+      mimeType: 'image/jpeg',
+      isInlineData: false,
+      processingDuration: 0,
+    };
+  }
+
+  // HTTP URL
+  if (imageSource.startsWith('http')) {
+    const { buffer, duration } = await downloadRemoteImageFile(imageSource);
+    const mimeType = getImageMimeType(imageSource, buffer);
+    processingDuration = duration;
+
+    return {
+      fileUri: `data:${mimeType};base64,${buffer.toString('base64')}`,
+      mimeType,
+      isInlineData: true,
+      processingDuration,
+    };
+  }
+
+  // Local file - read and inline as base64
+  const { buffer, duration } = await readLocalImageFile(imageSource);
+  const mimeType = getImageMimeType(imageSource, buffer);
+  processingDuration = duration;
+
+  return {
+    fileUri: `data:${mimeType};base64,${buffer.toString('base64')}`,
+    mimeType,
+    isInlineData: true,
+    processingDuration,
+  };
 }

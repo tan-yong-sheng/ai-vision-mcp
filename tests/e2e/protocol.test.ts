@@ -53,10 +53,10 @@ describe('MCP Protocol Tests', () => {
   });
 
   describe('Tools/List', () => {
-    test('should list all 4 tools', async () => {
+    test('should list all 5 tools', async () => {
       const tools = await client.listTools();
 
-      expect(tools.tools).toHaveLength(4);
+      expect(tools.tools).toHaveLength(5);
       expect(tools.tools.map(t => t.name)).toContain('analyze_image');
       expect(tools.tools.map(t => t.name)).toContain('compare_images');
       expect(tools.tools.map(t => t.name)).toContain('detect_objects_in_image');
@@ -243,9 +243,9 @@ describe('MCP Protocol Tests', () => {
       ]);
 
       // All should return the same result
-      expect(tools1.tools).toHaveLength(4);
-      expect(tools2.tools).toHaveLength(4);
-      expect(tools3.tools).toHaveLength(4);
+      expect(tools1.tools).toHaveLength(5);
+      expect(tools2.tools).toHaveLength(5);
+      expect(tools3.tools).toHaveLength(5);
     });
 
     test('should maintain connection after multiple operations', async () => {
@@ -256,7 +256,7 @@ describe('MCP Protocol Tests', () => {
 
       // Connection should still be valid
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4);
+      expect(tools.tools).toHaveLength(5);
     });
   });
 });

@@ -14,7 +14,6 @@
 
 import type { AnalysisOptions, AnalysisResult } from '../types/Providers.js';
 import type { VisionProvider } from '../types/Providers.js';
-import { FileService } from '../services/FileService.js';
 import type { Config } from '../types/Config.js';
 import { VisionError } from '../types/Errors.js';
 import { FUNCTION_NAMES } from '../constants/FunctionNames.js';
@@ -30,6 +29,7 @@ import {
   computeLuminance,
   checkWCAG,
 } from '../utils/pixelAnalysis.js';
+import { processImageSource } from '../utils/imageSourceHandler.js';
 
 export interface AuditDesignArgs {
   imageSource: string; // Can be URL, base64 data, or local file path
@@ -130,9 +130,30 @@ function extractDesignIssues(metrics: DesignMetrics): DesignIssue[] {
  * Build audit prompt for Gemini
  */
 function buildAuditPrompt(
-  metrics: DesignMetrics,
+  metrics: DesignMetrics | null,
   customPrompt?: string
 ): string {
+  // If metrics are unavailable (e.g., AVIF format), use a simpler prompt
+  if (!metrics) {
+    const basePrompt = `You are a senior UX/UI design auditor. Analyze this design screenshot for:
+
+1. **Color harmony** — palette coherence, emotional tone, brand alignment
+2. **Visual hierarchy** — does the layout guide the eye correctly?
+3. **Accessibility** — potential contrast issues, cognitive load, readability
+4. **Layout complexity** — visual density and organization
+5. **Actionable fixes** — 3 specific, prioritized improvements
+
+For each issue, label severity: [critical] [major] [minor].
+Be concise and direct.
+
+Note: Pixel-level metrics unavailable (unsupported image format). Analysis based on visual inspection only.`;
+
+    if (customPrompt) {
+      return `${basePrompt}\n\nAdditional context: ${customPrompt}`;
+    }
+    return basePrompt;
+  }
+
   const colorSummary = metrics.dominantColors
     .map((c) => `${c.hex} (${c.percentage.toFixed(1)}%)`)
     .join(', ');
@@ -185,8 +206,7 @@ function determineSeverity(issues: DesignIssue[]): DesignAuditResult['severity']
 export async function audit_design(
   args: AuditDesignArgs,
   config: Config,
-  imageProvider: VisionProvider,
-  imageFileService: FileService
+  imageProvider: VisionProvider
 ): Promise<DesignAuditResult> {
   try {
     // Validate arguments
@@ -194,36 +214,60 @@ export async function audit_design(
       throw new VisionError('imageSource is required', 'MISSING_ARGUMENT');
     }
 
-    // Handle image source (URL vs local file vs base64)
-    const processedImageSource = await imageFileService.handleImageSource(
-      args.imageSource
-    );
+    // Process image source using shared utility
+    const {
+      fileUri,
+      mimeType,
+      isInlineData,
+    } = await processImageSource(args.imageSource);
 
     // Compute pixel-level metrics
     console.error('[audit_design] Computing pixel metrics...');
     let imageBuffer: Buffer;
 
-    // If it's a data URI, decode it
-    if (processedImageSource.startsWith('data:image/')) {
-      const base64Data = processedImageSource.split(',')[1];
+    // Extract buffer from processed image source
+    if (isInlineData && fileUri.startsWith('data:image/')) {
+      const base64Data = fileUri.split(',')[1];
       imageBuffer = Buffer.from(base64Data, 'base64');
-    } else if (processedImageSource.startsWith('http')) {
-      // Fetch from URL
-      const response = await fetch(processedImageSource);
-      imageBuffer = Buffer.from(await response.arrayBuffer());
     } else {
-      // Assume it's a file path
-      const fs = await import('fs/promises');
-      imageBuffer = await fs.readFile(processedImageSource);
+      // For file references and GCS URIs, we can't extract pixel data
+      // Fall back to Gemini vision analysis only
+      imageBuffer = Buffer.alloc(0);
     }
 
-    const metrics = await computeDesignMetrics(imageBuffer);
-    console.error(
-      `[audit_design] Metrics computed: ${metrics.width}×${metrics.height}px, ${metrics.dominantColors.length} colors`
-    );
+    // Try to compute pixel metrics, but gracefully handle unsupported formats
+    let metrics: DesignMetrics | null = null;
+    let issues: DesignIssue[] = [];
 
-    // Extract issues from metrics
-    const issues = extractDesignIssues(metrics);
+    if (imageBuffer.length > 0) {
+      try {
+        metrics = await computeDesignMetrics(imageBuffer);
+        console.error(
+          `[audit_design] Metrics computed: ${metrics.width}×${metrics.height}px, ${metrics.dominantColors.length} colors`
+        );
+        // Extract issues from metrics
+        issues = extractDesignIssues(metrics);
+      } catch (metricsError) {
+        // Unsupported format detected - skip pixel analysis and use Gemini vision analysis only
+        if (metricsError instanceof Error) {
+          const message = metricsError.message.toLowerCase();
+          if (
+            message.includes('format detected') ||
+            message.includes('unsupported') ||
+            message.includes('pixel analysis skipped')
+          ) {
+            console.error(
+              `[audit_design] ${metricsError.message}`
+            );
+            metrics = null;
+          } else {
+            throw metricsError;
+          }
+        } else {
+          throw metricsError;
+        }
+      }
+    }
 
     // Merge default options with provided options
     const options: AnalysisOptions = {
@@ -252,7 +296,7 @@ export async function audit_design(
     console.error('[audit_design] Requesting Gemini critique...');
     const auditPrompt = buildAuditPrompt(metrics, args.prompt);
     const critiqueResult = await imageProvider.analyzeImage(
-      processedImageSource,
+      fileUri,
       auditPrompt,
       options
     );

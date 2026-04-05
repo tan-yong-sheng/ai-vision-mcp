@@ -885,13 +885,12 @@ server.registerTool<any, any>(
       const validatedArgs = { imageSource, prompt, options };
 
       // Initialize services on-demand (only after validation passes)
-      const { config, imageProvider, imageFileService } = getServices();
+      const { config, imageProvider } = getServices();
 
       const result = await audit_design(
         validatedArgs,
         config,
-        imageProvider,
-        imageFileService
+        imageProvider
       );
 
       return {

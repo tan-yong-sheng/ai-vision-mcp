@@ -744,7 +744,7 @@ export class ConfigService {
 
   public getAllowedImageFormats(): string[] {
     return (
-      this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp']
+      this.config.ALLOWED_IMAGE_FORMATS || ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp', 'avif', 'heic']
     );
   }
 

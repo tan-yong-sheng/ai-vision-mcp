@@ -44,7 +44,7 @@ export interface DesignMetrics {
 }
 
 export interface DesignAuditResult {
-  metrics: DesignMetrics;
+  metrics: DesignMetrics | null;
   critique: string;
   issues: DesignIssue[];
   severity: 'pass' | 'minor' | 'major' | 'critical';

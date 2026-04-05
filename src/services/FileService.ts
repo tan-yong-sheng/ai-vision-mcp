@@ -453,30 +453,44 @@ export class FileService {
   }
 
   private isLocalFilePath(filePath: string): boolean {
-    // Unix/Linux paths
+    // Unix/Linux absolute paths
+    if (filePath.startsWith('/')) {
+      return true;
+    }
+
+    // Unix/Linux and Windows relative paths with ./ or ../
     if (
-      filePath.startsWith('/') ||
       filePath.startsWith('./') ||
       filePath.startsWith('../')
     ) {
       return true;
     }
 
-    // Windows paths
-    // Check for drive letter pattern (e.g., "C:\", "D:/", etc.)
+    // Windows paths with drive letter (e.g., "C:\", "D:/", etc.)
     if (/^[a-zA-Z]:[\\/]/.test(filePath)) {
       return true;
     }
 
-    // Check for UNC paths (e.g., "\\server\share")
+    // Windows UNC paths (e.g., "\\server\share")
     if (filePath.startsWith('\\\\')) {
       return true;
     }
 
-    // Check for relative paths with backslashes (Windows-style)
+    // Windows relative paths with backslashes (e.g., "..\folder", ".\file")
     if (
       filePath.includes('\\') &&
       (filePath.startsWith('.\\') || filePath.startsWith('..\\'))
+    ) {
+      return true;
+    }
+
+    // Relative paths with forward slashes (e.g., "folder/file.jpg")
+    // Check if it contains a path separator and doesn't look like a URL
+    if (
+      (filePath.includes('/') || filePath.includes('\\')) &&
+      !filePath.startsWith('http://') &&
+      !filePath.startsWith('https://') &&
+      !filePath.startsWith('gs://')
     ) {
       return true;
     }
@@ -536,6 +550,7 @@ export class FileService {
       webp: 'image/webp',
       bmp: 'image/bmp',
       tiff: 'image/tiff',
+      avif: 'image/avif',
       heic: 'image/heic',
       heif: 'image/heif',
       // Videos

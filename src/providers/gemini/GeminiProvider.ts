@@ -31,11 +31,7 @@ import {
   isYouTubeUrl,
 } from '../../utils/mediaSources.js';
 import { processVideoSource } from '../../utils/videoSourceHandler.js';
-import {
-  getImageMimeType,
-  getImageMimeTypeFromUrl,
-  downloadRemoteImageFile,
-} from '../../utils/imageSourceHandler.js';
+import { processImageSource } from '../../utils/imageSourceHandler.js';
 
 export class GeminiProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -111,70 +107,57 @@ export class GeminiProvider extends BaseVisionProvider {
       );
 
       let content: any;
-      let mimeType: string;
       let fileSize: number | undefined;
       let processingDuration = 0;
 
-      if (imageSource.startsWith('data:image/')) {
-        // Handle base64 data with inlineData
-        const matches = imageSource.match(/^data:([^;]+);base64,(.+)$/);
-        if (!matches) {
-          throw new Error('Invalid data URL format');
-        }
+      // Process image source using shared utility
+      const {
+        fileUri,
+        mimeType,
+        isInlineData,
+        processingDuration: sourceProcessingDuration,
+      } = await processImageSource(imageSource);
 
-        mimeType = matches[1];
-        const base64Data = matches[2];
+      processingDuration = sourceProcessingDuration;
+
+      // For GeminiProvider, if we got inline data from a non-files/, non-gs:// source,
+      // and it's not already a data URI, handle it
+      if (isInlineData && fileUri.startsWith('data:')) {
+        // Extract base64 data from data URI
+        const base64Data = fileUri.split(',')[1];
         fileSize = Buffer.from(base64Data, 'base64').length;
 
-        content = {
-          inlineData: {
-            mimeType,
-            data: base64Data,
-          },
-        };
-      } else if (imageSource.startsWith('gs://')) {
-        mimeType = 'image/jpeg';
-        content = {
-          fileData: {
-            fileUri: imageSource,
-            mimeType,
-          },
-        };
-      } else if (imageSource.startsWith('http')) {
-        const { result: imageData, duration: downloadDuration } =
-          await this.measureAsync(async () => {
-            const response = await fetch(imageSource);
-            if (!response.ok) {
-              throw new NetworkError(
-                `Failed to fetch image from URL: ${imageSource}`
-              );
-            }
-            const arrayBuffer = await response.arrayBuffer();
-            return Buffer.from(arrayBuffer);
-          });
+        // Check if we should upload HTTP images to Files API
+        if (imageSource.startsWith('http') && !isYouTubeUrl(imageSource)) {
+          const buffer = Buffer.from(base64Data, 'base64');
+          const filename = imageSource.split('/').pop() || 'image.jpg';
 
-        const filename = imageSource.split('/').pop() || 'image.jpg';
-        mimeType = getImageMimeTypeFromUrl(imageSource);
-        fileSize = imageData.length;
+          const { result: uploadedFile, duration: uploadFileDuration } =
+            await this.measureAsync(async () => {
+              return await this.uploadFile(buffer, filename, mimeType);
+            });
 
-        const { result: uploadedFile, duration: uploadFileDuration } =
-          await this.measureAsync(async () => {
-            return await this.uploadFile(imageData, filename, mimeType);
-          });
-
-        processingDuration = downloadDuration + uploadFileDuration;
-        content = {
-          fileData: {
-            fileUri: uploadedFile.uri!,
-            mimeType,
-          },
-        };
-      } else if (isFileReferenceSource(imageSource)) {
-        const fileUri = imageSource;
+          processingDuration += uploadFileDuration;
+          content = {
+            fileData: {
+              fileUri: uploadedFile.uri!,
+              mimeType,
+            },
+          };
+        } else {
+          // Use inline data for local files or data URIs
+          content = {
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          };
+        }
+      } else if (isFileReferenceSource(fileUri)) {
+        // Handle Gemini Files API references
         const fileId = fileUri.split('/').pop()!;
         await this.waitForFileProcessing(fileId);
 
-        mimeType = 'image/jpeg';
         content = {
           fileData: {
             fileUri,
@@ -182,9 +165,13 @@ export class GeminiProvider extends BaseVisionProvider {
           },
         };
       } else {
-        throw new Error(
-          `Invalid image source format: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''} (starts with http: ${imageSource.startsWith('http')}, starts with data:image: ${imageSource.startsWith('data:image/')}, starts with files/: ${imageSource.startsWith('files/')})`
-        );
+        // Use fileData for GCS URIs and other file references
+        content = {
+          fileData: {
+            fileUri,
+            mimeType,
+          },
+        };
       }
 
       const model = this.resolveModelForFunction(
@@ -263,73 +250,54 @@ export class GeminiProvider extends BaseVisionProvider {
           `[GeminiProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
         );
 
+        // Process image source using shared utility
+        const {
+          fileUri,
+          mimeType,
+          isInlineData,
+          processingDuration: sourceProcessingDuration,
+        } = await processImageSource(imageSource);
+
         let content: any;
-        let mimeType: string;
         let fileSize: number | undefined;
-        let processingDuration = 0;
+        let processingDuration = sourceProcessingDuration;
 
-        if (imageSource.startsWith('data:image/')) {
-          // Handle base64 data with inlineData
-          const matches = imageSource.match(/^data:([^;]+);base64,(.+)$/);
-          if (!matches) {
-            throw new Error(`Invalid data URL format for image ${i + 1}`);
-          }
-
-          mimeType = matches[1];
-          const base64Data = matches[2];
+        if (isInlineData && fileUri.startsWith('data:')) {
+          // Extract base64 data from data URI
+          const base64Data = fileUri.split(',')[1];
           fileSize = Buffer.from(base64Data, 'base64').length;
 
-          content = {
-            inlineData: {
-              mimeType,
-              data: base64Data,
-            },
-          };
-        } else if (imageSource.startsWith('gs://')) {
-          // GCS URIs can be passed directly using file_data
-          mimeType = 'image/jpeg'; // Default, will be detected if needed
-          content = {
-            fileData: {
-              fileUri: imageSource,
-              mimeType,
-            },
-          };
-        } else if (imageSource.startsWith('http')) {
-          // Download image from URL and upload to Files API
-          const { result: imageData, duration: downloadDuration } =
-            await this.measureAsync(async () => {
-              const response = await fetch(imageSource);
-              if (!response.ok) {
-                throw new NetworkError(
-                  `Failed to fetch image ${i + 1} from URL: ${imageSource}`
-                );
-              }
-              const arrayBuffer = await response.arrayBuffer();
-              return Buffer.from(arrayBuffer);
-            });
+          // Check if we should upload HTTP images to Files API
+          if (imageSource.startsWith('http') && !isYouTubeUrl(imageSource)) {
+            const buffer = Buffer.from(base64Data, 'base64');
+            const filename = imageSource.split('/').pop() || `image${i + 1}.jpg`;
 
-          const filename = imageSource.split('/').pop() || `image${i + 1}.jpg`;
-          mimeType = getImageMimeTypeFromUrl(imageSource);
-          fileSize = imageData.length;
+            const { result: uploadedFile, duration: uploadFileDuration } =
+              await this.measureAsync(async () => {
+                return await this.uploadFile(buffer, filename, mimeType);
+              });
 
-          const { result: uploadedFile, duration: uploadFileDuration } =
-            await this.measureAsync(async () => {
-              return await this.uploadFile(imageData, filename, mimeType);
-            });
-
-          processingDuration = downloadDuration + uploadFileDuration;
-          content = {
-            fileData: {
-              fileUri: uploadedFile.uri!,
-              mimeType,
-            },
-          };
-        } else if (isFileReferenceSource(imageSource)) {
-          const fileUri = imageSource;
+            processingDuration += uploadFileDuration;
+            content = {
+              fileData: {
+                fileUri: uploadedFile.uri!,
+                mimeType,
+              },
+            };
+          } else {
+            // Use inline data for local files or data URIs
+            content = {
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
+            };
+          }
+        } else if (isFileReferenceSource(fileUri)) {
+          // Handle Gemini Files API references
           const fileId = fileUri.split('/').pop()!;
           await this.waitForFileProcessing(fileId);
 
-          mimeType = 'image/jpeg';
           content = {
             fileData: {
               fileUri,
@@ -337,9 +305,13 @@ export class GeminiProvider extends BaseVisionProvider {
             },
           };
         } else {
-          throw new Error(
-            `Invalid image source format for image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
-          );
+          // Use fileData for GCS URIs and other file references
+          content = {
+            fileData: {
+              fileUri,
+              mimeType,
+            },
+          };
         }
 
         contentParts.push(content);

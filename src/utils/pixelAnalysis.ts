@@ -1,6 +1,6 @@
 /**
  * Pure TypeScript pixel analysis utilities for design auditing
- * Zero native binaries — uses imagescript for decoding and inline math for analysis
+ * Zero native binaries — uses imagescript for PNG/JPEG decoding (WASM)
  *
  * Inspired by: "Automating UX/UI Design Analysis with Python, Machine Learning, and LLMs"
  * by Jade Graham
@@ -13,8 +13,12 @@
  * - WCAG 2.1 contrast validation
  */
 
-import { Image } from 'imagescript';
+import { Image, ImageType } from 'imagescript';
 import { kmeans } from 'ml-kmeans';
+import { execSync } from 'child_process';
+import { writeFileSync, readFileSync, unlinkSync, mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import type {
   RGB,
   ColorCluster,
@@ -24,14 +28,155 @@ import type {
 } from '../types/DesignAudit.js';
 
 /**
- * Step 1: Load image via imagescript
- * imagescript uses WASM for PNG/JPEG decoding (bundled, no native deps)
+ * Detect if buffer is a supported format that ImageScript can decode
+ * Returns the detected format type or null if unsupported
  */
+function detectSupportedFormat(buffer: Buffer): string | null {
+  try {
+    // ImageScript's ImageType.getType() returns the format if recognized
+    // Returns: 'png', 'jpeg', 'bmp', 'gif', 'tiff', or null if unknown
+    const type = ImageType.getType(buffer);
+    return type; // null if unsupported format
+  } catch (error) {
+    // If detection fails, return null
+    return null;
+  }
+}
+
+/**
+ * Detect if buffer is an ISO-BMFF container (AVIF, HEIC, HEIF, etc.)
+ * These formats use the same container but different codecs
+ */
+function detectISOBMFFFormat(buffer: Buffer): string | null {
+  if (buffer.length < 12) return null;
+
+  // Check for 'ftyp' box marker at offset 4
+  const ftypMarker = buffer.toString('ascii', 4, 8);
+  if (ftypMarker !== 'ftyp') return null;
+
+  // Get the brand code (4 bytes after 'ftyp')
+  const brand = buffer.toString('ascii', 8, 12);
+
+  // Map brand codes to format names
+  const brandMap: Record<string, string> = {
+    avif: 'AVIF',
+    mif1: 'HEIF', // Modern HEIF (can be HEIC or HEIF)
+    heic: 'HEIC', // HEIC variant
+    heix: 'HEIC', // HEIC variant
+    hevc: 'HEIC', // HEIC variant
+  };
+
+  return brandMap[brand] || null;
+}
+
+/**
+ * Detect WebP format by magic bytes
+ */
+function detectWebPFormat(buffer: Buffer): boolean {
+  // WebP files start with 'RIFF' signature, followed by 'WEBP' at offset 8
+  if (buffer.length < 12) return false;
+  const riff = buffer.toString('ascii', 0, 4);
+  const webp = buffer.toString('ascii', 8, 12);
+  return riff === 'RIFF' && webp === 'WEBP';
+}
+
+/**
+ * Convert unsupported image format to JPEG using FFmpeg
+ * Returns the converted JPEG buffer
+ */
+function convertToJpegViaFFmpeg(buffer: Buffer): Buffer {
+  const tempDir = mkdtempSync(join(tmpdir(), 'img-convert-'));
+  const inputPath = join(tempDir, 'input');
+  const outputPath = join(tempDir, 'output.jpg');
+
+  try {
+    // Write input buffer to temp file
+    writeFileSync(inputPath, buffer);
+
+    // Convert to JPEG using FFmpeg
+    // -y: overwrite output file
+    // -q:v 2: quality (2 is high quality, range 2-31)
+    execSync(`ffmpeg -y -i "${inputPath}" -q:v 2 "${outputPath}"`, {
+      stdio: 'pipe', // suppress output
+      encoding: 'buffer',
+    });
+
+    // Read converted JPEG
+    const jpegBuffer = readFileSync(outputPath);
+
+    return jpegBuffer;
+  } finally {
+    // Cleanup temp files
+    try {
+      unlinkSync(inputPath);
+      unlinkSync(outputPath);
+      // Remove temp directory
+      execSync(`rmdir "${tempDir}"`, { stdio: 'pipe' });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+
 export async function loadImagePixels(imageBuffer: Buffer): Promise<{
   width: number;
   height: number;
   rgba: Uint8ClampedArray;
 }> {
+  // Check if format is supported by ImageScript
+  const supportedFormat = detectSupportedFormat(imageBuffer);
+  if (!supportedFormat) {
+    // Check if it's an ISO-BMFF container (AVIF, HEIC, HEIF, etc.)
+    const isobmffFormat = detectISOBMFFFormat(imageBuffer);
+    if (isobmffFormat) {
+      console.error(
+        `[pixelAnalysis] ${isobmffFormat} format detected. Converting to JPEG via FFmpeg...`
+      );
+      try {
+        const jpegBuffer = convertToJpegViaFFmpeg(imageBuffer);
+        console.error(`[pixelAnalysis] Conversion successful, processing JPEG...`);
+        const img = await Image.decode(jpegBuffer);
+        return {
+          width: img.width,
+          height: img.height,
+          rgba: img.bitmap,
+        };
+      } catch (error) {
+        throw new Error(
+          `Failed to convert ${isobmffFormat} to JPEG: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    // Check for WebP format
+    if (detectWebPFormat(imageBuffer)) {
+      console.error(
+        `[pixelAnalysis] WebP format detected. Converting to JPEG via FFmpeg...`
+      );
+      try {
+        const jpegBuffer = convertToJpegViaFFmpeg(imageBuffer);
+        console.error(`[pixelAnalysis] Conversion successful, processing JPEG...`);
+        const img = await Image.decode(jpegBuffer);
+        return {
+          width: img.width,
+          height: img.height,
+          rgba: img.bitmap,
+        };
+      } catch (error) {
+        throw new Error(
+          `Failed to convert WebP to JPEG: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    // Unknown or unsupported format
+    throw new Error(
+      'Unsupported image format. Pixel analysis skipped. Using Gemini vision analysis instead.'
+    );
+  }
+
+  // For supported formats (PNG/JPEG/BMP/GIF/TIFF), use imagescript
   const img = await Image.decode(imageBuffer);
 
   return {

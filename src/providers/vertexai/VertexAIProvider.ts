@@ -3,7 +3,6 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import fetch from 'node-fetch';
 import { BaseVisionProvider } from '../base/VisionProvider.js';
 import { FUNCTION_NAMES } from '../../constants/FunctionNames.js';
 import type {
@@ -24,11 +23,7 @@ import {
 import { RetryHandler } from '../../utils/retry.js';
 import { formatDuration } from '../../utils/duration.js';
 import { processVideoSource } from '../../utils/videoSourceHandler.js';
-import {
-  getImageMimeType,
-  getImageMimeTypeFromUrl,
-  downloadRemoteImageFile,
-} from '../../utils/imageSourceHandler.js';
+import { processImageSource } from '../../utils/imageSourceHandler.js';
 
 export class VertexAIProvider extends BaseVisionProvider {
   private client: GoogleGenAI;
@@ -116,13 +111,16 @@ export class VertexAIProvider extends BaseVisionProvider {
     options?: AnalysisOptions
   ): Promise<AnalysisResult> {
     try {
-      if (
-        imageSource.startsWith('files/') ||
-        imageSource.includes('generativelanguage.googleapis.com')
-      ) {
-        const fileUri = imageSource;
-        const mimeType = getImageMimeTypeFromUrl(imageSource);
+      // Process image source using shared utility
+      const {
+        fileUri,
+        mimeType,
+        isInlineData,
+        processingDuration: sourceProcessingDuration,
+      } = await processImageSource(imageSource);
 
+      // Handle file references and GCS URIs
+      if (!isInlineData) {
         const model = this.resolveModelForFunction(
           'image',
           options?.functionName
@@ -187,7 +185,7 @@ export class VertexAIProvider extends BaseVisionProvider {
                 totalTokenCount: usage.totalTokenCount,
               }
             : undefined,
-          duration,
+          sourceProcessingDuration + duration,
           mimeType,
           undefined,
           response.modelVersion,
@@ -195,9 +193,8 @@ export class VertexAIProvider extends BaseVisionProvider {
         );
       }
 
-      const imageData = await this.getImageData(imageSource);
-      const mimeType = getImageMimeType(imageSource, imageData);
-
+      // Handle inline data (data URIs)
+      const base64Data = fileUri.split(',')[1];
       const model = this.resolveModelForFunction(
         'image',
         options?.functionName
@@ -230,7 +227,7 @@ export class VertexAIProvider extends BaseVisionProvider {
                   {
                     inlineData: {
                       mimeType,
-                      data: imageData.toString('base64'),
+                      data: base64Data,
                     },
                   },
                   { text: prompt },
@@ -262,9 +259,9 @@ export class VertexAIProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        duration,
+        sourceProcessingDuration + duration,
         mimeType,
-        imageData.length,
+        Buffer.from(base64Data, 'base64').length,
         response.modelVersion,
         response.responseId
       );
@@ -286,6 +283,7 @@ export class VertexAIProvider extends BaseVisionProvider {
       // Process all images to create parts
       const imageParts: any[] = [];
       let totalFileSize = 0;
+      let totalProcessingDuration = 0;
 
       for (let i = 0; i < imageSources.length; i++) {
         const imageSource = imageSources[i];
@@ -293,16 +291,37 @@ export class VertexAIProvider extends BaseVisionProvider {
           `[VertexAIProvider] Processing image ${i + 1}: ${imageSource.substring(0, 100)}${imageSource.length > 100 ? '...' : ''}`
         );
 
-        const imageData = await this.getImageData(imageSource);
-        const mimeType = getImageMimeType(imageSource, imageData);
-        totalFileSize += imageData.length;
+        // Process image source using shared utility
+        const {
+          fileUri,
+          mimeType,
+          isInlineData,
+          processingDuration: sourceProcessingDuration,
+        } = await processImageSource(imageSource);
 
-        imageParts.push({
-          inlineData: {
-            mimeType,
-            data: imageData.toString('base64'),
-          },
-        });
+        totalProcessingDuration += sourceProcessingDuration;
+
+        if (isInlineData && fileUri.startsWith('data:')) {
+          // Extract base64 data from data URI
+          const base64Data = fileUri.split(',')[1];
+          const fileSize = Buffer.from(base64Data, 'base64').length;
+          totalFileSize += fileSize;
+
+          imageParts.push({
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          });
+        } else {
+          // Use fileData for GCS URIs, file references, and generativelanguage.googleapis.com URIs
+          imageParts.push({
+            fileData: {
+              mimeType,
+              fileUri,
+            },
+          });
+        }
       }
 
       // Add the prompt as the last part
@@ -365,7 +384,7 @@ export class VertexAIProvider extends BaseVisionProvider {
               totalTokenCount: usage.totalTokenCount,
             }
           : undefined,
-        duration,
+        totalProcessingDuration + duration,
         'image/multiple',
         totalFileSize,
         response.modelVersion,
@@ -581,31 +600,6 @@ export class VertexAIProvider extends BaseVisionProvider {
   }
 
   // Private helper methods
-
-  private async getImageData(imageSource: string): Promise<Buffer> {
-    if (imageSource.startsWith('http')) {
-      // Handle URL
-      const response = await fetch(imageSource);
-      if (!response.ok) {
-        throw new NetworkError(
-          `Failed to fetch image from URL: ${imageSource}`
-        );
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      return Buffer.from(arrayBuffer);
-    } else if (imageSource.startsWith('data:image/')) {
-      // Handle base64
-      const base64Data = imageSource.split(',')[1];
-      return Buffer.from(base64Data, 'base64');
-    } else if (imageSource.startsWith('gs://')) {
-      // For GCS URIs, we need to download from GCS
-      throw new Error(
-        'GCS download not implemented. Please use GCS client directly.'
-      );
-    } else {
-      throw new Error('Invalid image source format for Vertex AI');
-    }
-  }
 
   private handleError(error: unknown, operation: string): Error {
     if (error instanceof Error) {

@@ -75,6 +75,8 @@ run_case() {
   echo
 } >> "$RESULT_FILE"
 
+run_case "audit-design url" $CLI audit-design "$IMAGE_URL" --prompt "Check design accessibility and WCAG compliance" --max-tokens 300
+run_case "audit-design local file" $CLI audit-design "$LOCAL_IMAGE" --prompt "Audit design for visual quality" --json
 run_case "analyze-image url" $CLI analyze-image "$IMAGE_URL" --prompt "Describe the scene in one sentence." --max-tokens 100
 run_case "analyze-image local file" $CLI analyze-image "$LOCAL_IMAGE" --prompt "Describe the image in one sentence." --max-tokens 100
 run_case "analyze-image base64" $CLI analyze-image "$BASE64_IMAGE" --prompt "What color is this?" --json
@@ -88,7 +90,7 @@ run_case "analyze-video youtube" $CLI analyze-video "$YOUTUBE_URL" --prompt "Sum
 
 {
   echo "## Summary"
-  echo "- Completed 10 CLI cases"
+  echo "- Completed 12 CLI cases"
   echo "- Passed: $PASS_COUNT"
   echo "- Failed: $FAIL_COUNT"
   if [[ ${#FAILED_CASES[@]} -gt 0 ]]; then

@@ -2,8 +2,8 @@
 name: ai-vision
 description: >
   Analyze images and videos with AI vision models. Detect objects with bounding boxes,
-  compare multiple images, extract design tokens and visual hierarchy, and analyze video
-  content using Google Gemini or Vertex AI. Supports CLI and MCP modes.
+  compare multiple images, audit design compliance, and analyze video content using 
+  Google Gemini or Vertex AI. Supports CLI and MCP modes.
 license: MIT
 metadata:
   version: 1.0.0
@@ -25,13 +25,12 @@ metadata:
     - analysis
     - detection
     - comparison
-    - design-tokens
-    - visual-hierarchy
+    - design-audit
 ---
 
 # AI Vision MCP
 
-AI-powered image and video analysis CLI using Google Gemini and Vertex AI models. Analyze images, compare multiple images, detect objects, and analyze videos with advanced AI capabilities.
+AI-powered image and video analysis CLI using Google Gemini and Vertex AI models.
 
 ## Quick Start
 
@@ -39,32 +38,20 @@ AI-powered image and video analysis CLI using Google Gemini and Vertex AI models
 
 ```bash
 npm install -g ai-vision-mcp
-```
-
-Or use directly with npx:
-
-```bash
+# or use directly
 npx ai-vision-mcp <command> [options]
 ```
 
 ### Setup
 
-Set up your provider credentials:
-
-**Provider selection**
-`ai-vision` automatically reads `IMAGE_PROVIDER` and `VIDEO_PROVIDER` from the environment.
-
-Use `google` for Gemini and `vertex_ai` for Vertex AI:
-- `IMAGE_PROVIDER="google"` or `IMAGE_PROVIDER="vertex_ai"`
-- `VIDEO_PROVIDER="google"` or `VIDEO_PROVIDER="vertex_ai"`
+Set your provider via environment variables:
 
 **Google AI Studio (Recommended)**
 ```bash
 export IMAGE_PROVIDER="google"
 export VIDEO_PROVIDER="google"
-export GEMINI_API_KEY="your-gemini-api-key"
+export GEMINI_API_KEY="your-api-key"
 ```
-
 Get your API key at [aistudio.google.com/app/api-keys](https://aistudio.google.com/app/api-keys)
 
 **Vertex AI**
@@ -76,75 +63,82 @@ export VERTEX_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KE
 export VERTEX_PROJECT_ID="your-gcp-project-id"
 export GCS_BUCKET_NAME="your-gcs-bucket"
 ```
-The CLI will load these automatically when `IMAGE_PROVIDER` and `VIDEO_PROVIDER` are set to `vertex_ai`.
 
 ## Commands
 
-### analyze-image
+### audit-design
 
-Analyze an image with AI vision models. Supports multiple analysis modes for different use cases.
+Audit a website or UI design for accessibility, visual quality, WCAG contrast compliance, and design best practices.
 
 ```bash
-ai-vision analyze-image <source> --prompt <text> [--mode <mode>] [options]
+ai-vision audit-design <source> [--prompt <text>] [options]
 ```
 
-**Modes:**
-- `general` (default) - General image analysis
-- `palette` - Extract design tokens (colors, spacing, typography)
-- `hierarchy` - Analyze visual hierarchy and eye flow
-- `components` - Catalog UI components and design system maturity
+**Options:**
+- `--prompt <text>` — Custom audit prompt (optional)
+- `--temperature <num>` — Temperature 0-2 (default: 0.7)
+- `--top-p <num>` — Top P 0-1
+- `--top-k <num>` — Top K 1-100
+- `--max-tokens <num>` — Max output tokens
+- `--json` — Output raw JSON
+
+**Output includes:**
+- Severity level (critical/major/minor/pass)
+- Metrics: dimensions, dominant colors, edge complexity, luminance, WCAG contrast
+- Issues identified with recommendations
+- AI critique
 
 **Examples:**
+```bash
+ai-vision audit-design https://example.com/hero.jpg
+ai-vision audit-design screenshot.png --prompt "Evaluate accessibility"
+ai-vision audit-design design.jpg --json
+```
+
+### analyze-image
+
+Analyze an image with AI vision models.
 
 ```bash
-# General analysis
+ai-vision analyze-image <source> --prompt <text> [options]
+```
+
+**Options:**
+- `--prompt <text>` — Analysis prompt (required)
+- `--temperature <num>` — Temperature 0-2 (default: 0.7)
+- `--top-p <num>` — Top P 0-1
+- `--top-k <num>` — Top K 1-100
+- `--max-tokens <num>` — Max output tokens
+- `--json` — Output raw JSON
+
+**Examples:**
+```bash
 ai-vision analyze-image https://example.com/image.jpg --prompt "describe the scene"
-
-# Design token extraction
-ai-vision analyze-image screenshot.png --prompt "extract design tokens" --mode palette
-
-# Visual hierarchy analysis
-ai-vision analyze-image ui-mockup.png --prompt "analyze layout" --mode hierarchy
-
-# Component inventory
-ai-vision analyze-image design-system.png --prompt "list components" --mode components
-
-# Output as JSON
+ai-vision analyze-image screenshot.png --prompt "extract design tokens"
 ai-vision analyze-image image.jpg --prompt "analyze" --json
 ```
 
 ### compare-images
 
-Compare 2-4 images side-by-side to identify differences, similarities, or changes. Supports URLs, local files, base64 data, GCS URIs, and file references.
+Compare 2-4 images to identify differences, similarities, or changes.
 
 ```bash
 ai-vision compare-images <source1> <source2> [source3] [source4] --prompt <text> [options]
 ```
 
 **Options:**
-
-```
---temperature <num>          Temperature 0-2 (default: 0.7)
---top-p <num>                Top P 0-1
---top-k <num>                Top K 1-100
---max-tokens <num>           Max output tokens
---json                       Output raw JSON instead of formatted text
-```
+- `--prompt <text>` — Comparison prompt (required)
+- `--temperature <num>` — Temperature 0-2 (default: 0.7)
+- `--top-p <num>` — Top P 0-1
+- `--top-k <num>` — Top K 1-100
+- `--max-tokens <num>` — Max output tokens
+- `--json` — Output raw JSON
 
 **Examples:**
-
 ```bash
-# Compare two versions
 ai-vision compare-images before.jpg after.jpg --prompt "what changed?"
-
-# Compare multiple designs
 ai-vision compare-images v1.png v2.png v3.png --prompt "which is best?"
-
-# Visual regression testing
 ai-vision compare-images baseline.png current.png --prompt "find visual bugs" --json
-
-# Compare images from different sources
-ai-vision compare-images https://example.com/v1.png ./local-v2.png gs://bucket/v3.png --prompt "compare all versions"
 ```
 
 ### detect-objects
@@ -156,40 +150,28 @@ ai-vision detect-objects <source> --prompt <text> [--output <path>] [options]
 ```
 
 **Options:**
+- `--prompt <text>` — Detection prompt (required)
+- `--output <path>` — Save annotated image (optional)
+- `--viewport-width <number>` — Logical viewport width for web screenshots
+- `--viewport-height <number>` — Logical viewport height for web screenshots
+- `--temperature <num>` — Temperature 0-2 (default: 0.7)
+- `--top-p <num>` — Top P 0-1
+- `--top-k <num>` — Top K 1-100
+- `--max-tokens <num>` — Max output tokens
+- `--json` — Output raw JSON
 
-```
---output <path>              Save annotated image to explicit path (optional)
---viewport-width <number>    Logical viewport width for web screenshots
---viewport-height <number>   Logical viewport height for web screenshots
---temperature <num>          Temperature 0-2 (default: 0.7)
---top-p <num>                Top P 0-1
---top-k <num>                Top K 1-100
---max-tokens <num>           Max output tokens
---json                       Output raw JSON instead of formatted text
-```
+**Output includes:**
+- Detections: Array of objects with bounding boxes and confidence scores
+- Summary: Human-readable text with CSS selectors for web elements
+- Metadata: Detection model, provider, processing time
 
 **Examples:**
-
 ```bash
-# Detect objects with bounding boxes
 ai-vision detect-objects photo.jpg --prompt "find all cars"
-
-# Save annotated image with bounding boxes drawn
 ai-vision detect-objects scene.jpg --prompt "detect people" --output annotated.jpg
-
-# Detect web elements with viewport dimensions
 ai-vision detect-objects screenshot.png --prompt "find buttons" --viewport-width 1920 --viewport-height 1080
-
-# Get JSON output
 ai-vision detect-objects image.jpg --prompt "find text" --json
 ```
-
-**Output Format:**
-
-Returns:
-- `detections`: Array of detected objects with bounding boxes and confidence scores
-- `summary`: Human-readable text with CSS selectors for web elements and percentage coordinates
-- `metadata`: Detection model, provider, processing time, and coordinate information
 
 ### analyze-video
 
@@ -200,34 +182,22 @@ ai-vision analyze-video <source> --prompt <text> [options]
 ```
 
 **Options:**
-
-```
---start-offset <time>        Start time for video clipping (e.g., "40s", "2m30s", "00:02:30")
---end-offset <time>          End time for video clipping (e.g., "80s", "3m", "00:03:00")
---fps <number>               Frame sampling rate (0.1-30, default: 1)
---temperature <num>          Temperature 0-2 (default: 0.7)
---top-p <num>                Top P 0-1
---top-k <num>                Top K 1-100
---max-tokens <num>           Max output tokens
---json                       Output raw JSON instead of formatted text
-```
+- `--prompt <text>` — Analysis prompt (required)
+- `--start-offset <time>` — Start time (e.g., "40s", "2m30s", "00:02:30")
+- `--end-offset <time>` — End time (e.g., "80s", "3m", "00:03:00")
+- `--fps <number>` — Frame sampling rate (0.1-30, default: 1)
+- `--temperature <num>` — Temperature 0-2 (default: 0.7)
+- `--top-p <num>` — Top P 0-1
+- `--top-k <num>` — Top K 1-100
+- `--max-tokens <num>` — Max output tokens
+- `--json` — Output raw JSON
 
 **Examples:**
-
 ```bash
-# Analyze local video
 ai-vision analyze-video recording.mp4 --prompt "describe what happens"
-
-# Analyze YouTube video with context validation
 ai-vision analyze-video https://www.youtube.com/watch?v=dQw4w9WgXcQ --prompt "summarize content"
-
-# Analyze video segment with custom frame rate
 ai-vision analyze-video video.mp4 --prompt "detect bugs" --start-offset 1m --end-offset 3m --fps 2
-
-# Analyze Playwright recording
 ai-vision analyze-video playwright-video.webm --prompt "detect interaction bugs"
-
-# Get JSON output
 ai-vision analyze-video video.mp4 --prompt "summarize" --json
 ```
 
@@ -254,72 +224,42 @@ All commands accept multiple input formats:
 - **File references**: `files/...` (reuse previously uploaded files)
 - **YouTube URLs** (analyze-video only): `https://www.youtube.com/watch?v=...`
 
-### Supported file formats
+### Supported Formats
 
-**Images**
-- `jpg`, `jpeg`
-- `png`
-- `bmp`
-- `gif`
-- `webp`
+**Images:** jpg, jpeg, png, bmp, gif, webp
 
-**Videos**
-- `mp4`
-- `mov`
-- `avi`
-- `webm`
-- `flv`
-- `mpeg`
-- `mpg`
-- `wmv`
-- `3gp`
+**Videos:** mp4, mov, avi, webm, flv, mpeg, mpg, wmv, 3gp
 
-**Accepted MIME aliases**
-- Images: `image/jpeg`, `image/png`, `image/bmp`, `image/gif`, `image/webp`
-- Videos: `video/mp4`, `video/mov`, `video/quicktime`, `video/avi`, `video/x-msvideo`, `video/mpeg`, `video/mpg`, `video/webm`, `video/x-flv`, `video/wmv`, `video/x-ms-wmv`, `video/3gpp`
-
-**Remote video handling**
-- Remote video URLs under 50MB are downloaded and passed inline as `data:video/...;base64,...`
-- Remote video URLs at or above 50MB use the Files API upload path
+**Remote video handling:**
+- Videos under 50MB are downloaded and passed inline as base64
+- Videos at or above 50MB use the Files API upload path
 
 ## Use Cases
 
-### Design System Analysis
-
-Extract design tokens and component inventory from design mockups:
-
+**Design System Analysis**
 ```bash
-ai-vision analyze-image design-system.png --mode palette --prompt "extract all colors and spacing values"
-ai-vision analyze-image components.png --mode components --prompt "catalog all UI components"
+ai-vision audit-design design-system.png
+ai-vision analyze-image components.png --prompt "catalog all UI components"
 ```
 
-### Visual Regression Testing
-
-Compare baseline and current screenshots to detect unintended changes:
-
+**Visual Regression Testing**
 ```bash
 ai-vision compare-images baseline.png current.png --prompt "identify visual differences"
 ```
 
-### Content Moderation
-
-Detect objects and analyze image content:
-
+**Content Moderation**
 ```bash
 ai-vision detect-objects user-upload.jpg --prompt "find inappropriate content"
 ```
 
-### Video Analysis
-
-Analyze recorded interactions and detect bugs:
-
+**Video Analysis**
 ```bash
 ai-vision analyze-video playwright-recording.webm --prompt "detect UI interaction bugs"
 ```
 
 ## Configuration
 
-Configure default values via environment variables:
+Configure defaults via environment variables:
 
 ```bash
 # Temperature settings
