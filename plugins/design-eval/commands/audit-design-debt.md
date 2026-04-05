@@ -5,7 +5,7 @@ allowed-tools: Bash(node:*)
 argument-hint: "--imageSource <source> [--threshold <percent>] [--userPrompt <text>]"
 ---
 
-Route this request to the `design-eval:design-system-reviewer` subagent.
+Route this request to the `design-eval:design-system-maturity-tester` subagent.
 The final user-visible response must be the subagent's output verbatim.
 
 Raw slash-command arguments:

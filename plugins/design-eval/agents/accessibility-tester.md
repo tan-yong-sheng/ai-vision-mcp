@@ -81,7 +81,7 @@ Assistive technologies assessed: Screen readers (NVDA, JAWS, VoiceOver), keyboar
 The accessibility-tester subagent is spawned by the design-auditor agent during full audit workflows:
 
 1. **design-auditor** initiates comprehensive audit
-2. **accessibility-tester** runs in parallel with visual-tester and design-system-reviewer
+2. **accessibility-tester** runs in parallel with visual-consistency-tester and design-system-maturity-tester
 3. All three subagents return findings to design-auditor
 4. **design-auditor** synthesizes all dimensions into unified report with:
    - Overall health score (weighted toward accessibility 40%)

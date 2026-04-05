@@ -97,8 +97,8 @@ Claude can automatically spawn specialized subagents for deep analysis:
 
 - **design-eval:design-auditor** - Full audit orchestrator
 - **design-eval:accessibility-tester** - Accessibility expert
-- **design-eval:design-system-reviewer** - Governance specialist
-- **design-eval:visual-tester** - Visual regression expert
+- **design-eval:design-system-maturity-tester** - Governance specialist
+- **design-eval:visual-consistency-tester** - Visual regression expert
 
 Just ask questions like:
 - "Audit the design at https://example.com"
@@ -181,8 +181,8 @@ design-eval/
 ├── agents/                  # Subagent definitions
 │   ├── design-auditor.md
 │   ├── accessibility-tester.md
-│   ├── design-system-reviewer.md
-│   └── visual-tester.md
+│   ├── design-system-maturity-tester.md
+│   └── visual-consistency-tester.md
 ├── skills/                  # Domain knowledge & guidance
 │   ├── design-audit-framework/
 │   ├── visual-testing/

@@ -177,9 +177,3 @@ Phase 4: Low (Ongoing)
   ]
 }
 ```
-
-## Reference Materials
-
-- Nielsen's 10 Usability Heuristics: `design-audit-framework/references/heuristics-guide.md`
-- WCAG Compliance Checklist: `design-audit-framework/references/wcag-checklist.md`
-- Design System Metrics: `design-audit-framework/references/design-system-metrics.md`

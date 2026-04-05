@@ -5,6 +5,27 @@ allowed-tools: Bash(node:*)
 argument-hint: "--imageSource <source> [--depth quick|standard|deep] [--userPrompt <text>]"
 ---
 
+# /design-eval:audit-design
+
+Comprehensive design audit analyzing heuristics, accessibility, visual consistency, and design system governance.
+
+## Arguments
+
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `--imageSource` | URL, file path, or base64 image to audit | `https://example.com/screenshot.png` |
+| `--depth` | Analysis depth: quick (30min), standard (1hr), deep (2hr) | `--depth standard` |
+| `--userPrompt` | Additional focus areas or custom instructions | `--userPrompt "focus on mobile accessibility"` |
+
+## Examples
+
+```
+/design-eval:audit-design --imageSource https://example.com/hero.jpg --depth standard
+/design-eval:audit-design --imageSource ./screenshot.png --depth deep --userPrompt "check WCAG AAA compliance"
+```
+
+## Execution Instructions
+
 Route this request to the `design-eval:design-auditor` subagent.
 The final user-visible response must be the subagent's output verbatim.
 

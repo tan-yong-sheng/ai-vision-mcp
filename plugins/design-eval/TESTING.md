@@ -15,8 +15,8 @@
 - [x] `agents/` directory with 4 agent specs:
   - [x] `design-auditor.md`
   - [x] `accessibility-tester.md`
-  - [x] `design-system-reviewer.md`
-  - [x] `visual-tester.md`
+  - [x] `design-system-maturity-tester.md`
+  - [x] `visual-consistency-tester.md`
 - [x] `skills/` directory with 3 skill domains:
   - [x] `design-audit-framework/` (SKILL.md + 4 references)
   - [x] `visual-testing/` (SKILL.md + 2 references)
@@ -64,8 +64,8 @@ Each agent file should have:
 **Agents verified:**
 - [x] `design-auditor` - Orchestrator agent
 - [x] `accessibility-tester` - Accessibility expert
-- [x] `design-system-reviewer` - Governance specialist
-- [x] `visual-tester` - Visual regression expert
+- [x] `design-system-maturity-tester` - Governance specialist
+- [x] `visual-consistency-tester` - Visual regression expert
 
 ### Skills Validation
 
@@ -116,8 +116,8 @@ Each skill domain should have:
 1. Design-auditor agent receives request
 2. Spawns 3 subagents in parallel:
    - accessibility-tester for accessibility analysis
-   - visual-tester for visual consistency
-   - design-system-reviewer for governance
+   - visual-consistency-tester for visual consistency
+   - design-system-maturity-tester for governance
 3. Waits for all subagents to complete
 4. Aggregates results into unified report
 
