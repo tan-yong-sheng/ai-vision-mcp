@@ -1,7 +1,7 @@
 ---
 description: Full design audit across heuristics, accessibility, visual consistency, and design system
 allowed-tools: Bash, Glob, Read
-argument-hint: "--url <url> [--depth quick|standard|deep]"
+argument-hint: "--imageSource <source> [--depth quick|standard|deep]"
 ---
 
 # /design-eval:audit-design
@@ -12,20 +12,23 @@ Conduct a comprehensive design audit analyzing usability heuristics, accessibili
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--url` | URL or file path to design artifact (required) | `--url https://example.com` |
+| `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--depth` | Audit depth: quick (overview), standard (detailed), deep (comprehensive) | `--depth deep` |
 
 ## Examples
 
 ```bash
-# Quick overview of design audit
-/design-eval:audit-design --url https://example.com --depth quick
+# Quick overview with remote image
+/design-eval:audit-design --imageSource https://example.com/design.jpg --depth quick
 
-# Standard audit with detailed analysis
-/design-eval:audit-design --url https://example.com --depth standard
+# Standard audit with local file
+/design-eval:audit-design --imageSource ./screenshots/design.png
 
-# Deep comprehensive audit
-/design-eval:audit-design --url https://example.com --depth deep
+# Deep audit with data URI
+/design-eval:audit-design --imageSource data:image/png;base64,iVBORw0KGgo... --depth deep
+
+# Standard audit with GCS URI (Vertex AI)
+/design-eval:audit-design --imageSource gs://my-bucket/design.jpg
 ```
 
 ## Backend Execution
@@ -36,9 +39,15 @@ Conduct a comprehensive design audit analyzing usability heuristics, accessibili
 
 ### Parameter Translation
 
-The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
-- User invokes: `/design-eval:audit-design --url https://example.com`
-- Plugin translates to: `ai-vision audit-design https://example.com`
+The `--imageSource` parameter from the design-eval command is translated directly to the positional argument for ai-vision CLI:
+- User invokes: `/design-eval:audit-design --imageSource https://example.com/design.jpg`
+- Plugin translates to: `ai-vision audit-design https://example.com/design.jpg`
+
+Supports all input formats:
+- **URLs**: `https://example.com/image.jpg`
+- **Local files**: `./path/to/image.jpg` or `./screenshots/design.png`
+- **Data URIs**: `data:image/jpeg;base64,...`
+- **GCS URIs**: `gs://bucket/path/to/image.jpg` (Vertex AI only)
 
 ### Execution Steps
 
@@ -47,19 +56,19 @@ The `--url` parameter from the design-eval command is translated to `$SOURCE` (p
 # --depth parameter determines prompt scope
 
 # Quick depth: basic heuristics check
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct a quick design audit focusing on Nielsen's 10 usability heuristics. Identify critical issues only." \
   --max-tokens 1000 \
   --json
 
 # Standard depth: comprehensive audit (default)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct a comprehensive design audit analyzing: 1) Nielsen's 10 usability heuristics, 2) WCAG 2.1 accessibility compliance, 3) Visual consistency and design tokens, 4) Component reusability and patterns. Provide findings organized by category with severity levels." \
   --max-tokens 2000 \
   --json
 
 # Deep depth: exhaustive analysis
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct an exhaustive design audit analyzing: 1) Nielsen's 10 usability heuristics with detailed explanations, 2) WCAG 2.1 Level AA accessibility compliance with specific violations, 3) Visual consistency including color contrast ratios and typography, 4) Component reusability with duplication analysis, 5) Design system maturity assessment. Provide comprehensive findings with remediation guidance." \
   --max-tokens 3000 \
   --json
@@ -67,9 +76,9 @@ ai-vision audit-design "$SOURCE" \
 
 ### Processing
 
-1. Parse arguments: `--url` and `--depth` (default: standard)
+1. Parse arguments: `--imageSource` and `--depth` (default: standard)
 2. Construct appropriate prompt based on depth parameter
-3. Call ai-vision audit-design with translated prompt
+3. Call ai-vision audit-design with image source
 4. ai-vision analyzes design and returns findings
 5. Claude reasoning layer:
    - Synthesizes findings across dimensions

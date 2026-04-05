@@ -1,7 +1,7 @@
 ---
 description: Component reusability and pattern analysis
 allowed-tools: Bash, Glob, Read
-argument-hint: "--url <url> [--scope src/components]"
+argument-hint: "--imageSource <source> [--scope src/components]"
 ---
 
 # /design-eval:component-audit
@@ -12,20 +12,20 @@ Analyze component reusability, pattern consistency, and design debt across your 
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--url` | URL or file path to design artifact (required) | `--url https://example.com` |
+| `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--scope` | Directory scope for component analysis (optional) | `--scope src/components` |
 
 ## Examples
 
 ```bash
-# Analyze components in default scope
-/design-eval:component-audit --url https://example.com
+# Analyze components in default scope (remote image)
+/design-eval:component-audit --imageSource https://example.com/components.jpg
 
-# Analyze components in specific directory
-/design-eval:component-audit --url https://example.com --scope src/components
+# Analyze components in specific directory (local file)
+/design-eval:component-audit --imageSource ./screenshots/components.png --scope src/components
 
 # Analyze components in nested scope
-/design-eval:component-audit --url https://example.com --scope src/features/*/components
+/design-eval:component-audit --imageSource ./screenshots/all-components.png --scope src/features/*/components
 ```
 
 ## Backend Execution
@@ -36,9 +36,15 @@ Analyze component reusability, pattern consistency, and design debt across your 
 
 ### Parameter Translation
 
-The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
-- User invokes: `/design-eval:component-audit --url https://example.com`
-- Plugin translates to: `ai-vision analyze-image https://example.com --prompt "..."`
+The `--imageSource` parameter from the design-eval command is translated directly to the positional argument for ai-vision CLI:
+- User invokes: `/design-eval:component-audit --imageSource https://example.com/components.jpg`
+- Plugin translates to: `ai-vision analyze-image https://example.com/components.jpg --prompt "..."`
+
+Supports all input formats:
+- **URLs**: `https://example.com/image.jpg`
+- **Local files**: `./path/to/image.jpg`
+- **Data URIs**: `data:image/jpeg;base64,...`
+- **GCS URIs**: `gs://bucket/path/to/image.jpg` (Vertex AI only)
 
 ### Execution Steps
 
@@ -46,7 +52,7 @@ The `--url` parameter from the design-eval command is translated to `$SOURCE` (p
 # Translate domain parameters to ai-vision CLI call
 # Component analysis prompt focuses on reusability and patterns
 
-ai-vision analyze-image "$SOURCE" \
+ai-vision analyze-image "$IMAGESOURCE" \
   --prompt "Analyze component reusability and patterns. Identify: 1) Duplicate or near-identical components, 2) Component nesting and composition patterns, 3) Prop/API consistency across similar components, 4) Naming conventions and clarity, 5) Component documentation completeness. For each finding provide: component names/selectors, issue description, reusability impact, consolidation opportunity. Calculate reusability metrics." \
   --max-tokens 2500 \
   --json
@@ -54,9 +60,9 @@ ai-vision analyze-image "$SOURCE" \
 
 ### Processing
 
-1. Parse arguments: `--url` and `--scope` (optional)
+1. Parse arguments: `--imageSource` and `--scope` (optional)
 2. Construct prompt for component analysis
-3. Call ai-vision analyze-image with translated prompt
+3. Call ai-vision analyze-image with image source
 4. ai-vision analyzes component structure and patterns
 5. Claude reasoning layer:
    - Assesses reusability metrics

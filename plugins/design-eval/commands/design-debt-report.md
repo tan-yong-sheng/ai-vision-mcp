@@ -1,7 +1,7 @@
 ---
 description: Custom vs system component ratio analysis and design debt calculation
 allowed-tools: Bash, Glob, Read
-argument-hint: "--url <url> [--threshold <percent>]"
+argument-hint: "--imageSource <source> [--threshold <percent>]"
 ---
 
 # /design-eval:design-debt-report
@@ -12,17 +12,20 @@ Analyze custom component usage, design system adoption, and calculate design deb
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--url` | URL or file path to design artifact (required) | `--url https://example.com` |
+| `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--threshold` | Design debt threshold percentage (triggers warning) | `--threshold 30` |
 
 ## Examples
 
 ```bash
-# Generate design debt report with default threshold
-/design-eval:design-debt-report --url https://example.com
+# Generate design debt report with default threshold (remote image)
+/design-eval:design-debt-report --imageSource https://example.com/design.jpg
 
-# Generate report with custom 40% threshold
-/design-eval:design-debt-report --url https://example.com --threshold 40
+# Generate report with custom 40% threshold (local file)
+/design-eval:design-debt-report --imageSource ./screenshots/design.png --threshold 40
+
+# Generate report with data URI
+/design-eval:design-debt-report --imageSource data:image/png;base64,...
 ```
 
 ## Backend Execution
@@ -33,9 +36,15 @@ Analyze custom component usage, design system adoption, and calculate design deb
 
 ### Parameter Translation
 
-The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
-- User invokes: `/design-eval:design-debt-report --url https://example.com`
-- Plugin translates to: `ai-vision analyze-image https://example.com --prompt "..."`
+The `--imageSource` parameter from the design-eval command is translated directly to the positional argument for ai-vision CLI:
+- User invokes: `/design-eval:design-debt-report --imageSource https://example.com/design.jpg`
+- Plugin translates to: `ai-vision analyze-image https://example.com/design.jpg --prompt "..."`
+
+Supports all input formats:
+- **URLs**: `https://example.com/image.jpg`
+- **Local files**: `./path/to/image.jpg`
+- **Data URIs**: `data:image/jpeg;base64,...`
+- **GCS URIs**: `gs://bucket/path/to/image.jpg` (Vertex AI only)
 
 ### Execution Steps
 
@@ -43,7 +52,7 @@ The `--url` parameter from the design-eval command is translated to `$SOURCE` (p
 # Translate domain parameters to ai-vision CLI call
 # Design debt analysis focuses on custom vs system component ratio
 
-ai-vision analyze-image "$SOURCE" \
+ai-vision analyze-image "$IMAGESOURCE" \
   --prompt "Analyze design system adoption and design debt. Identify: 1) Custom vs system component ratio, 2) Component adoption metrics, 3) Design system maturity level (1-4), 4) Debt drivers and root causes, 5) Governance health assessment. For each custom component, explain why it was created instead of using system components. Calculate design debt score and provide strategic recommendations for improvement." \
   --max-tokens 2500 \
   --json

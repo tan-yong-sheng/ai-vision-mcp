@@ -1,7 +1,7 @@
 ---
 description: Design system token validation and visual consistency check
 allowed-tools: Bash, Glob, Read
-argument-hint: "--url <url> [--design-system <path>]"
+argument-hint: "--imageSource <source> [--design-system <path>]"
 ---
 
 # /design-eval:visual-consistency
@@ -12,17 +12,20 @@ Validate design system token compliance and check visual consistency across comp
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--url` | URL or file path to design artifact (required) | `--url https://example.com` |
+| `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--design-system` | Path to design system definition (JSON or YAML) | `--design-system ./design-system.json` |
 
 ## Examples
 
 ```bash
-# Check visual consistency with design system
-/design-eval:visual-consistency --url https://example.com --design-system ./design-system.json
+# Check visual consistency with design system (remote image)
+/design-eval:visual-consistency --imageSource https://example.com/design.jpg --design-system ./design-system.json
 
-# Check visual consistency without explicit design system (infer from usage)
-/design-eval:visual-consistency --url https://example.com
+# Check visual consistency without explicit design system (local file)
+/design-eval:visual-consistency --imageSource ./screenshots/design.png
+
+# Check with data URI
+/design-eval:visual-consistency --imageSource data:image/png;base64,...
 ```
 
 ## Backend Execution
@@ -33,9 +36,15 @@ Validate design system token compliance and check visual consistency across comp
 
 ### Parameter Translation
 
-The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
-- User invokes: `/design-eval:visual-consistency --url https://example.com`
-- Plugin translates to: `ai-vision audit-design https://example.com --prompt "..."`
+The `--imageSource` parameter from the design-eval command is translated directly to the positional argument for ai-vision CLI:
+- User invokes: `/design-eval:visual-consistency --imageSource https://example.com/design.jpg`
+- Plugin translates to: `ai-vision audit-design https://example.com/design.jpg --prompt "..."`
+
+Supports all input formats:
+- **URLs**: `https://example.com/image.jpg`
+- **Local files**: `./path/to/image.jpg`
+- **Data URIs**: `data:image/jpeg;base64,...`
+- **GCS URIs**: `gs://bucket/path/to/image.jpg` (Vertex AI only)
 
 ### Execution Steps
 
@@ -44,13 +53,13 @@ The `--url` parameter from the design-eval command is translated to `$SOURCE` (p
 # --design-system parameter determines validation scope
 
 # Without design system definition (infer tokens from usage)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Analyze visual consistency and design tokens. Extract and catalog: color palette (primary, secondary, neutral, semantic colors), typography (font families, sizes, weights, line heights), spacing (margin, padding, gap values), shape (border radius, shadows, strokes), motion (transition durations, easing). Identify inconsistencies and deviations from inferred patterns." \
   --max-tokens 2000 \
   --json
 
 # With design system definition (validate against tokens)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Validate visual consistency against design system tokens. Compare actual usage to expected values for: color palette tokens, typography tokens, spacing tokens, shape tokens, motion tokens. For each violation, provide: token name, expected value, actual value, affected elements, remediation guidance. Calculate overall consistency score." \
   --max-tokens 2500 \
   --json
@@ -58,9 +67,9 @@ ai-vision audit-design "$SOURCE" \
 
 ### Processing
 
-1. Parse arguments: `--url` and `--design-system` (optional)
+1. Parse arguments: `--imageSource` and `--design-system` (optional)
 2. Construct appropriate prompt based on whether design system is provided
-3. Call ai-vision audit-design with translated prompt
+3. Call ai-vision audit-design with image source
 4. ai-vision analyzes visual properties and design tokens
 5. Claude reasoning layer:
    - Maps violations to specific design tokens

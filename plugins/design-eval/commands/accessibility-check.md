@@ -1,7 +1,7 @@
 ---
 description: Deep WCAG 2.1/3.0 compliance review with remediation guidance
 allowed-tools: Bash, Glob, Read
-argument-hint: "--url <url> [--level A|AA|AAA] [--wcag-version 2.1|3.0]"
+argument-hint: "--imageSource <source> [--level A|AA|AAA] [--wcag-version 2.1|3.0]"
 ---
 
 # /design-eval:accessibility-check
@@ -12,21 +12,21 @@ Conduct a deep accessibility compliance review against WCAG standards with detai
 
 | Argument | Description | Example |
 |----------|-------------|---------|
-| `--url` | URL or file path to design artifact (required) | `--url https://example.com` |
+| `--imageSource` | Image source: remote URL, local file, data URI, or GCS URI (required) | `--imageSource https://example.com/design.jpg` |
 | `--level` | WCAG compliance level: A (basic), AA (standard), AAA (enhanced) | `--level AA` |
 | `--wcag-version` | WCAG version: 2.1 (compliance-focused), 3.0 (outcome-focused) | `--wcag-version 3.0` |
 
 ## Examples
 
 ```bash
-# Check WCAG 2.1 AA compliance (standard)
-/design-eval:accessibility-check --url https://example.com --level AA --wcag-version 2.1
+# Check WCAG 2.1 AA compliance (standard) with remote image
+/design-eval:accessibility-check --imageSource https://example.com/design.jpg --level AA --wcag-version 2.1
 
-# Check WCAG 3.0 AA compliance (outcome-focused)
-/design-eval:accessibility-check --url https://example.com --level AA --wcag-version 3.0
+# Check WCAG 3.0 AA with local file
+/design-eval:accessibility-check --imageSource ./screenshots/design.png --level AA --wcag-version 3.0
 
-# Deep AAA compliance check
-/design-eval:accessibility-check --url https://example.com --level AAA --wcag-version 3.0
+# Deep AAA compliance check with data URI
+/design-eval:accessibility-check --imageSource data:image/png;base64,... --level AAA --wcag-version 3.0
 ```
 
 ## Backend Execution
@@ -37,9 +37,15 @@ Conduct a deep accessibility compliance review against WCAG standards with detai
 
 ### Parameter Translation
 
-The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
-- User invokes: `/design-eval:accessibility-check --url https://example.com --level AA`
-- Plugin translates to: `ai-vision audit-design https://example.com --prompt "..."`
+The `--imageSource` parameter from the design-eval command is translated directly to the positional argument for ai-vision CLI:
+- User invokes: `/design-eval:accessibility-check --imageSource https://example.com/design.jpg --level AA`
+- Plugin translates to: `ai-vision audit-design https://example.com/design.jpg --prompt "..."`
+
+Supports all input formats:
+- **URLs**: `https://example.com/image.jpg`
+- **Local files**: `./path/to/image.jpg`
+- **Data URIs**: `data:image/jpeg;base64,...`
+- **GCS URIs**: `gs://bucket/path/to/image.jpg` (Vertex AI only)
 
 ### Execution Steps
 
@@ -48,25 +54,25 @@ The `--url` parameter from the design-eval command is translated to `$SOURCE` (p
 # --level and --wcag-version parameters determine prompt scope
 
 # WCAG 2.1 Level A
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct accessibility audit against WCAG 2.1 Level A standards. Check: color contrast ratios, keyboard navigation, semantic HTML structure, ARIA patterns, form accessibility, text alternatives. Provide specific violations and remediation guidance." \
   --max-tokens 2000 \
   --json
 
 # WCAG 2.1 Level AA (standard)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct accessibility audit against WCAG 2.1 Level AA standards. Check: WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text), keyboard navigation with tab order and focus management, semantic HTML with proper heading hierarchy, ARIA patterns and landmarks, form field associations and error messages, prefers-reduced-motion compliance. Provide specific criterion violations and detailed remediation code examples." \
   --max-tokens 2500 \
   --json
 
 # WCAG 3.0 Level AA (outcome-focused)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct accessibility audit against WCAG 3.0 Level AA outcome-focused standards. For each issue, explain: 1) Which user outcome is affected, 2) How users with disabilities are impacted, 3) Remediation to restore outcome, 4) How to verify outcome is achieved. Focus on outcomes, not compliance checkboxes. Cover: perceivable content, operable interfaces, understandable information, robust implementation." \
   --max-tokens 2500 \
   --json
 
 # WCAG 3.0 Level AAA (enhanced)
-ai-vision audit-design "$SOURCE" \
+ai-vision audit-design "$IMAGESOURCE" \
   --prompt "Conduct comprehensive accessibility audit against WCAG 3.0 Level AAA outcome-focused standards. Assess all accessibility dimensions with outcome focus: perceivable (visual, auditory, tactile), operable (keyboard, voice control, switch access), understandable (readability, navigability, predictability), robust (assistive technology compatibility). Provide specific outcome violations and interaction design remediation guidance." \
   --max-tokens 3000 \
   --json
@@ -74,9 +80,9 @@ ai-vision audit-design "$SOURCE" \
 
 ### Processing
 
-1. Parse arguments: `--url`, `--level` (default: AA), `--wcag-version` (default: 2.1)
+1. Parse arguments: `--imageSource`, `--level` (default: AA), `--wcag-version` (default: 2.1)
 2. Construct appropriate prompt based on level and version parameters
-3. Call ai-vision audit-design with translated prompt
+3. Call ai-vision audit-design with image source
 4. ai-vision analyzes accessibility dimensions
 5. Claude reasoning layer:
    - Maps findings to specific WCAG criteria
