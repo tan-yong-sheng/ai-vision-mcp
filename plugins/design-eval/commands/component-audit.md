@@ -34,6 +34,12 @@ Analyze component reusability, pattern consistency, and design debt across your 
 - ai-vision CLI installed: `npm install -g ai-vision-mcp`
 - API credentials configured via environment variables (see README.md)
 
+### Parameter Translation
+
+The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
+- User invokes: `/design-eval:component-audit --url https://example.com`
+- Plugin translates to: `ai-vision analyze-image https://example.com --prompt "..."`
+
 ### Execution Steps
 
 ```bash

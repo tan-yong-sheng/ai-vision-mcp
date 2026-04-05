@@ -31,6 +31,12 @@ Analyze custom component usage, design system adoption, and calculate design deb
 - ai-vision CLI installed: `npm install -g ai-vision-mcp`
 - API credentials configured via environment variables (see README.md)
 
+### Parameter Translation
+
+The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
+- User invokes: `/design-eval:design-debt-report --url https://example.com`
+- Plugin translates to: `ai-vision analyze-image https://example.com --prompt "..."`
+
 ### Execution Steps
 
 ```bash

@@ -35,6 +35,12 @@ Conduct a deep accessibility compliance review against WCAG standards with detai
 - ai-vision CLI installed: `npm install -g ai-vision-mcp`
 - API credentials configured via environment variables (see README.md)
 
+### Parameter Translation
+
+The `--url` parameter from the design-eval command is translated to `$SOURCE` (positional argument) for ai-vision CLI:
+- User invokes: `/design-eval:accessibility-check --url https://example.com --level AA`
+- Plugin translates to: `ai-vision audit-design https://example.com --prompt "..."`
+
 ### Execution Steps
 
 ```bash
