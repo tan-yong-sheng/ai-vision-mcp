@@ -1,5 +1,5 @@
 ---
-name: ai-vision
+name: ai-vision-cli
 description: >
   Analyze images and videos with AI vision models. Detect objects with bounding boxes,
   compare multiple images, audit design compliance, and analyze video content using 

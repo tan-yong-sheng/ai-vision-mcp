@@ -96,7 +96,7 @@ Or install directly from the repository:
 Claude can automatically spawn specialized subagents for deep analysis:
 
 - **design-eval:design-auditor** - Full audit orchestrator
-- **design-eval:a11y-specialist** - Accessibility expert
+- **design-eval:accessibility-tester** - Accessibility expert
 - **design-eval:design-system-reviewer** - Governance specialist
 - **design-eval:visual-tester** - Visual regression expert
 
@@ -180,7 +180,7 @@ design-eval/
 │   └── design-debt-report.md
 ├── agents/                  # Subagent definitions
 │   ├── design-auditor.md
-│   ├── a11y-specialist.md
+│   ├── accessibility-tester.md
 │   ├── design-system-reviewer.md
 │   └── visual-tester.md
 ├── skills/                  # Domain knowledge & guidance

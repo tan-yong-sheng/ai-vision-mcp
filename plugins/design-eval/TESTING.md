@@ -14,7 +14,7 @@
   - [x] `design-debt-report.md`
 - [x] `agents/` directory with 4 agent specs:
   - [x] `design-auditor.md`
-  - [x] `a11y-specialist.md`
+  - [x] `accessibility-tester.md`
   - [x] `design-system-reviewer.md`
   - [x] `visual-tester.md`
 - [x] `skills/` directory with 3 skill domains:
@@ -63,7 +63,7 @@ Each agent file should have:
 
 **Agents verified:**
 - [x] `design-auditor` - Orchestrator agent
-- [x] `a11y-specialist` - Accessibility expert
+- [x] `accessibility-tester` - Accessibility expert
 - [x] `design-system-reviewer` - Governance specialist
 - [x] `visual-tester` - Visual regression expert
 
@@ -115,7 +115,7 @@ Each skill domain should have:
 **Expected behavior:**
 1. Design-auditor agent receives request
 2. Spawns 3 subagents in parallel:
-   - a11y-specialist for accessibility analysis
+   - accessibility-tester for accessibility analysis
    - visual-tester for visual consistency
    - design-system-reviewer for governance
 3. Waits for all subagents to complete

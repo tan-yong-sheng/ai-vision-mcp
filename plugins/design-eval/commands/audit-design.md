@@ -1,8 +1,12 @@
 ---
-description: Full design audit across heuristics, accessibility, visual consistency, and design system
+description: "Use this command to run a comprehensive design audit across heuristics, accessibility, visual consistency, and design system governance"
+context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--depth quick|standard|deep]"
-disable-model-invocation: true
+argument-hint: "--imageSource <source> [--depth quick|standard|deep] [--userPrompt <text>]"
 ---
 
-!`node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" audit-design $ARGUMENTS`
+Route this request to the `design-eval:design-auditor` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

@@ -1,8 +1,12 @@
 ---
-description: Custom vs system component ratio analysis and design debt calculation
+description: "Use this command to calculate design debt ratio and assess design system maturity level"
+context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--threshold <percent>]"
-disable-model-invocation: true
+argument-hint: "--imageSource <source> [--threshold <percent>] [--userPrompt <text>]"
 ---
 
-!`node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" design-debt-report $ARGUMENTS`
+Route this request to the `design-eval:design-system-reviewer` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

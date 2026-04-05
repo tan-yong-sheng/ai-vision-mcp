@@ -1,8 +1,12 @@
 ---
-description: Design system token validation and visual consistency check
+description: "Use this command to validate design system token usage and detect visual consistency violations"
+context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--design-system <path>]"
-disable-model-invocation: true
+argument-hint: "--imageSource <source> [--design-system <path>] [--userPrompt <text>]"
 ---
 
-!`node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" visual-consistency $ARGUMENTS`
+Route this request to the `design-eval:visual-tester` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

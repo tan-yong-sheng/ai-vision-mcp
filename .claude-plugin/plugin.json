@@ -6,7 +6,14 @@
   "author": {
     "name": "Design Evaluation Team"
   },
-  "keywords": ["design", "accessibility", "wcag", "ui-ux", "audit", "design-system"],
+  "keywords": [
+    "design",
+    "accessibility",
+    "wcag",
+    "ui-ux",
+    "audit",
+    "design-system"
+  ],
   "license": "Apache-2.0",
   "commands": [
     {
@@ -42,7 +49,7 @@
       "description": "Comprehensive design evaluation orchestrator"
     },
     {
-      "name": "a11y-specialist",
+      "name": "accessibility-tester",
       "displayName": "A11y Specialist",
       "description": "Accessibility compliance expert"
     },

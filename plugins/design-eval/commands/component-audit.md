@@ -1,8 +1,12 @@
 ---
-description: Component reusability and pattern analysis
+description: "Use this command to analyze component reusability patterns and identify consolidation opportunities"
+context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--scope src/components]"
-disable-model-invocation: true
+argument-hint: "--imageSource <source> [--scope src/components] [--userPrompt <text>]"
 ---
 
-!`node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" component-audit $ARGUMENTS`
+Route this request to the `design-eval:design-system-reviewer` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

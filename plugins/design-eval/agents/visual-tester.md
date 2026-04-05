@@ -1,7 +1,8 @@
 ---
 name: visual-tester
-description: Visual regression and consistency testing specialist
+description: "Use this agent when you need visual consistency validation, design token compliance checking, and visual regression detection"
 tools: ["Bash", "Glob", "Read"]
+skills: ["ai-vision-cli", "visual-consistency-validation"]
 model: inherit
 ---
 
@@ -22,16 +23,13 @@ Conducts visual regression testing, design token validation, and visual consiste
 ## Execution Flow
 
 1. **Parse visual testing parameters** from command arguments
-   - Extract `--url` and `--design-system` (for visual-consistency)
+   - Extract `--imageSource` and `--design-system` (for visual-consistency)
    - Determine testing scope and depth
    - Verify API credentials are set via environment variables
 
-2. **Call ai-vision CLI with visual focus**
+2. **Invoke the design-eval router**
    ```bash
-   ai-vision audit-design "$SOURCE" \
-     --prompt "Analyze visual consistency and design tokens. Extract colors, typography, spacing, shapes, motion. Validate against design system if provided. Identify inconsistencies and deviations." \
-     --max-tokens 2000 \
-     --json
+   node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" visual-consistency $ARGUMENTS
    ```
    (Credentials passed via GEMINI_API_KEY or VERTEX_* environment variables)
 

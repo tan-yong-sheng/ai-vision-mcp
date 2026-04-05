@@ -1,7 +1,8 @@
 ---
 name: design-auditor
-description: Comprehensive design evaluation orchestrator
+description: "Use this agent when you need comprehensive design evaluation across heuristics, accessibility, visual consistency, and design system governance"
 tools: ["Bash", "Glob", "Read"]
+skills: ["ai-vision-cli", "design-audit-orchestration"]
 model: inherit
 ---
 
@@ -13,7 +14,7 @@ Orchestrates comprehensive design audits by coordinating specialized subagents a
 
 - Receives audit requests from `/design-eval:audit-design` command
 - Spawns 3 specialized subagents in parallel:
-  - `a11y-specialist` for accessibility analysis
+  - `accessibility-tester` for accessibility analysis
   - `visual-tester` for visual consistency validation
   - `design-system-reviewer` for governance assessment
 - Aggregates results from all subagents
@@ -24,17 +25,13 @@ Orchestrates comprehensive design audits by coordinating specialized subagents a
 ## Execution Flow
 
 1. **Parse audit parameters** from command arguments
-   - Extract `--url` and `--depth` (quick/standard/deep)
+   - Extract `--imageSource` and `--depth` (quick/standard/deep)
    - Determine analysis scope based on depth
    - Verify API credentials are set via environment variables
 
-2. **Call ai-vision CLI for comprehensive analysis**
+2. **Invoke the design-eval router**
    ```bash
-   # Construct prompt based on depth parameter
-   ai-vision audit-design "$SOURCE" \
-     --prompt "Comprehensive design audit analyzing Nielsen's 10 heuristics, WCAG 2.1 accessibility, visual consistency, and component reusability..." \
-     --max-tokens 2000 \
-     --json
+   node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" audit-design $ARGUMENTS
    ```
    (Credentials passed via GEMINI_API_KEY or VERTEX_* environment variables)
 

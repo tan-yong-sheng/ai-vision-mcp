@@ -1,27 +1,40 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { binaryAvailable } from "./lib/process.mjs";
 import { invokeAiVisionCli, buildAuditDesignArgs, buildAnalyzeImageArgs } from "./lib/cli-invoker.mjs";
 import { parseArgs, extractDesignEvalOptions, wrapUserPrompt } from "./lib/args.mjs";
 
-const COMMAND_PROMPTS = {
-  "audit-design": {
-    quick: "Conduct a quick design audit focusing on Nielsen's 10 usability heuristics. Identify critical issues only.",
-    standard: "Conduct a comprehensive design audit analyzing: 1) Nielsen's 10 usability heuristics, 2) WCAG 2.1 accessibility compliance, 3) Visual consistency and design tokens, 4) Component reusability and patterns. Provide findings organized by category with severity levels.",
-    deep: "Conduct an exhaustive design audit analyzing: 1) Nielsen's 10 usability heuristics with detailed explanations, 2) WCAG 2.1 Level AA accessibility compliance with specific violations, 3) Visual consistency including color contrast ratios and typography, 4) Component reusability with duplication analysis, 5) Design system maturity assessment. Provide comprehensive findings with remediation guidance."
-  },
-  "accessibility-check": {
-    "2.1-AA": "Conduct accessibility audit against WCAG 2.1 Level AA standards. Check: WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text), keyboard navigation with tab order and focus management, semantic HTML with proper heading hierarchy, ARIA patterns and landmarks, form field associations and error messages, prefers-reduced-motion compliance. Provide specific criterion violations and detailed remediation code examples.",
-    "3.0-AA": "Conduct accessibility audit against WCAG 3.0 Level AA outcome-focused standards. For each issue, explain: 1) Which user outcome is affected, 2) How users with disabilities are impacted, 3) Remediation to restore outcome, 4) How to verify outcome is achieved. Focus on outcomes, not compliance checkboxes. Cover: perceivable content, operable interfaces, understandable information, robust implementation.",
-    "3.0-AAA": "Conduct comprehensive accessibility audit against WCAG 3.0 Level AAA outcome-focused standards. Assess all accessibility dimensions with outcome focus: perceivable (visual, auditory, tactile), operable (keyboard, voice control, switch access), understandable (readability, navigability, predictability), robust (assistive technology compatibility). Provide specific outcome violations and interaction design remediation guidance."
-  },
-  "visual-consistency": {
-    "inferred": "Analyze visual consistency and design tokens. Extract and catalog: color palette (primary, secondary, neutral, semantic colors), typography (font families, sizes, weights, line heights), spacing (margin, padding, gap values), shape (border radius, shadows, strokes), motion (transition durations, easing). Identify inconsistencies and deviations from inferred patterns.",
-    "validated": "Validate visual consistency against design system tokens. Compare actual usage to expected values for: color palette tokens, typography tokens, spacing tokens, shape tokens, motion tokens. For each violation, provide: token name, expected value, actual value, affected elements, remediation guidance. Calculate overall consistency score."
-  },
-  "component-audit": "Analyze component reusability and patterns. Identify: 1) Duplicate or near-identical components, 2) Component nesting and composition patterns, 3) Prop/API consistency across similar components, 4) Naming conventions and clarity, 5) Component documentation completeness. For each finding provide: component names/selectors, issue description, reusability impact, consolidation opportunity. Calculate reusability metrics.",
-  "design-debt-report": "Analyze design system adoption and design debt. Identify: 1) Custom vs system component ratio, 2) Component adoption metrics, 3) Design system maturity level (1-4), 4) Debt drivers and root causes, 5) Governance health assessment. For each custom component, explain why it was created instead of using system components. Calculate design debt score and provide strategic recommendations for improvement."
-};
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const promptsDir = join(__dirname, "../prompts");
+
+function loadPromptFile(filename) {
+  const path = join(promptsDir, filename);
+  return readFileSync(path, "utf-8");
+}
+
+function extractPromptSection(content, sectionName) {
+  const lines = content.split("\n");
+  let inSection = false;
+  let sectionContent = [];
+
+  for (const line of lines) {
+    if (line.startsWith(`## ${sectionName}`)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection && line.startsWith("##")) {
+      break;
+    }
+    if (inSection) {
+      sectionContent.push(line);
+    }
+  }
+
+  return sectionContent.join("\n").trim();
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -57,7 +70,17 @@ async function main() {
     switch (command) {
       case "audit-design": {
         const depth = options.depth || "standard";
-        const basePrompt = COMMAND_PROMPTS["audit-design"][depth];
+        const auditDesignContent = loadPromptFile("audit-design.md");
+        const depthCapitalized = depth.charAt(0).toUpperCase() + depth.slice(1);
+        let sectionName;
+        if (depthCapitalized === "Quick") {
+          sectionName = "Quick (Fast Assessment)";
+        } else if (depthCapitalized === "Standard") {
+          sectionName = "Standard (Comprehensive)";
+        } else if (depthCapitalized === "Deep") {
+          sectionName = "Deep (Exhaustive)";
+        }
+        const basePrompt = extractPromptSection(auditDesignContent, sectionName);
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAuditDesignArgs({
           imageSource: options.imageSource,
@@ -74,8 +97,9 @@ async function main() {
       case "accessibility-check": {
         const wcagVersion = options.wcagVersion || "2.1";
         const level = options.level || "AA";
-        const promptKey = wcagVersion === "3.0" ? `3.0-${level}` : `2.1-${level}`;
-        const basePrompt = COMMAND_PROMPTS["accessibility-check"][promptKey];
+        const a11yContent = loadPromptFile("accessibility-check.md");
+        const sectionName = wcagVersion === "3.0" ? `WCAG 3.0 Level ${level}` : `WCAG 2.1 Level ${level}`;
+        const basePrompt = extractPromptSection(a11yContent, sectionName);
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAuditDesignArgs({
           imageSource: options.imageSource,
@@ -90,8 +114,10 @@ async function main() {
       }
 
       case "visual-consistency": {
-        const promptKey = options.designSystem ? "validated" : "inferred";
-        const basePrompt = COMMAND_PROMPTS["visual-consistency"][promptKey];
+        const promptKey = options.designSystem ? "Validated" : "Inferred";
+        const visualContent = loadPromptFile("visual-consistency.md");
+        const sectionName = promptKey === "Validated" ? "Validated (Against Design System)" : "Inferred (Auto-Discovery)";
+        const basePrompt = extractPromptSection(visualContent, sectionName);
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAuditDesignArgs({
           imageSource: options.imageSource,
@@ -106,7 +132,8 @@ async function main() {
       }
 
       case "component-audit": {
-        const basePrompt = COMMAND_PROMPTS["component-audit"];
+        const componentContent = loadPromptFile("component-audit.md");
+        const basePrompt = componentContent.split("\n").slice(1).join("\n").trim();
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAnalyzeImageArgs({
           imageSource: options.imageSource,
@@ -121,7 +148,8 @@ async function main() {
       }
 
       case "design-debt-report": {
-        const basePrompt = COMMAND_PROMPTS["design-debt-report"];
+        const debtContent = loadPromptFile("design-debt-report.md");
+        const basePrompt = debtContent.split("\n").slice(1).join("\n").trim();
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAnalyzeImageArgs({
           imageSource: options.imageSource,

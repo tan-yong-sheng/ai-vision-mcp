@@ -1,7 +1,8 @@
 ---
 name: design-system-reviewer
-description: Design system governance and maturity assessment specialist
+description: "Use this agent when you need design system maturity assessment, component reusability analysis, and design debt evaluation"
 tools: ["Bash", "Glob", "Read"]
+skills: ["ai-vision-cli", "design-system-governance"]
 model: inherit
 ---
 
@@ -22,17 +23,16 @@ Conducts design system governance assessment, maturity level analysis, and desig
 ## Execution Flow
 
 1. **Parse design system parameters** from command arguments
-   - Extract `--url` and `--scope` (for component-audit)
-   - Extract `--url` and `--threshold` (for design-debt-report)
+   - Extract `--imageSource` and `--scope` (for component-audit)
+   - Extract `--imageSource` and `--threshold` (for design-debt-report)
    - Determine analysis type based on command
    - Verify API credentials are set via environment variables
 
-2. **Call ai-vision CLI for component analysis**
+2. **Invoke the design-eval router**
    ```bash
-   ai-vision analyze-image "$SOURCE" \
-     --prompt "Analyze component reusability and design system adoption. Identify custom vs system components, duplication, composition patterns, API consistency, naming conventions. Assess design system maturity level." \
-     --max-tokens 2000 \
-     --json
+   node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" component-audit $ARGUMENTS
+   # or
+   node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" design-debt-report $ARGUMENTS
    ```
    (Credentials passed via GEMINI_API_KEY or VERTEX_* environment variables)
 
