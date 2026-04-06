@@ -94,7 +94,7 @@ All commands use this standardized format:
 
 ```
 --imageSource <source>        Required: URL, file path, or base64 image
---userPrompt <user-prompt>    Required: Custom focus areas and instructions
+   Required: Custom focus areas and instructions
 [optional params]             Optional parameters in brackets
 ```
 

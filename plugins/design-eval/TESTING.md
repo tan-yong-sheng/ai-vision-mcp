@@ -27,7 +27,7 @@
 
 Each command file should have:
 - [x] YAML frontmatter with `description`, `context`, `allowed-tools`, `argument-hint`
-- [x] Standardized argument format: `--imageSource <source> --userPrompt <user-prompt> [optional-params]`
+- [x] Standardized argument format: `--imageSource <source> [optional-params]`
 - [x] Execution instructions routing to correct subagent
 - [x] No duplicate parameters in argument-hint
 

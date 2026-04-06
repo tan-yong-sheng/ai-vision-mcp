@@ -2,7 +2,7 @@
 description: "Use this command to run a comprehensive design audit across heuristics, accessibility, visual consistency, and design system governance"
 context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> --userPrompt <user-prompt> [--depth quick|standard|deep]"
+argument-hint: "--imageSource <source> [--depth quick|standard|deep]"
 ---
 
 # /design-eval:audit-design

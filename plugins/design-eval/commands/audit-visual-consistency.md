@@ -2,7 +2,7 @@
 description: "Use this command to validate design system token usage and detect visual consistency violations"
 context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> --userPrompt <user-prompt> [--design-system <path>]"
+argument-hint: "--imageSource <source> [--design-system <path>]"
 ---
 
 Route this request to the `design-eval:visual-consistency-tester` subagent.
