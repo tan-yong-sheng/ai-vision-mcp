@@ -92,6 +92,13 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
    - Include severity, affected elements (CSS selectors, ARIA roles), user impact
    - Provide remediation code examples and design pattern suggestions
    - Add verification steps (keyboard testing, screen reader testing, contrast checking)
+   - **Output as markdown file** (e.g., `ACCESSIBILITY_AUDIT_REPORT.md`) with:
+     - Executive summary with compliance status
+     - Detailed findings organized by severity (Critical, High, Medium, Low)
+     - Before/after code examples for each issue
+     - Testing steps and verification procedures
+     - Remediation roadmap with effort estimates
+     - Implementation checklist for user action
    - Return structured JSON report with actionable guidance
 
 ## Accessibility Scope
@@ -233,6 +240,7 @@ The agent draws on deep guidance from the wcag-compliance skill:
   "critical_violations": 3,
   "high_findings": 8,
   "medium_findings": 12,
+  "markdown_report": "ACCESSIBILITY_AUDIT_REPORT.md",
   "findings": [
     {
       "id": "contrast-001",
@@ -260,4 +268,18 @@ The agent draws on deep guidance from the wcag-compliance skill:
   ]
 }
 ```
+
+**Markdown Report File**:
+- Executive summary with current compliance percentage
+- Critical issues section with:
+  - Issue title and WCAG criterion
+  - Current vs required state
+  - User impact explanation
+  - Before/after code examples
+  - Testing verification steps
+  - Fix difficulty and time estimate
+- High priority issues section (same structure)
+- Medium priority issues section (same structure)
+- Remediation roadmap with phases and timelines
+- Implementation checklist for development team
 

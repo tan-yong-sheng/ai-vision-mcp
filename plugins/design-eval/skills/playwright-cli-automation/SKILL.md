@@ -31,11 +31,14 @@ Capture full-page screenshots, navigate authentication flows, run Lighthouse aud
 ### Basic Capture (Desktop)
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Open browser and navigate
 playwright-cli open http://localhost:8787
 
 # Take screenshot (saves to .playwright-cli/page-*.png)
-playwright-cli screenshot --filename=login-page.png
+playwright-cli screenshot --filename=.playwright-cli/login-page.png
 
 # Close browser
 playwright-cli close
@@ -44,11 +47,14 @@ playwright-cli close
 ### Capture with Lighthouse Audit
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Open browser
 playwright-cli open http://localhost:8787
 
 # Get page snapshot for reference
-playwright-cli snapshot --filename=before-audit.yaml
+playwright-cli snapshot --filename=.playwright-cli/before-audit.yaml
 
 # Run Lighthouse audit (accessibility + performance)
 playwright-cli run-code "async page => {
@@ -63,7 +69,7 @@ playwright-cli run-code "async page => {
 }"
 
 # Take screenshot
-playwright-cli screenshot --filename=login-lighthouse.png
+playwright-cli screenshot --filename=.playwright-cli/login-lighthouse.png
 
 # Close
 playwright-cli close
@@ -72,18 +78,21 @@ playwright-cli close
 ### Authentication Flow (Multi-Step)
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Open browser at login page
 playwright-cli open http://localhost:8787/login
 
 # Get snapshot to see form elements
-playwright-cli snapshot --filename=login-form.yaml
+playwright-cli snapshot --filename=.playwright-cli/login-form.yaml
 
 # Fill form (use element refs from snapshot)
 playwright-cli fill e1 "tys203831@gmail.com"
 playwright-cli fill e2 "&Test1234"
 
 # Capture before submit
-playwright-cli screenshot --filename=form-filled.png
+playwright-cli screenshot --filename=.playwright-cli/form-filled.png
 
 # Click submit button
 playwright-cli click e3
@@ -92,10 +101,10 @@ playwright-cli click e3
 playwright-cli wait-for-load-state networkidle
 
 # Capture authenticated page
-playwright-cli screenshot --filename=authenticated-page.png
+playwright-cli screenshot --filename=.playwright-cli/authenticated-page.png
 
 # Get snapshot of authenticated state
-playwright-cli snapshot --filename=authenticated.yaml
+playwright-cli snapshot --filename=.playwright-cli/authenticated.yaml
 
 # Close
 playwright-cli close
@@ -104,33 +113,39 @@ playwright-cli close
 ### Multi-Viewport Testing
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Desktop (1280x720)
 playwright-cli open http://localhost:8787
 playwright-cli resize 1280 720
-playwright-cli screenshot --filename=desktop.png
+playwright-cli screenshot --filename=.playwright-cli/desktop.png
 playwright-cli close
 
 # Tablet (768x1024)
 playwright-cli open http://localhost:8787
 playwright-cli resize 768 1024
-playwright-cli screenshot --filename=tablet.png
+playwright-cli screenshot --filename=.playwright-cli/tablet.png
 playwright-cli close
 
 # Mobile (375x667)
 playwright-cli open http://localhost:8787
 playwright-cli resize 375 667
-playwright-cli screenshot --filename=mobile.png
+playwright-cli screenshot --filename=.playwright-cli/mobile.png
 playwright-cli close
 ```
 
 ### Complete Accessibility Audit Flow
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Open browser at login
 playwright-cli open http://localhost:8787
 
 # Capture login page
-playwright-cli screenshot --filename=1-login-page.png
+playwright-cli screenshot --filename=.playwright-cli/1-login-page.png
 
 # Run Lighthouse on login page
 playwright-cli run-code "async page => {
@@ -149,18 +164,18 @@ playwright-cli click e3
 playwright-cli wait-for-load-state networkidle
 
 # Capture dashboard
-playwright-cli screenshot --filename=2-dashboard.png
+playwright-cli screenshot --filename=.playwright-cli/2-dashboard.png
 
 # Get snapshot for element inspection
-playwright-cli snapshot --filename=dashboard-structure.yaml
+playwright-cli snapshot --filename=.playwright-cli/dashboard-structure.yaml
 
 # Navigate to other pages
 playwright-cli goto http://localhost:8787/settings
-playwright-cli screenshot --filename=3-settings.png
-playwright-cli snapshot --filename=settings-structure.yaml
+playwright-cli screenshot --filename=.playwright-cli/3-settings.png
+playwright-cli snapshot --filename=.playwright-cli/settings-structure.yaml
 
 # Save browser state for later use
-playwright-cli state-save auth-session.json
+playwright-cli state-save .playwright-cli/auth-session.json
 
 # Close
 playwright-cli close
@@ -185,25 +200,31 @@ Common device sizes for testing:
 ### Workflow 1: Single Page Audit
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Capture and audit a single page
 playwright-cli open http://localhost:8787
-playwright-cli screenshot --filename=page.png
-playwright-cli snapshot --filename=page-structure.yaml
+playwright-cli screenshot --filename=.playwright-cli/page.png
+playwright-cli snapshot --filename=.playwright-cli/page-structure.yaml
 playwright-cli close
 
 # Then feed to accessibility audit
-/design-eval:audit-accessibility --imageSource ./page.png --level AA
+/design-eval:audit-accessibility --imageSource .playwright-cli/page.png --level AA
 ```
 
 ### Workflow 2: Responsive Testing
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Test across all breakpoints
 for size in "375x667" "768x1024" "1280x720" "1920x1080"; do
   IFS='x' read -r width height <<< "$size"
   playwright-cli open http://localhost:8787
   playwright-cli resize $width $height
-  playwright-cli screenshot --filename=screenshot-${width}x${height}.png
+  playwright-cli screenshot --filename=.playwright-cli/screenshot-${width}x${height}.png
   playwright-cli close
 done
 ```
@@ -211,11 +232,14 @@ done
 ### Workflow 3: Authentication + Multi-Page Audit
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Login and capture multiple pages
 playwright-cli open http://localhost:8787/login
 
 # Capture login page
-playwright-cli screenshot --filename=1-login.png
+playwright-cli screenshot --filename=.playwright-cli/1-login.png
 
 # Fill and submit
 playwright-cli fill e1 "tys203831@gmail.com"
@@ -224,17 +248,17 @@ playwright-cli click e3
 playwright-cli wait-for-load-state networkidle
 
 # Capture dashboard
-playwright-cli screenshot --filename=2-dashboard.png
+playwright-cli screenshot --filename=.playwright-cli/2-dashboard.png
 
 # Navigate to other pages
 playwright-cli goto http://localhost:8787/settings
-playwright-cli screenshot --filename=3-settings.png
+playwright-cli screenshot --filename=.playwright-cli/3-settings.png
 
 playwright-cli goto http://localhost:8787/profile
-playwright-cli screenshot --filename=4-profile.png
+playwright-cli screenshot --filename=.playwright-cli/4-profile.png
 
 # Save session for reuse
-playwright-cli state-save auth-session.json
+playwright-cli state-save .playwright-cli/auth-session.json
 
 playwright-cli close
 ```
@@ -242,14 +266,17 @@ playwright-cli close
 ### Workflow 4: Lighthouse + Accessibility Audit
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Capture and get page metrics
 playwright-cli open http://localhost:8787
 
 # Get page structure
-playwright-cli snapshot --filename=before-audit.yaml
+playwright-cli snapshot --filename=.playwright-cli/before-audit.yaml
 
 # Capture screenshot
-playwright-cli screenshot --filename=page-for-audit.png
+playwright-cli screenshot --filename=.playwright-cli/page-for-audit.png
 
 # Get page metrics for accessibility analysis
 playwright-cli run-code "async page => {
@@ -274,7 +301,7 @@ playwright-cli run-code "async page => {
 playwright-cli close
 
 # Feed screenshot to accessibility audit
-/design-eval:audit-accessibility --imageSource ./page-for-audit.png --level AA
+/design-eval:audit-accessibility --imageSource .playwright-cli/page-for-audit.png --level AA
 ```
 
 ## Element References
@@ -346,26 +373,32 @@ playwright-cli screenshot --filename=no-animations.png
 ### Feed Screenshots to Accessibility Audit
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Capture screenshot
 playwright-cli open http://localhost:8787
-playwright-cli screenshot --filename=page.png
+playwright-cli screenshot --filename=.playwright-cli/page.png
 playwright-cli close
 
 # Run accessibility audit
-/design-eval:audit-accessibility --imageSource ./page.png --level AA --wcag-version 2.1
+/design-eval:audit-accessibility --imageSource .playwright-cli/page.png --level AA --wcag-version 2.1
 ```
 
 ### Feed Screenshots to Visual Consistency Check
 
 ```bash
+# Create .playwright-cli directory if it doesn't exist
+mkdir -p .playwright-cli
+
 # Capture at multiple viewports
 playwright-cli open http://localhost:8787
 playwright-cli resize 1280 720
-playwright-cli screenshot --filename=desktop.png
+playwright-cli screenshot --filename=.playwright-cli/desktop.png
 playwright-cli close
 
 # Check visual consistency
-/design-eval:audit-visual-consistency --imageSource ./desktop.png
+/design-eval:audit-visual-consistency --imageSource .playwright-cli/desktop.png
 ```
 
 ## Troubleshooting

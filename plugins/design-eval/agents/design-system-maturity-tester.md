@@ -90,7 +90,15 @@ This agent assesses design system health across four dimensions:
    - Include adoption metrics and trends
    - Provide maturity assessment
    - Recommend governance improvements
-   - Return structured JSON report
+   - **Output as markdown file** (e.g., `DESIGN_SYSTEM_MATURITY_REPORT.md`) with:
+     - Executive summary with maturity level assessment
+     - Adoption metrics organized by team and trend analysis
+     - Design debt driver analysis with specific examples
+     - Governance health assessment by dimension
+     - Consolidation recommendations with rationale and effort
+     - Strategic roadmap to next maturity level
+     - Implementation checklist for governance team
+   - Return structured JSON report with file reference
 
 ## LLM Prompt Templates
 
@@ -219,6 +227,7 @@ The agent returns findings in a structured JSON format:
     "customComponents": 70,
     "debtScore": 7.2
   },
+  "markdown_report": "DESIGN_SYSTEM_MATURITY_REPORT.md",
   "maturityAssessment": {
     "level": 2,
     "justification": "Design system exists with documented components, but adoption is inconsistent across teams. Governance process is informal.",

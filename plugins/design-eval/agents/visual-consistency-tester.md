@@ -115,7 +115,15 @@ Or with default mode (token-compliance is default):
    - Include actual vs expected values
    - Provide remediation guidance
    - Add visual evidence and metrics
-   - Return structured JSON report
+   - **Output as markdown file** (e.g., `VISUAL_CONSISTENCY_REPORT.md`) with:
+     - Executive summary with consistency score
+     - Findings organized by severity and token category
+     - Before/after CSS code examples for each issue
+     - Visual evidence with measurements and metrics
+     - Responsive design analysis by breakpoint
+     - Remediation roadmap with effort estimates
+     - Implementation checklist for design and dev teams
+   - Return structured JSON report with file reference
 
 ### Mode 2: Visual Regression (Two Images)
 
@@ -290,7 +298,8 @@ The agent returns findings in a structured JSON format:
     },
     "consistencyScore": 78,
     "breakpointsAnalyzed": ["mobile", "tablet", "desktop"],
-    "statesAnalyzed": ["light", "dark", "high-contrast"]
+    "statesAnalyzed": ["light", "dark", "high-contrast"],
+    "markdown_report": "VISUAL_CONSISTENCY_REPORT.md"
   },
   "findings": [
     {

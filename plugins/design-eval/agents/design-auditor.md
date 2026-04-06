@@ -94,6 +94,13 @@ This agent orchestrates comprehensive multi-dimensional design evaluation:
    - Deduplicate and consolidate related findings
    - Provide cross-dimensional insights
    - Create prioritized remediation roadmap
+   - **Output as markdown file** with:
+     - Executive summary with overall health score
+     - Findings organized by severity and category
+     - Before/after code examples for each issue
+     - Cross-dimensional insights (issues affecting multiple dimensions)
+     - Remediation roadmap with phases and effort estimates
+     - Implementation checklist for design and development teams
    - Return structured JSON with executive summary
 
 ## LLM Prompt Templates
