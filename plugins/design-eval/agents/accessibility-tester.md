@@ -23,36 +23,32 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
 
 ## Execution Flow
 
-1. **Gather Lighthouse accessibility report as reference** (RECOMMENDED FIRST STEP)
-   - Use `playwright-cli-automation` skill to:
-     - Open browser and navigate to target URL
-     - Run Lighthouse audit with accessibility focus
-     - Capture accessibility score and recommendations
-     - Take full-page screenshots for visual analysis
-   - Benefits:
-     - Provides baseline accessibility metrics (score 0-100)
-     - Identifies critical issues from Lighthouse perspective
-     - Documents semantic HTML and ARIA problems
-     - Highlights color contrast and form accessibility issues
-   - Example:
-     ```bash
-     playwright-cli open http://localhost:8787
-     playwright-cli run-code "async page => {
-       return {
-         url: page.url(),
-         title: await page.title(),
-         accessibility: 'audit-required'
-       };
-     }"
-     playwright-cli screenshot --filename=page-for-audit.png
-     playwright-cli close
-     ```
-
-2. **Parse accessibility parameters** from command arguments
-   - Extract `--imageSource`, `--level` (A/AA/AAA), `--wcag-version` (2.1/3.0), optional `--userPrompt`
-   - Extract `--design-system` (path to DESIGN.md for design-aware remediation, optional)
+1. **Parse accessibility parameters** from command arguments
+   - Extract `--imageSource` (URL or local file)
+   - Extract `--mode` (quick or deep, default: deep)
+   - Extract `--level` (A/AA/AAA)
+   - Extract `--wcag-version` (2.1/3.0)
+   - Extract optional credentials for login: `--email`, `--password`
+   - Extract optional `--userPrompt` for additional focus
+   - Extract optional `--design-system` (path to DESIGN.md, optional)
    - Determine WCAG criteria scope based on level and version
-   - Verify API credentials are set via environment variables (GEMINI_API_KEY or VERTEX_*)
+   - Verify API credentials for ai-vision (if mode=deep)
+
+2. **Mode Selection**
+
+   **Mode: quick (axe-core automated scan)**
+   - Fast, automated accessibility scan using axe-core
+   - No API calls required
+   - No dependencies on ai-vision CLI
+   - Results: immediate JSON + markdown report
+   - Best for: quick feedback, catching low-hanging fruit, CI/CD pipelines
+
+   **Mode: deep (axe-core + ai-vision analysis)**
+   - Run axe-core first to catch automated issues
+   - Send findings + screenshots to ai-vision for deeper analysis
+   - ai-vision provides context, remediation code, design patterns
+   - Results: combined report (automated + AI-enhanced)
+   - Best for: comprehensive audits, design-aware remediation, detailed guidance
 
 3. **Invoke the design-eval router**
    ```bash
@@ -99,6 +95,7 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
      - Testing steps and verification procedures
      - Remediation roadmap with effort estimates
      - Implementation checklist for user action
+   - **Print absolute path to audit output directory** so users know where to find files
    - Return structured JSON report with actionable guidance
 
 ## Accessibility Scope

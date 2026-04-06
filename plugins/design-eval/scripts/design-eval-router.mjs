@@ -6,6 +6,8 @@ import { dirname, join } from "path";
 import { binaryAvailable } from "./lib/process.mjs";
 import { invokeAiVisionCli, buildAuditDesignArgs, buildAnalyzeImageArgs, buildCompareImagesArgs } from "./lib/cli-invoker.mjs";
 import { parseArgs, extractDesignEvalOptions, wrapUserPrompt } from "./lib/args.mjs";
+import { runAxeScan } from "./lib/axe-runner.mjs";
+import { saveAxeResults, axeFindingsToPromptContext } from "./lib/axe-formatter.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const promptsDir = join(__dirname, "../prompts");
@@ -90,21 +92,62 @@ async function main() {
       }
 
       case "accessibility-check": {
+        const mode = options.mode || "deep"; // default to deep
         const wcagVersion = options.wcagVersion || "2.1";
         const level = options.level || "AA";
-        const a11yContent = loadPromptFile("check-accessibility.md");
-        const sectionName = wcagVersion === "3.0" ? `WCAG 3.0 Level ${level}` : `WCAG 2.1 Level ${level}`;
-        const basePrompt = extractPromptSection(a11yContent, sectionName);
-        prompt = wrapUserPrompt(basePrompt, options.userPrompt);
-        cliArgs = buildAuditDesignArgs({
-          imageSource: options.imageSource,
-          prompt,
-          temperature: options.temperature,
-          topP: options.topP,
-          topK: options.topK,
-          maxTokens: options.maxTokens || 2500,
-          json: true
-        });
+
+        // Validate mode
+        if (!["quick", "deep"].includes(mode)) {
+          console.error(`Error: Invalid mode "${mode}". Allowed modes: quick, deep`);
+          process.exit(1);
+        }
+
+        // Mode: quick - axe-core only
+        if (mode === "quick") {
+          try {
+            const axeResults = await runAxeScan(options.imageSource, {
+              email: options.email,
+              password: options.password
+            });
+            const { auditDir } = saveAxeResults(axeResults);
+            console.log(`\n✅ Accessibility scan complete (axe-core mode)`);
+            console.log(`📁 Results saved to: ${auditDir}\n`);
+            process.exit(0);
+          } catch (error) {
+            console.error(`Error running axe-core scan: ${error.message}`);
+            process.exit(1);
+          }
+        }
+
+        // Mode: deep - axe-core + ai-vision
+        if (mode === "deep") {
+          let axeContext = "";
+          try {
+            const axeResults = await runAxeScan(options.imageSource, {
+              email: options.email,
+              password: options.password
+            });
+            saveAxeResults(axeResults);
+            axeContext = axeFindingsToPromptContext(axeResults);
+          } catch (error) {
+            console.warn(`Warning: axe-core scan failed, proceeding with ai-vision only: ${error.message}`);
+          }
+
+          const a11yContent = loadPromptFile("check-accessibility.md");
+          const sectionName = wcagVersion === "3.0" ? `WCAG 3.0 Level ${level}` : `WCAG 2.1 Level ${level}`;
+          const basePrompt = extractPromptSection(a11yContent, sectionName);
+          const combinedPrompt = axeContext ? `${axeContext}\n\n${basePrompt}` : basePrompt;
+          prompt = wrapUserPrompt(combinedPrompt, options.userPrompt);
+          cliArgs = buildAuditDesignArgs({
+            imageSource: options.imageSource,
+            prompt,
+            temperature: options.temperature,
+            topP: options.topP,
+            topK: options.topK,
+            maxTokens: options.maxTokens || 2500,
+            json: true
+          });
+        }
         break;
       }
 

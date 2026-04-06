@@ -8,7 +8,7 @@ This plugin provides professional-grade design evaluation capabilities integrate
 
 **Use cases:**
 - **Full design audits** - Multi-dimensional analysis across heuristics, accessibility, visual consistency, and design system governance
-- **Accessibility compliance** - WCAG 2.1/3.0 deep-dive with remediation guidance and assistive technology assessment
+- **Accessibility compliance** - WCAG 2.1/3.0 assessment with two modes: quick automated scanning (axe-core) or deep AI-enhanced analysis
 - **Visual consistency** - Design token validation, violation detection, and visual regression testing (single image or baseline/current comparison)
 - **Component analysis** - Reusability patterns, design debt calculation, and consolidation opportunities
 - **Design system governance** - Maturity level assessment (1-4), adoption metrics, and governance process evaluation
@@ -20,7 +20,13 @@ This plugin provides professional-grade design evaluation capabilities integrate
    npm install -g ai-vision-mcp
    ```
 
-2. **Set up API credentials**
+2. **Install design-eval plugin dependencies**
+   ```bash
+   npm install
+   ```
+   This installs axe-core and playwright for accessibility scanning.
+
+3. **Set up API credentials**
 
    **Option A: Google AI Studio (Recommended)**
    ```bash
@@ -37,7 +43,7 @@ This plugin provides professional-grade design evaluation capabilities integrate
    export GCS_BUCKET_NAME="your-gcs-bucket"
    ```
 
-3. **Verify installation**
+4. **Verify installation**
    ```bash
    ai-vision --help
    ```
@@ -86,7 +92,7 @@ All commands follow the pattern: `/design-eval:<command>`
 | Command | Purpose | Key Arguments |
 |---------|---------|---------------|
 | `audit-design` | Comprehensive multi-dimensional audit | `--depth [quick\|standard\|deep]` |
-| `audit-accessibility` | WCAG 2.1/3.0 compliance analysis | `--level [A\|AA\|AAA]`, `--wcag-version [2.1\|3.0]` |
+| `audit-accessibility` | WCAG 2.1/3.0 compliance analysis (axe-core + optional AI) | `--mode [quick\|deep]`, `--level [A\|AA\|AAA]`, `--wcag-version [2.1\|3.0]` |
 | `audit-visual-consistency` | Design token validation & visual regression | `--mode [token-compliance\|regression]` |
 | `audit-components` | Component reusability & patterns | `--scope <directory>` |
 | `audit-design-debt` | Maturity & governance assessment | `--threshold <percent>` |
