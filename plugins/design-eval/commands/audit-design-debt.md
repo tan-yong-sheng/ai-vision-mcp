@@ -2,7 +2,7 @@
 description: "Use this command to calculate design debt ratio and assess design system maturity level"
 context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--threshold <percent>] [--userPrompt <text>]"
+argument-hint: "--imageSource <source> --userPrompt <user-prompt> [--threshold <percent>]"
 ---
 
 Route this request to the `design-eval:design-system-maturity-tester` subagent.

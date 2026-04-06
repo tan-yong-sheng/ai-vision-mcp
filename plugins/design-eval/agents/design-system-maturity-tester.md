@@ -91,7 +91,7 @@ This agent assesses design system health across four dimensions:
    - Recommend governance improvements
    - Return structured JSON report
 
-## Gemini Prompt Templates
+## LLM Prompt Templates
 
 ### Template 1: Component Audit (Reusability Analysis)
 

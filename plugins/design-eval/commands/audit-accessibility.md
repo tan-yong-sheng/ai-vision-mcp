@@ -2,7 +2,7 @@
 description: "Use this command to verify WCAG 2.1/3.0 compliance with detailed remediation guidance and assistive technology assessment"
 context: fork
 allowed-tools: Bash(node:*)
-argument-hint: "--imageSource <source> [--level A|AA|AAA] [--wcag-version 2.1|3.0] [--userPrompt <text>]"
+argument-hint: "--imageSource <source> --userPrompt <user-prompt> [--level A|AA|AAA] [--wcag-version 2.1|3.0]"
 ---
 
 # /design-eval:audit-accessibility

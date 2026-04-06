@@ -96,7 +96,7 @@ This agent orchestrates comprehensive multi-dimensional design evaluation:
    - Create prioritized remediation roadmap
    - Return structured JSON with executive summary
 
-## Gemini Prompt Templates
+## LLM Prompt Templates
 
 ### Template 1: Standard Depth Audit (Balanced Analysis)
 

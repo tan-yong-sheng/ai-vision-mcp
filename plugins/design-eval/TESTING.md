@@ -7,65 +7,54 @@
 - [x] `.claude-plugin/plugin.json` - Plugin manifest created
 - [x] `README.md` - User documentation created
 - [x] `commands/` directory with 5 command specs:
-  - [x] `audit-design.md`
-  - [x] `accessibility-check.md`
-  - [x] `visual-consistency.md`
-  - [x] `component-audit.md`
-  - [x] `design-debt-report.md`
+  - [x] `audit-design.md` - Full design audit
+  - [x] `audit-accessibility.md` - WCAG compliance
+  - [x] `audit-visual-consistency.md` - Design tokens
+  - [x] `audit-components.md` - Component reusability
+  - [x] `audit-design-debt.md` - Design system maturity
 - [x] `agents/` directory with 4 agent specs:
-  - [x] `design-auditor.md`
-  - [x] `accessibility-tester.md`
-  - [x] `design-system-maturity-tester.md`
-  - [x] `visual-consistency-tester.md`
+  - [x] `design-auditor.md` - Orchestrator
+  - [x] `accessibility-tester.md` - Accessibility expert
+  - [x] `visual-consistency-tester.md` - Visual regression expert
+  - [x] `design-system-maturity-tester.md` - Governance specialist
 - [x] `skills/` directory with 3 skill domains:
   - [x] `design-audit-framework/` (SKILL.md + 4 references)
-  - [x] `visual-testing/` (SKILL.md + 2 references)
+  - [x] `visual-consistency-validation/` (SKILL.md + 2 references)
   - [x] `design-system-governance/` (SKILL.md + 2 references)
 - [x] `.gitignore` - Ignore patterns configured
-
-### Plugin Manifest Validation
-
-**File:** `.claude-plugin/plugin.json`
-
-Verify:
-- [x] Plugin name: "design-eval"
-- [x] Display name: "Design Evaluation Suite"
-- [x] Version: "1.0.0"
-- [x] 5 commands defined with correct names
-- [x] 4 agents defined with correct names
-- [x] 3 skills defined with correct names
-- [x] All required fields present (name, displayName, description, author, keywords, license)
 
 ### Command Specifications Validation
 
 Each command file should have:
-- [x] YAML frontmatter with description, allowed-tools, argument-hint
-- [x] Usage examples with correct syntax
-- [x] Arguments table with descriptions
-- [x] Execution instructions
-- [x] Output format (JSON schema)
+- [x] YAML frontmatter with `description`, `context`, `allowed-tools`, `argument-hint`
+- [x] Standardized argument format: `--imageSource <source> --userPrompt <user-prompt> [optional-params]`
+- [x] Execution instructions routing to correct subagent
+- [x] No duplicate parameters in argument-hint
 
 **Commands verified:**
-- [x] `/design-eval:audit-design` - Full audit command
-- [x] `/design-eval:accessibility-check` - WCAG compliance command
-- [x] `/design-eval:visual-consistency` - Design tokens command
-- [x] `/design-eval:component-audit` - Component analysis command
-- [x] `/design-eval:design-debt-report` - Design debt command
+- [x] `/design-eval:audit-design` - Full audit (routes to design-auditor)
+- [x] `/design-eval:audit-accessibility` - WCAG compliance (routes to accessibility-tester)
+- [x] `/design-eval:audit-visual-consistency` - Design tokens (routes to visual-consistency-tester)
+- [x] `/design-eval:audit-components` - Component analysis (routes to design-system-maturity-tester)
+- [x] `/design-eval:audit-design-debt` - Design debt (routes to design-system-maturity-tester)
 
 ### Agent Specifications Validation
 
 Each agent file should have:
-- [x] YAML frontmatter with name, description, tools, model
-- [x] Responsibilities section
+- [x] YAML frontmatter with `name`, `description`, `tools`, `model`
+- [x] Rich specialist introduction (2-3 sentences)
+- [x] Scope section describing analysis dimensions
 - [x] Execution flow section
-- [x] Gemini prompt template(s)
+- [x] LLM Prompt Template(s) with XML structure
 - [x] Reference to relevant skills
+- [x] Integration explanation
+- [x] Complete JSON output example
 
 **Agents verified:**
-- [x] `design-auditor` - Orchestrator agent
-- [x] `accessibility-tester` - Accessibility expert
-- [x] `design-system-maturity-tester` - Governance specialist
-- [x] `visual-consistency-tester` - Visual regression expert
+- [x] `design-auditor` - Orchestrates 3 subagents in parallel
+- [x] `accessibility-tester` - WCAG 2.1/3.0 compliance analysis
+- [x] `visual-consistency-tester` - Design token validation and regression detection
+- [x] `design-system-maturity-tester` - Governance and maturity assessment
 
 ### Skills Validation
 
@@ -74,143 +63,249 @@ Each skill domain should have:
 - [x] Reference materials in `references/` subdirectory
 - [x] Clear "When to Use" section
 - [x] Actionable guidance and patterns
+- [x] Red flags and anti-patterns
 
 **Skills verified:**
 - [x] `design-audit-framework/` - Nielsen heuristics, WCAG, maturity models
-- [x] `visual-testing/` - Playwright patterns, regression testing
+- [x] `visual-consistency-validation/` - Token mapping, violation detection, severity categorization
 - [x] `design-system-governance/` - Governance processes, maturity assessment
 
 ## End-to-End Testing
 
-### Test 1: Command Invocation
+### Test 1: Command Invocation and Routing
 
-**Objective:** Verify command routes to correct agent
+**Objective:** Verify each command routes to correct agent with proper argument parsing
 
-**Test case:**
+**Test cases:**
+
 ```bash
-/design-eval:audit-design --url https://example.com --depth deep
+# Test audit-design routing
+/design-eval:audit-design --imageSource https://example.com/screenshot.png --userPrompt "check accessibility" --depth deep
+
+# Test audit-accessibility routing
+/design-eval:audit-accessibility --imageSource ./form.png --userPrompt "WCAG compliance" --level AA --wcag-version 3.0
+
+# Test audit-visual-consistency routing
+/design-eval:audit-visual-consistency --imageSource ./component.png --userPrompt "validate tokens" --design-system ./tokens.json
+
+# Test audit-components routing
+/design-eval:audit-components --imageSource ./src/components --userPrompt "find duplicates" --scope src/components
+
+# Test audit-design-debt routing
+/design-eval:audit-design-debt --imageSource ./screenshots --userPrompt "assess maturity" --threshold 30
 ```
 
 **Expected behavior:**
 1. Command is recognized by Claude Code
-2. Arguments are parsed correctly
-3. Request is routed to `design-eval:design-auditor` agent
-4. Agent receives correct parameters
+2. Arguments are parsed correctly (required: `--imageSource`, `--userPrompt`)
+3. Optional parameters are recognized
+4. Request routes to correct subagent
+5. Subagent receives all parameters
 
-**Verification:**
-- [ ] Command appears in plugin marketplace
+**Verification checklist:**
+- [ ] All 5 commands appear in plugin marketplace
 - [ ] Command help text displays correctly
-- [ ] Arguments are parsed without errors
-- [ ] Agent receives correct parameters
+- [ ] Arguments parse without errors
+- [ ] Subagents receive correct parameters
+- [ ] No duplicate parameter warnings
 
-### Test 2: Agent Orchestration
+### Test 2: Agent Orchestration (design-auditor)
 
-**Objective:** Verify design-auditor spawns subagents in parallel
+**Objective:** Verify design-auditor spawns 3 subagents in parallel and aggregates results
 
 **Test case:**
 ```bash
-/design-eval:audit-design --url https://example.com --depth standard
+/design-eval:audit-design --imageSource https://example.com --userPrompt "comprehensive audit" --depth standard
 ```
 
 **Expected behavior:**
-1. Design-auditor agent receives request
+1. design-auditor receives request
 2. Spawns 3 subagents in parallel:
-   - accessibility-tester for accessibility analysis
-   - visual-consistency-tester for visual consistency
+   - accessibility-tester for WCAG compliance
+   - visual-consistency-tester for design tokens
    - design-system-maturity-tester for governance
 3. Waits for all subagents to complete
 4. Aggregates results into unified report
+5. Deduplicates findings across dimensions
+6. Prioritizes by severity and impact
 
-**Verification:**
+**Verification checklist:**
 - [ ] All 3 subagents are invoked
 - [ ] Subagents run in parallel (not sequentially)
 - [ ] Results are aggregated correctly
 - [ ] No data loss during aggregation
+- [ ] Findings are deduplicated
+- [ ] Output includes all 4 dimensions (heuristics, accessibility, visual, governance)
 
-### Test 3: Gemini CLI Integration
+### Test 3: Skill Accessibility
 
-**Objective:** Verify Gemini CLI is invoked correctly
+**Objective:** Verify skills are discoverable and referenced correctly
 
-**Prerequisites:**
-- Gemini CLI installed: `npm install -g @google/gemini-cli`
-- Authenticated: `gemini auth`
-
-**Test case:**
-```bash
-/design-eval:audit-design --url https://example.com --depth quick
-```
+**Test cases:**
+- Access design-audit-framework skill during audit
+- Access visual-consistency-validation skill during visual audit
+- Access design-system-governance skill during maturity assessment
 
 **Expected behavior:**
-1. Agent constructs Gemini prompt
-2. Invokes Gemini CLI with correct arguments
-3. Receives JSON response from Gemini
-4. Parses response without errors
+1. Skills are discoverable in plugin
+2. Reference materials are linked correctly
+3. Guidance is clear and actionable
+4. Code examples are syntactically correct
+5. Cross-references between skills work
 
-**Verification:**
-- [ ] Gemini CLI is invoked
-- [ ] Prompt is well-formed XML/markdown
-- [ ] Response is valid JSON
-- [ ] No parsing errors
+**Verification checklist:**
+- [ ] Skills appear in plugin skill list
+- [ ] Reference files are accessible
+- [ ] Links between files work
+- [ ] Code examples are correct
+- [ ] No broken references
 
 ### Test 4: Output Schema Validation
 
-**Objective:** Verify output matches expected JSON schema
+**Objective:** Verify output matches expected JSON structure for each command
 
-**Test case:**
-```bash
-/design-eval:audit-design --url https://example.com --depth standard
-```
-
-**Expected output structure:**
+**Test case 1: audit-design output**
 ```json
 {
-  "audit_type": "full_design_audit",
-  "depth": "standard",
-  "url": "https://example.com",
-  "timestamp": "ISO-8601 timestamp",
+  "summary": {
+    "totalFindings": number,
+    "bySeverity": {
+      "critical": number,
+      "high": number,
+      "medium": number,
+      "low": number,
+      "info": number
+    },
+    "overallAssessment": "string"
+  },
   "findings": {
     "heuristics": [...],
     "accessibility": [...],
-    "visual_consistency": [...],
-    "component_analysis": [...]
+    "visualConsistency": [...],
+    "componentAnalysis": [...]
   },
-  "summary": {
-    "total_findings": number,
-    "critical": number,
-    "high": number,
-    "medium": number,
-    "low": number,
-    "info": number,
-    "overall_assessment": "string"
-  }
+  "recommendations": [...]
 }
 ```
 
-**Verification:**
+**Test case 2: audit-accessibility output**
+```json
+{
+  "summary": {
+    "totalFindings": number,
+    "wcagLevel": "A|AA|AAA",
+    "wcagVersion": "2.1|3.0",
+    "complianceStatus": "compliant|partial|non-compliant"
+  },
+  "findings": [
+    {
+      "id": "string",
+      "title": "string",
+      "severity": "critical|high|medium|low|info",
+      "criterion": "WCAG criterion",
+      "description": "string",
+      "affectedElements": ["string"],
+      "remediation": {
+        "cssCode": "string",
+        "effort": "low|medium|high"
+      },
+      "testingApproach": "string"
+    }
+  ]
+}
+```
+
+**Test case 3: audit-visual-consistency output**
+```json
+{
+  "summary": {
+    "totalFindings": number,
+    "consistencyScore": number,
+    "breakpointsAnalyzed": ["string"],
+    "statesAnalyzed": ["string"]
+  },
+  "findings": [
+    {
+      "title": "string",
+      "severity": "critical|high|medium|low",
+      "tokenName": "string",
+      "expectedValue": "string",
+      "actualValue": "string",
+      "affectedElements": ["string"],
+      "remediation": {
+        "cssCode": "string",
+        "effort": "low|medium|high"
+      }
+    }
+  ],
+  "regressions": []
+}
+```
+
+**Test case 4: audit-design-debt output**
+```json
+{
+  "summary": {
+    "maturityLevel": 1|2|3|4,
+    "maturityLevelDescription": "string",
+    "adoptionRate": number,
+    "customComponentRatio": number,
+    "debtScore": number
+  },
+  "maturityAssessment": {
+    "level": number,
+    "justification": "string",
+    "characteristics": ["string"]
+  },
+  "adoptionMetrics": {
+    "byTeam": [...],
+    "trend": "improving|stable|declining"
+  },
+  "recommendations": [...]
+}
+```
+
+**Verification checklist:**
 - [ ] Output is valid JSON
 - [ ] All required fields present
 - [ ] Field types match schema
 - [ ] Findings are properly categorized
 - [ ] Summary metrics are accurate
+- [ ] No extra/unexpected fields
 
-### Test 5: Skill References
+### Test 5: Argument Validation
 
-**Objective:** Verify skills are accessible and linked correctly
+**Objective:** Verify argument parsing and validation
 
-**Test case:**
-Access design-audit-framework skill during audit
+**Test cases:**
 
-**Expected behavior:**
-1. Skill is discoverable in plugin
-2. Reference materials are linked
-3. Guidance is clear and actionable
-4. Code examples are correct
+```bash
+# Missing required --imageSource
+/design-eval:audit-design --userPrompt "test"
+# Expected: Error - missing required argument
 
-**Verification:**
-- [ ] Skills appear in plugin skill list
-- [ ] Reference files are accessible
-- [ ] Links between files work
-- [ ] Code examples are syntactically correct
+# Missing required --userPrompt
+/design-eval:audit-design --imageSource ./test.png
+# Expected: Error - missing required argument
+
+# Invalid --depth value
+/design-eval:audit-design --imageSource ./test.png --userPrompt "test" --depth invalid
+# Expected: Error - invalid depth value
+
+# Invalid --level value
+/design-eval:audit-accessibility --imageSource ./test.png --userPrompt "test" --level X
+# Expected: Error - invalid level value
+
+# Valid optional parameters
+/design-eval:audit-design --imageSource ./test.png --userPrompt "test" --depth quick
+# Expected: Success - parameters accepted
+```
+
+**Verification checklist:**
+- [ ] Required parameters are enforced
+- [ ] Optional parameters are validated
+- [ ] Invalid values are rejected with clear errors
+- [ ] Valid combinations are accepted
 
 ## Manual Testing Scenarios
 
@@ -218,20 +313,27 @@ Access design-audit-framework skill during audit
 
 **Command:**
 ```bash
-/design-eval:audit-design --url https://example.com --depth quick
+/design-eval:audit-design --imageSource https://example.com --userPrompt "quick overview" --depth quick
 ```
 
 **Expected:**
-- Fast execution (<2 minutes)
-- Overview-level findings
-- 5-10 findings identified
+- Fast execution (1-2 minutes)
+- Overview-level findings (5-10 items)
+- All 4 dimensions represented
 - Actionable recommendations
+- Clear severity distribution
+
+**Verification:**
+- [ ] Execution completes within expected time
+- [ ] Findings are concise and relevant
+- [ ] Recommendations are prioritized
+- [ ] Output is well-formatted JSON
 
 ### Scenario 2: Deep Accessibility Check
 
 **Command:**
 ```bash
-/design-eval:accessibility-check --url https://example.com --level AA --wcag-version 3.0
+/design-eval:audit-accessibility --imageSource https://example.com/form --userPrompt "comprehensive WCAG check" --level AA --wcag-version 3.0
 ```
 
 **Expected:**
@@ -239,19 +341,73 @@ Access design-audit-framework skill during audit
 - WCAG 3.0 outcome-focused assessment
 - Specific remediation code examples
 - Testing steps for verification
+- Assistive technology considerations
 
-### Scenario 3: Design System Maturity Assessment
+**Verification:**
+- [ ] WCAG 3.0 criteria are applied
+- [ ] Remediation code is correct
+- [ ] Testing approach is clear
+- [ ] Output includes all affected elements
+
+### Scenario 3: Visual Consistency Validation
 
 **Command:**
 ```bash
-/design-eval:design-debt-report --url https://example.com --threshold 30
+/design-eval:audit-visual-consistency --imageSource ./component.png --userPrompt "validate design tokens" --design-system ./design-tokens.json
 ```
 
 **Expected:**
-- Adoption metrics calculated
-- Maturity level assessed (1-4)
-- Governance health evaluated
-- Trend analysis provided
+- Token compliance analysis
+- Violation detection with severity
+- Responsive design validation
+- State coverage analysis (light, dark, high-contrast)
+- Visual regression detection
+
+**Verification:**
+- [ ] All tokens are analyzed
+- [ ] Violations are quantified
+- [ ] Severity is appropriate
+- [ ] Remediation is provided
+
+### Scenario 4: Component Reusability Analysis
+
+**Command:**
+```bash
+/design-eval:audit-components --imageSource ./src/components --userPrompt "identify duplicate patterns" --scope src/components
+```
+
+**Expected:**
+- Component inventory
+- Duplication detection
+- Consolidation opportunities
+- API consistency analysis
+- Naming convention compliance
+
+**Verification:**
+- [ ] All components are analyzed
+- [ ] Duplicates are identified
+- [ ] Consolidation recommendations are clear
+- [ ] Effort estimation is provided
+
+### Scenario 5: Design System Maturity Assessment
+
+**Command:**
+```bash
+/design-eval:audit-design-debt --imageSource ./screenshots --userPrompt "assess governance health" --threshold 30
+```
+
+**Expected:**
+- Maturity level assessment (1-4)
+- Adoption metrics by team
+- Design debt drivers identified
+- Governance health evaluation
+- Transition roadmap to next level
+
+**Verification:**
+- [ ] Maturity level is justified
+- [ ] Adoption metrics are accurate
+- [ ] Debt drivers are specific
+- [ ] Roadmap is actionable
 
 ## Troubleshooting Guide
 
@@ -266,36 +422,8 @@ Access design-audit-framework skill during audit
 
 **Solution:**
 - Reinstall plugin: `/plugin install ./plugins/design-eval`
-- Validate plugin.json syntax
+- Validate plugin.json syntax: `jq . .claude-plugin/plugin.json`
 - Check for typos in command names
-
-### Issue: Gemini CLI Not Found
-
-**Symptom:** "gemini: command not found"
-
-**Diagnosis:**
-1. Gemini CLI not installed
-2. Not in PATH
-
-**Solution:**
-```bash
-npm install -g @google/gemini-cli
-gemini auth
-```
-
-### Issue: Invalid JSON Output
-
-**Symptom:** "JSON parse error"
-
-**Diagnosis:**
-1. Gemini response is not valid JSON
-2. Response contains extra text before/after JSON
-3. Encoding issues
-
-**Solution:**
-- Check Gemini CLI output format: `--output-format json`
-- Verify response parsing logic
-- Check for encoding issues
 
 ### Issue: Subagent Not Responding
 
@@ -305,25 +433,70 @@ gemini auth
 1. Subagent crashed or errored
 2. Network issue
 3. Resource exhaustion
+4. Gemini API rate limiting
 
 **Solution:**
-- Check subagent logs
+- Check subagent logs for errors
 - Verify network connectivity
 - Reduce scope/complexity of request
+- Wait and retry with backoff
+
+### Issue: Invalid JSON Output
+
+**Symptom:** "JSON parse error"
+
+**Diagnosis:**
+1. Gemini response is not valid JSON
+2. Response contains extra text before/after JSON
+3. Encoding issues
+4. Incomplete response
+
+**Solution:**
+- Verify Gemini CLI output format
+- Check response parsing logic
+- Verify encoding is UTF-8
+- Check for timeout/truncation
+
+### Issue: Missing Required Arguments
+
+**Symptom:** "Missing required argument: --imageSource"
+
+**Diagnosis:**
+1. Required argument not provided
+2. Argument name misspelled
+3. Argument value is empty
+
+**Solution:**
+- Provide both `--imageSource` and `--userPrompt`
+- Check argument spelling matches exactly
+- Verify argument values are not empty
+
+### Issue: Invalid Argument Value
+
+**Symptom:** "Invalid value for --depth: invalid"
+
+**Diagnosis:**
+1. Optional parameter value not in allowed list
+2. Typo in parameter value
+
+**Solution:**
+- Use valid values: `quick`, `standard`, `deep` for `--depth`
+- Use valid values: `A`, `AA`, `AAA` for `--level`
+- Use valid values: `2.1`, `3.0` for `--wcag-version`
 
 ## Performance Benchmarks
 
 ### Expected Execution Times
 
-| Command | Depth | Expected Time |
-|---------|-------|----------------|
+| Command | Depth/Scope | Expected Time |
+|---------|------------|----------------|
 | audit-design | quick | 1-2 minutes |
 | audit-design | standard | 3-5 minutes |
 | audit-design | deep | 5-10 minutes |
-| accessibility-check | AA | 2-4 minutes |
-| visual-consistency | - | 2-3 minutes |
-| component-audit | - | 3-5 minutes |
-| design-debt-report | - | 2-3 minutes |
+| audit-accessibility | AA | 2-4 minutes |
+| audit-visual-consistency | - | 2-3 minutes |
+| audit-components | - | 3-5 minutes |
+| audit-design-debt | - | 2-3 minutes |
 
 ### Resource Requirements
 
@@ -336,13 +509,15 @@ gemini auth
 
 Before releasing to production:
 
-- [ ] All tests pass
-- [ ] Documentation is complete and accurate
-- [ ] README.md is up-to-date
-- [ ] Plugin manifest is valid
-- [ ] All commands are tested
-- [ ] All agents are tested
-- [ ] All skills are accessible
+- [x] All command specs are standardized
+- [x] All agent specs follow consistent format
+- [x] All skills have proper structure
+- [x] README.md is complete and accurate
+- [x] TESTING.md is complete and accurate
+- [x] Plugin manifest is valid
+- [ ] All commands tested end-to-end
+- [ ] All agents tested with parallel execution
+- [ ] All skills are accessible and linked
 - [ ] Error handling is robust
 - [ ] Performance is acceptable
 - [ ] Security review completed
@@ -356,8 +531,9 @@ Before releasing to production:
 ### Metrics to Track
 
 - Command invocation frequency
-- Average execution time
-- Error rate
+- Average execution time per command
+- Error rate and error types
+- Subagent success rate
 - User satisfaction (if feedback available)
 - Gemini API usage and costs
 
@@ -381,3 +557,5 @@ Potential improvements for future versions:
 6. **Scheduling** - Schedule regular audits and email reports
 7. **Collaboration** - Share findings and comments with team
 8. **Automation** - CI/CD integration for automated design audits
+9. **Baseline Management** - Store and compare against historical baselines
+10. **Team Analytics** - Track design system adoption trends over time

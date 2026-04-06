@@ -90,7 +90,7 @@ The accessibility-tester subagent is spawned by the design-auditor agent during 
 
 The accessibility-tester findings are also available via standalone `/design-eval:accessibility-check` command for focused a11y analysis without full audit.
 
-## Gemini Prompt Template (WCAG 2.1)
+## LLM Prompt Template (WCAG 2.1)
 
 ```xml
 <context>
@@ -131,7 +131,7 @@ Focus on:
 </output_requirements>
 ```
 
-## Gemini Prompt Template (WCAG 3.0)
+## LLM Prompt Template (WCAG 3.0)
 
 ```xml
 <context>
