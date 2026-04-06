@@ -23,23 +23,49 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
 
 ## Execution Flow
 
-1. **Parse accessibility parameters** from command arguments
+1. **Gather Lighthouse accessibility report as reference** (RECOMMENDED FIRST STEP)
+   - Use `playwright-cli-automation` skill to:
+     - Open browser and navigate to target URL
+     - Run Lighthouse audit with accessibility focus
+     - Capture accessibility score and recommendations
+     - Take full-page screenshots for visual analysis
+   - Benefits:
+     - Provides baseline accessibility metrics (score 0-100)
+     - Identifies critical issues from Lighthouse perspective
+     - Documents semantic HTML and ARIA problems
+     - Highlights color contrast and form accessibility issues
+   - Example:
+     ```bash
+     playwright-cli open http://localhost:8787
+     playwright-cli run-code "async page => {
+       return {
+         url: page.url(),
+         title: await page.title(),
+         accessibility: 'audit-required'
+       };
+     }"
+     playwright-cli screenshot --filename=page-for-audit.png
+     playwright-cli close
+     ```
+
+2. **Parse accessibility parameters** from command arguments
    - Extract `--imageSource`, `--level` (A/AA/AAA), `--wcag-version` (2.1/3.0), optional `--userPrompt`
    - Extract `--design-system` (path to DESIGN.md for design-aware remediation, optional)
    - Determine WCAG criteria scope based on level and version
    - Verify API credentials are set via environment variables (GEMINI_API_KEY or VERTEX_*)
 
-2. **Invoke the design-eval router**
+3. **Invoke the design-eval router**
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/plugins/design-eval/scripts/design-eval-router.mjs" accessibility-check $ARGUMENTS
    ```
    Router passes `--prompt` text to ai-vision CLI containing:
    - Selected WCAG variant (e.g., "WCAG 2.1 Level AA" or "WCAG 3.0 Level AAA")
+   - Reference Lighthouse findings (if available)
    - User's additional focus areas (if `--userPrompt` provided)
    - Design system context (if `--design-system` DESIGN.md provided)
    - Analysis expectations and output format
 
-3. **Receive accessibility findings from ai-vision**
+4. **Receive accessibility findings from ai-vision**
    - Color contrast violations with exact contrast ratios and WCAG thresholds
    - Keyboard navigation issues (tab order, focus indicators, focus trapping, skip links)
    - Semantic HTML problems (heading hierarchy, landmark regions, list structures)
@@ -50,7 +76,8 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
    - Interactive element sizing and touch target issues
    - Cognitive accessibility barriers (unclear language, inconsistent patterns)
 
-4. **LLM reasoning layer synthesizes findings**
+5. **LLM reasoning layer synthesizes findings**
+   - Cross-reference ai-vision findings with Lighthouse recommendations
    - Maps violations to specific WCAG success criteria
    - Explains real-world impact on users with disabilities (blind, low vision, motor, cognitive, hearing)
    - Provides remediation code examples with before/after patterns
@@ -59,8 +86,9 @@ Senior accessibility testing specialist with deep expertise in WCAG 2.1/3.0 stan
    - Prioritizes by severity (critical blocks access vs. medium impacts user experience)
    - For WCAG 3.0: Frames findings as user outcomes at risk, not compliance checkboxes
 
-5. **Generate accessibility report**
+6. **Generate accessibility report**
    - Organize findings by WCAG criterion or outcome dimension
+   - Include Lighthouse score and how findings align with Lighthouse recommendations
    - Include severity, affected elements (CSS selectors, ARIA roles), user impact
    - Provide remediation code examples and design pattern suggestions
    - Add verification steps (keyboard testing, screen reader testing, contrast checking)
