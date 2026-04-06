@@ -2,7 +2,7 @@
 name: visual-consistency-tester
 description: "Use this agent when you need design token compliance validation or visual regression detection"
 tools: ["Bash", "Glob", "Read"]
-skills: ["visual-consistency-validation", "playwright-screenshot-capture"]
+skills: ["visual-consistency-validation", "playwright-cli-automation"]
 model: inherit
 ---
 
@@ -55,7 +55,7 @@ This agent validates token compliance across multiple dimensions:
 - Spacing deviations
 - Component size changes
 
-**For detailed token mapping, violation detection, severity categorization, and remediation patterns, see the visual-consistency-validation skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
+**For detailed token mapping, violation detection, severity categorization, and remediation patterns, see the visual-consistency-validation skill. IMPORTANT: Use the playwright-cli-automation skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Execution Flow
 

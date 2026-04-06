@@ -2,7 +2,7 @@
 name: accessibility-tester
 description: "Use this agent when you need deep WCAG 2.1/3.0 compliance verification, assistive technology assessment, and accessibility remediation guidance"
 tools: ["Bash", "Glob", "Read"]
-skills: ["wcag-compliance", "playwright-screenshot-capture"]
+skills: ["wcag-compliance", "playwright-cli-automation"]
 model: inherit
 ---
 
@@ -77,7 +77,7 @@ The agent analyzes WCAG 2.1 and 3.0 dimensions across four key areas:
 
 Assistive technologies assessed: Screen readers (NVDA, JAWS, VoiceOver), keyboard-only navigation, voice control, zoom/magnification, reduced motion preferences.
 
-**For detailed WCAG criteria, testing methodologies, and remediation patterns, see the wcag-compliance skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
+**For detailed WCAG criteria, testing methodologies, and remediation patterns, see the wcag-compliance skill. IMPORTANT: Use the playwright-cli-automation skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Integration with Design Audit
 

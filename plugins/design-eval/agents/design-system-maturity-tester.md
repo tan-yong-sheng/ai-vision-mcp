@@ -2,7 +2,7 @@
 name: design-system-maturity-tester
 description: "Use this agent when you need design system maturity assessment, component reusability analysis, and design debt evaluation"
 tools: ["Bash", "Glob", "Read"]
-skills: ["design-system-governance", "playwright-screenshot-capture"]
+skills: ["design-system-governance", "playwright-cli-automation"]
 model: inherit
 ---
 
@@ -51,7 +51,7 @@ This agent assesses design system health across four dimensions:
 - Component versioning and deprecation process
 - Team training and onboarding
 
-**For detailed governance processes, maturity models, and design debt assessment frameworks, see the design-system-governance skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
+**For detailed governance processes, maturity models, and design debt assessment frameworks, see the design-system-governance skill. IMPORTANT: Use the playwright-cli-automation skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Execution Flow
 

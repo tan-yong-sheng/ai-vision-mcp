@@ -2,7 +2,7 @@
 name: design-auditor
 description: "Use this agent when you need comprehensive design evaluation across heuristics, accessibility, visual consistency, and design system governance"
 tools: ["Bash", "Glob", "Read"]
-skills: ["design-audit-orchestration", "playwright-screenshot-capture"]
+skills: ["design-audit-orchestration", "playwright-cli-automation"]
 model: inherit
 ---
 
@@ -61,7 +61,7 @@ This agent orchestrates comprehensive multi-dimensional design evaluation:
 - Maturity level assessment (1-4)
 - Governance process effectiveness
 
-**For detailed audit frameworks, heuristics guidance, and design system maturity models, see the design-audit-orchestration skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
+**For detailed audit frameworks, heuristics guidance, and design system maturity models, see the design-audit-orchestration skill. IMPORTANT: Use the playwright-cli-automation skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Execution Flow
 

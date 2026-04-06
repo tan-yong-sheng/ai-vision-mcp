@@ -159,10 +159,10 @@ Agents automatically orchestrate in parallel and aggregate findings into unified
   - `maturity-model.md` — Levels 1-4 with characteristics and transition paths
   - `governance-process.md` — Component request workflows and approval processes
 
-### Playwright Screenshot Capture
-- **Scope:** Full-page screenshot capture, viewport presets, device emulation, capture patterns
-- **Location:** `skills/playwright-screenshot-capture/`
-- **Use:** Capture baseline screenshots before running visual consistency analysis
+### Playwright CLI Automation
+- **Scope:** Full-page screenshot capture, Lighthouse audits, authentication flows, responsive testing via playwright-cli
+- **Location:** `skills/playwright-cli-automation/`
+- **Use:** Capture baseline screenshots and run Lighthouse audits before running visual consistency analysis
 
 ## Output Formats
 
@@ -310,7 +310,7 @@ Results are returned as structured JSON with:
 4. **Review findings in context** - Severity indicates importance; prioritize critical and high findings first
 5. **Use with design system** - Provide design token definitions via `--design-system` for more accurate validation
 6. **Iterate and retest** - Run audit again after fixes to verify improvements and measure progress
-7. **Capture baselines** - Use playwright-screenshot-capture skill to establish baseline screenshots before running visual regression tests
+7. **Capture baselines** - Use playwright-cli-automation skill to establish baseline screenshots before running visual regression tests
 
 ## Architecture
 
@@ -403,11 +403,9 @@ design-eval/
 │   │   └── references/
 │   │       ├── maturity-model.md
 │   │       └── governance-process.md
-│   └── playwright-screenshot-capture/
+│   └── playwright-cli-automation/
 │       ├── SKILL.md
 │       └── references/
-│           ├── viewport-presets.md
-│           └── capture-patterns.md
 ├── README.md                        # This file
 ├── TESTING.md                       # Testing and verification guide
 └── .gitignore

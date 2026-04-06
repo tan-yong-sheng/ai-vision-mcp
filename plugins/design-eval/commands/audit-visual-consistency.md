@@ -69,7 +69,7 @@ Detect visual regressions by comparing baseline and current screenshots.
 ## Workflow with Playwright Skill
 
 ```bash
-# Step 1: Capture baseline screenshot (e.g., with playwright-screenshot-capture skill)
+# Step 1: Capture baseline screenshot (e.g., with playwright-cli-automation skill)
 # outputs: /tmp/design-eval-baseline-mobile.jpg
 
 # Step 2: After design changes, capture current state
