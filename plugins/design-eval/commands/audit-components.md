@@ -5,14 +5,6 @@ allowed-tools: Bash(node:*)
 argument-hint: "--imageSource <source> [--scope src/components] [--design-system <path>]"
 ---
 
-## Execution Instructions
-
-Route this request to the `design-eval:design-system-maturity-tester` subagent.
-The final user-visible response must be the subagent's output verbatim.
-
-Raw slash-command arguments:
-`$ARGUMENTS`
-
 # /design-eval:audit-components
 
 Analyze component reusability and identify consolidation opportunities.
@@ -32,3 +24,10 @@ Analyze component reusability and identify consolidation opportunities.
 /design-eval:audit-components --imageSource ./components.png --scope src/components --design-system ./DESIGN.md
 ```
 
+## Execution Instructions
+
+Route this request to the `design-eval:design-system-maturity-tester` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

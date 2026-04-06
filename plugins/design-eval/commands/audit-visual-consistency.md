@@ -5,14 +5,6 @@ allowed-tools: Bash(node:*)
 argument-hint: "--mode token-compliance|regression [--imageSource <source>] [--baseline <source> --current <source>] [--design-system <path>]"
 ---
 
-## Execution Instructions
-
-Route this request to the `design-eval:visual-consistency-tester` subagent.
-The final user-visible response must be the subagent's output verbatim.
-
-Raw slash-command arguments:
-`$ARGUMENTS`
-
 # /design-eval:audit-visual-consistency
 
 Validate design system token compliance on a single screenshot, or detect visual regressions by comparing baseline and current screenshots. Explicitly specify the analysis mode using `--mode`.
@@ -86,3 +78,11 @@ Detect visual regressions by comparing baseline and current screenshots.
 # Step 3: Compare baseline vs current using regression mode
 /design-eval:audit-visual-consistency --mode regression --baseline /tmp/design-eval-baseline-mobile.jpg --current /tmp/design-eval-current-mobile.jpg
 ```
+
+## Execution Instructions
+
+Route this request to the `design-eval:visual-consistency-tester` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

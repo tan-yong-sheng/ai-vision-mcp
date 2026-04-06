@@ -5,14 +5,6 @@ allowed-tools: Bash(node:*)
 argument-hint: "--imageSource <source> [--depth quick|standard|deep]"
 ---
 
-## Execution Instructions
-
-Route this request to the `design-eval:design-auditor` subagent.
-The final user-visible response must be the subagent's output verbatim.
-
-Raw slash-command arguments:
-`$ARGUMENTS`
-
 # /design-eval:audit-design
 
 Comprehensive design audit analyzing heuristics, accessibility, visual consistency, and design system governance.
@@ -34,3 +26,10 @@ Comprehensive design audit analyzing heuristics, accessibility, visual consisten
 /design-eval:audit-design --imageSource https://example.com/hero.jpg --depth standard --design-system ./DESIGN.md
 ```
 
+## Execution Instructions
+
+Route this request to the `design-eval:design-auditor` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`

@@ -5,15 +5,6 @@ allowed-tools: Bash(node:*)
 argument-hint: "--imageSource <source> [--threshold <percent>] [--design-system <path>]"
 ---
 
-
-## Execution Instructions
-
-Route this request to the `design-eval:design-system-maturity-tester` subagent.
-The final user-visible response must be the subagent's output verbatim.
-
-Raw slash-command arguments:
-`$ARGUMENTS`
-
 # /design-eval:audit-design-debt
 
 Calculate design debt and assess design system maturity.
@@ -32,3 +23,11 @@ Calculate design debt and assess design system maturity.
 /design-eval:audit-design-debt --imageSource https://example.com/component-inventory.jpg
 /design-eval:audit-design-debt --imageSource ./inventory.png --threshold 40 --design-system ./DESIGN.md
 ```
+
+## Execution Instructions
+
+Route this request to the `design-eval:design-system-maturity-tester` subagent.
+The final user-visible response must be the subagent's output verbatim.
+
+Raw slash-command arguments:
+`$ARGUMENTS`
