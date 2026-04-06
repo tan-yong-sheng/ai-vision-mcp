@@ -2,7 +2,7 @@
 name: design-system-maturity-tester
 description: "Use this agent when you need design system maturity assessment, component reusability analysis, and design debt evaluation"
 tools: ["Bash", "Glob", "Read"]
-skills: ["ai-vision-cli", "design-system-governance"]
+skills: ["design-system-governance", "playwright-screenshot-capture"]
 model: inherit
 ---
 
@@ -51,13 +51,13 @@ This agent assesses design system health across four dimensions:
 - Component versioning and deprecation process
 - Team training and onboarding
 
-**For detailed governance processes, maturity models, and design debt assessment frameworks, see the design-system-governance skill.**
+**For detailed governance processes, maturity models, and design debt assessment frameworks, see the design-system-governance skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Execution Flow
 
 1. **Parse design system parameters** from command arguments
-   - Extract `--imageSource` and `--scope` (for component-audit)
-   - Extract `--imageSource` and `--threshold` (for design-debt-report)
+   - Extract `--imageSource`, `--scope` (for component-audit), `--design-system` (path to DESIGN.md, optional)
+   - Extract `--imageSource`, `--threshold` (for design-debt-report), `--design-system` (optional)
    - Determine analysis type based on command
    - Verify API credentials are set via environment variables
 
@@ -82,6 +82,7 @@ This agent assesses design system health across four dimensions:
    - Calculates adoption metrics
    - Identifies governance health indicators
    - Analyzes debt drivers and trends
+   - If DESIGN.md provided: maps consolidation opportunities to existing design system components
    - Provides strategic recommendations
 
 5. **Generate governance report**
@@ -100,7 +101,7 @@ This agent assesses design system health across four dimensions:
 [ai-vision component analysis data]
 [Component usage patterns]
 [Component similarity metrics]
-[Design system definitions if available]
+[Design system definitions from DESIGN.md if provided]
 </context>
 
 <task>
@@ -113,6 +114,10 @@ Assess:
 4. Naming clarity - Are component names descriptive and consistent?
 5. Documentation quality - What needs documentation?
 
+For each consolidation recommendation:
+- If DESIGN.md provided: map to existing design system components and suggest how to extend them
+- Otherwise: suggest creating new consolidated components
+
 Provide:
 - Specific consolidation recommendations
 - Priority ranking by impact
@@ -122,12 +127,17 @@ Provide:
 
 <output_requirements>
 - Findings organized by category
-- Consolidation recommendations with rationale
+- Consolidation recommendations with rationale (referencing existing design system components if DESIGN.md provided)
 - Priority ranking by impact
 - Effort estimation
 - Governance recommendations
 - JSON format
 </output_requirements>
+
+**Important:** If DESIGN.md is provided, prioritize consolidating duplicates into existing design system components rather than creating new ones. For example:
+- Instead of "create new Button component", suggest "extend existing Button component with new variant"
+- Instead of "create new Form component", suggest "compose using existing FormField and FormLayout components"
+- Instead of "create new utility", suggest "add to existing utility component library"
 ```
 
 ### Template 2: Design Debt Report (Maturity & Governance Assessment)
@@ -138,6 +148,7 @@ Provide:
 [Component usage statistics]
 [Component creation timeline]
 [Design system maturity metrics]
+[Design system component inventory from DESIGN.md if provided]
 </context>
 
 <task>
@@ -150,10 +161,14 @@ Analyze:
 4. Governance health - How effective is our process?
 5. Trends - Is adoption improving or declining?
 
+For recommendations:
+- If DESIGN.md provided: assess whether debt drivers could be resolved by extending existing design system components
+- Suggest governance improvements that leverage existing design system structure
+
 Provide:
 - Clear maturity level assessment
 - Root cause analysis of debt drivers
-- Governance gaps and recommendations
+- Governance gaps and recommendations (design-system-aware if DESIGN.md provided)
 - Trend analysis and projections
 - Transition roadmap to next level
 </task>
@@ -161,11 +176,16 @@ Provide:
 <output_requirements>
 - Maturity level (1-4) with justification
 - Adoption metrics and trends
-- Debt driver analysis
+- Debt driver analysis (with design system component references if DESIGN.md provided)
 - Governance health assessment
 - Strategic recommendations
 - JSON format
 </output_requirements>
+
+**Important:** If DESIGN.md is provided, frame debt driver analysis in terms of design system gaps. For example:
+- Instead of "teams create custom buttons because they need variants", suggest "extend existing Button component with missing variants defined in DESIGN.md"
+- Instead of "custom forms are created for special layouts", suggest "create layout composition patterns using existing FormField components"
+- Instead of "governance process is unclear", suggest "formalize component request process that routes requests to existing design system first"
 ```
 
 ## Reference Skills

@@ -1,5 +1,15 @@
 # Design Debt Report Prompt
 
+## Design Preservation Principle
+
+When providing remediation guidance or design suggestions:
+- Respect existing design style, components, and tokens
+- Suggest modifications to existing patterns, not replacements
+- Only recommend overwriting existing style if the user explicitly requests it
+- Reference existing component names and design tokens in remediation code
+
+---
+
 Analyze design system adoption and design debt. Identify:
 1) Custom vs system component ratio
 2) Component adoption metrics

@@ -299,11 +299,36 @@ Each skill domain should have:
 # Valid optional parameters
 /design-eval:audit-design --imageSource ./test.png --userPrompt "test" --depth quick
 # Expected: Success - parameters accepted
+
+# Visual consistency: token-compliance mode without --imageSource
+/design-eval:audit-visual-consistency --mode token-compliance --baseline ./baseline.png --current ./current.png
+# Expected: Error - --baseline and --current not allowed in token-compliance mode
+
+# Visual consistency: regression mode without --baseline and --current
+/design-eval:audit-visual-consistency --mode regression --imageSource ./component.png
+# Expected: Error - --imageSource not allowed in regression mode
+
+# Visual consistency: regression mode missing --current
+/design-eval:audit-visual-consistency --mode regression --baseline ./baseline.png
+# Expected: Error - --current is required for regression mode
+
+# Visual consistency: invalid mode value
+/design-eval:audit-visual-consistency --mode invalid --imageSource ./component.png
+# Expected: Error - invalid mode value
+
+# Visual consistency: valid token-compliance mode
+/design-eval:audit-visual-consistency --mode token-compliance --imageSource ./component.png
+# Expected: Success - parameters accepted
+
+# Visual consistency: valid regression mode
+/design-eval:audit-visual-consistency --mode regression --baseline ./baseline.png --current ./current.png
+# Expected: Success - parameters accepted
 ```
 
 **Verification checklist:**
 - [ ] Required parameters are enforced
 - [ ] Optional parameters are validated
+- [ ] Mode-specific argument validation works correctly
 - [ ] Invalid values are rejected with clear errors
 - [ ] Valid combinations are accepted
 
@@ -349,11 +374,11 @@ Each skill domain should have:
 - [ ] Testing approach is clear
 - [ ] Output includes all affected elements
 
-### Scenario 3: Visual Consistency Validation
+### Test 3: Visual Consistency Validation
 
 **Command:**
 ```bash
-/design-eval:audit-visual-consistency --imageSource ./component.png --userPrompt "validate design tokens" --design-system ./design-tokens.json
+/design-eval:audit-visual-consistency --mode token-compliance --imageSource ./component.png --userPrompt "validate design tokens" --design-system ./design-tokens.json
 ```
 
 **Expected:**
@@ -361,13 +386,33 @@ Each skill domain should have:
 - Violation detection with severity
 - Responsive design validation
 - State coverage analysis (light, dark, high-contrast)
-- Visual regression detection
+- Design system alignment check
 
 **Verification:**
 - [ ] All tokens are analyzed
 - [ ] Violations are quantified
 - [ ] Severity is appropriate
 - [ ] Remediation is provided
+
+### Test 4: Visual Regression Detection
+
+**Command:**
+```bash
+/design-eval:audit-visual-consistency --mode regression --baseline ./baseline.png --current ./current.png --userPrompt "check for layout shifts"
+```
+
+**Expected:**
+- Baseline vs current comparison
+- Change detection (layout, color, typography, spacing)
+- Severity assessment (critical, high, medium, low)
+- Regression identification
+- Design system alignment (if DESIGN.md provided)
+
+**Verification:**
+- [ ] All changes are detected
+- [ ] Severity is justified
+- [ ] Remediation is provided
+- [ ] Design system alignment is checked
 
 ### Scenario 4: Component Reusability Analysis
 

@@ -2,7 +2,7 @@
 name: design-auditor
 description: "Use this agent when you need comprehensive design evaluation across heuristics, accessibility, visual consistency, and design system governance"
 tools: ["Bash", "Glob", "Read"]
-skills: ["ai-vision-cli", "design-audit-orchestration"]
+skills: ["design-audit-orchestration", "playwright-screenshot-capture"]
 model: inherit
 ---
 
@@ -61,12 +61,12 @@ This agent orchestrates comprehensive multi-dimensional design evaluation:
 - Maturity level assessment (1-4)
 - Governance process effectiveness
 
-**For detailed audit frameworks, heuristics guidance, and design system maturity models, see the design-audit-orchestration skill.**
+**For detailed audit frameworks, heuristics guidance, and design system maturity models, see the design-audit-orchestration skill. IMPORTANT: Use the playwright-screenshot-capture skill to capture full-page screenshots before invoking analysis commands.**
 
 ## Execution Flow
 
 1. **Parse audit parameters** from command arguments
-   - Extract `--imageSource` and `--depth` (quick/standard/deep)
+   - Extract `--imageSource`, `--depth` (quick/standard/deep), and `--design-system` (path to DESIGN.md, optional)
    - Determine analysis scope based on depth
    - Verify API credentials are set via environment variables
 
@@ -215,17 +215,23 @@ Analyze all four dimensions with rigor:
 The design-auditor coordinates three specialized agents in parallel:
 
 - **accessibility-tester** — Deep WCAG 2.1/3.0 compliance analysis
+  - Receives `--design-system` DESIGN.md path if provided
   - Validates color contrast, keyboard navigation, semantic HTML
   - Tests with assistive technologies
+  - Maps remediation to existing design system components when available
   - Maps findings to specific WCAG criteria
 
 - **visual-consistency-tester** — Design token validation and regression detection
+  - Receives `--design-system` DESIGN.md path if provided
   - Analyzes color, typography, spacing, shape, shadows
   - Tests responsive design across breakpoints
+  - Suggests modifications to existing design tokens rather than new code
   - Detects visual regressions and baseline deviations
 
 - **design-system-maturity-tester** — Governance and adoption analysis
+  - Receives `--design-system` DESIGN.md path if provided
   - Assesses design system maturity (1-4 levels)
+  - Maps consolidation opportunities to existing components
   - Analyzes component adoption and design debt
   - Evaluates governance process effectiveness
 

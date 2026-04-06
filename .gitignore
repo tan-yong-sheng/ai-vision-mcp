@@ -8,6 +8,8 @@ codex-plugin-cc/
 !.claude/plans/
 !.claude/plugins/
 
+.playwright-cli/
+
 # Dependencies
 node_modules/
 npm-debug.log*

@@ -73,8 +73,13 @@ export function buildAuditDesignArgs(options) {
  * @param {Object} options - Options object
  * @returns {string[]} CLI arguments
  */
-export function buildAnalyzeImageArgs(options) {
-  const args = ["analyze-image", options.imageSource];
+/**
+ * Build ai-vision CLI arguments for image comparison
+ * @param {Object} options - Options object
+ * @returns {string[]} CLI arguments
+ */
+export function buildCompareImagesArgs(options) {
+  const args = ["compare-images", options.baseline, options.current];
 
   if (options.prompt) {
     args.push("--prompt", options.prompt);
@@ -102,3 +107,4 @@ export function buildAnalyzeImageArgs(options) {
 
   return args;
 }
+

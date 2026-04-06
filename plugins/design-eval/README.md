@@ -9,7 +9,7 @@ This plugin provides professional-grade design evaluation capabilities integrate
 **Use cases:**
 - **Full design audits** - Multi-dimensional analysis across heuristics, accessibility, visual consistency, and design system governance
 - **Accessibility compliance** - WCAG 2.1/3.0 deep-dive with remediation guidance and assistive technology assessment
-- **Visual consistency** - Design token validation, violation detection, and visual regression testing
+- **Visual consistency** - Design token validation, violation detection, and visual regression testing (single image or baseline/current comparison)
 - **Component analysis** - Reusability patterns, design debt calculation, and consolidation opportunities
 - **Design system governance** - Maturity level assessment (1-4), adoption metrics, and governance process evaluation
 
@@ -63,19 +63,22 @@ All commands follow the pattern: `/design-eval:<command>`
 
 ```bash
 # Full design audit (heuristics + accessibility + visual + governance)
-/design-eval:audit-design --imageSource https://example.com/screenshot.png --userPrompt "focus on mobile experience" --depth deep
+/design-eval:audit-design --imageSource https://example.com/screenshot.png --depth standard
 
 # Accessibility compliance check (WCAG 2.1/3.0)
-/design-eval:audit-accessibility --imageSource https://example.com/form.jpg --userPrompt "check keyboard navigation" --level AA --wcag-version 3.0
+/design-eval:audit-accessibility --imageSource https://example.com/form.jpg --level AA --wcag-version 2.1
 
-# Visual consistency validation (design tokens)
-/design-eval:audit-visual-consistency --imageSource ./component.png --userPrompt "validate against brand colors" --design-system ./design-tokens.json
+# Visual consistency validation (single image - design tokens)
+/design-eval:audit-visual-consistency --imageSource ./component.png --design-system ./design-tokens.json
+
+# Visual regression detection (two images - baseline vs current)
+/design-eval:audit-visual-consistency --baseline ./baseline.png --current ./current.png
 
 # Component reusability analysis
-/design-eval:audit-components --imageSource ./src/components --userPrompt "identify duplicate patterns" --scope src/components
+/design-eval:audit-components --imageSource ./src/components --scope src/components
 
 # Design system maturity and debt assessment
-/design-eval:audit-design-debt --imageSource ./screenshots --userPrompt "assess governance health" --threshold 30
+/design-eval:audit-design-debt --imageSource ./screenshots --threshold 30
 ```
 
 ### Command Reference
@@ -84,30 +87,39 @@ All commands follow the pattern: `/design-eval:<command>`
 |---------|---------|---------------|
 | `audit-design` | Comprehensive multi-dimensional audit | `--depth [quick\|standard\|deep]` |
 | `audit-accessibility` | WCAG 2.1/3.0 compliance analysis | `--level [A\|AA\|AAA]`, `--wcag-version [2.1\|3.0]` |
-| `audit-visual-consistency` | Design token validation & regressions | `--design-system <path>` |
+| `audit-visual-consistency` | Design token validation & visual regression | `--mode [token-compliance\|regression]` |
 | `audit-components` | Component reusability & patterns | `--scope <directory>` |
 | `audit-design-debt` | Maturity & governance assessment | `--threshold <percent>` |
 
 ### Argument Format
 
-All commands use this standardized format:
+All commands use standardized arguments:
 
 ```
---imageSource <source>        Required: URL, file path, or base64 image
-   Required: Custom focus areas and instructions
-[optional params]             Optional parameters in brackets
+--imageSource <source>        URL, file path, or base64 image
+--userPrompt <text>           Custom focus areas and instructions (optional)
+[optional params]             Command-specific optional parameters
 ```
 
 **Examples:**
 ```bash
 # With required params only
-/design-eval:audit-design --imageSource ./screenshot.png --userPrompt "check for accessibility issues"
+/design-eval:audit-design --imageSource ./screenshot.png
 
 # With optional depth parameter
-/design-eval:audit-design --imageSource https://example.com --userPrompt "detailed analysis" --depth deep
+/design-eval:audit-design --imageSource https://example.com --depth deep
 
 # With multiple optional params
-/design-eval:audit-accessibility --imageSource ./form.png --userPrompt "WCAG compliance" --level AA --wcag-version 3.0
+/design-eval:audit-accessibility --imageSource ./form.png --level AA --wcag-version 3.0
+
+# Visual consistency validation (token-compliance mode - default)
+/design-eval:audit-visual-consistency --imageSource ./component.png --design-system ./design-tokens.json
+
+# Visual consistency validation (explicit token-compliance mode)
+/design-eval:audit-visual-consistency --mode token-compliance --imageSource ./component.png
+
+# Visual regression detection (regression mode)
+/design-eval:audit-visual-consistency --mode regression --baseline ./baseline.png --current ./current.png
 ```
 
 ### Autonomous Agents
@@ -118,7 +130,7 @@ Claude can automatically spawn specialized subagents for deep analysis:
 |-------|---------------|--------------|
 | `design-auditor` | Full audit orchestrator (heuristics, accessibility, visual, governance) | `audit-design` |
 | `accessibility-tester` | WCAG 2.1/3.0 compliance expert with remediation guidance | `audit-accessibility` |
-| `visual-consistency-tester` | Design token validator and visual regression detector | `audit-visual-consistency` |
+| `visual-consistency-tester` | Design token validator and visual regression detector (single or dual-image modes) | `audit-visual-consistency` |
 | `design-system-maturity-tester` | Design system governance and maturity assessor | `audit-components`, `audit-design-debt` |
 
 Agents automatically orchestrate in parallel and aggregate findings into unified reports.
@@ -138,7 +150,6 @@ Agents automatically orchestrate in parallel and aggregate findings into unified
 - **Scope:** Design token compliance, violation detection, severity categorization, remediation patterns
 - **Location:** `skills/visual-consistency-validation/`
 - **Core Principle:** Every violation must be (1) mapped to a specific token, (2) quantified, (3) severity-categorized, and (4) provided with remediation
-- **Red Flags:** Explicit counters against rationalizations ("close enough", "desktop is primary", etc.)
 - **Validation Checklist:** Properties, breakpoints, modes, states, accessibility
 
 ### Design System Governance
@@ -147,6 +158,11 @@ Agents automatically orchestrate in parallel and aggregate findings into unified
 - **References:**
   - `maturity-model.md` — Levels 1-4 with characteristics and transition paths
   - `governance-process.md` — Component request workflows and approval processes
+
+### Playwright Screenshot Capture
+- **Scope:** Full-page screenshot capture, viewport presets, device emulation, capture patterns
+- **Location:** `skills/playwright-screenshot-capture/`
+- **Use:** Capture baseline screenshots before running visual consistency analysis
 
 ## Output Formats
 
@@ -294,6 +310,7 @@ Results are returned as structured JSON with:
 4. **Review findings in context** - Severity indicates importance; prioritize critical and high findings first
 5. **Use with design system** - Provide design token definitions via `--design-system` for more accurate validation
 6. **Iterate and retest** - Run audit again after fixes to verify improvements and measure progress
+7. **Capture baselines** - Use playwright-screenshot-capture skill to establish baseline screenshots before running visual regression tests
 
 ## Architecture
 
@@ -316,13 +333,29 @@ The `design-auditor` agent automatically orchestrates parallel analysis:
 ```
 design-auditor
     ├─→ accessibility-tester (WCAG compliance)
-    ├─→ visual-consistency-tester (design tokens)
+    ├─→ visual-consistency-tester (design tokens & regression)
     └─→ design-system-maturity-tester (governance)
          ↓
     Aggregate & Deduplicate Findings
          ↓
     Unified Multi-Dimensional Report
 ```
+
+### Visual Consistency Modes
+
+The `audit-visual-consistency` command intelligently routes based on parameters:
+
+**Mode 1: Token Compliance (Single Image)**
+- Triggered by: `--imageSource <path>`
+- Uses: `ai-vision analyze-image` command
+- Validates design token compliance on a single screenshot
+- Optional: `--design-system <path>` for design-aware analysis
+
+**Mode 2: Visual Regression (Two Images)**
+- Triggered by: `--baseline <path> --current <path>`
+- Uses: `ai-vision compare-images` command
+- Detects visual changes between baseline and current screenshots
+- Optional: `--design-system <path>` for design-aware regression analysis
 
 ## Plugin Structure
 
@@ -341,7 +374,19 @@ design-eval/
 │   ├── accessibility-tester.md
 │   ├── visual-consistency-tester.md
 │   └── design-system-maturity-tester.md
-├── skills/                          # Domain knowledge & guidance (3 skills)
+├── prompts/                         # Prompt templates (5 prompts)
+│   ├── audit-design.md
+│   ├── check-accessibility.md
+│   ├── validate-visual-consistency.md
+│   ├── audit-components.md
+│   └── report-design-debt.md
+├── scripts/                         # Router and utilities
+│   ├── design-eval-router.mjs       # Intelligent command router
+│   └── lib/
+│       ├── cli-invoker.mjs
+│       ├── args.mjs
+│       └── process.mjs
+├── skills/                          # Domain knowledge & guidance (4 skills)
 │   ├── design-audit-framework/
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -352,13 +397,17 @@ design-eval/
 │   ├── visual-consistency-validation/
 │   │   ├── SKILL.md
 │   │   └── references/
-│   │       ├── execution-guide.md
 │   │       └── implementation-patterns.md
-│   └── design-system-governance/
+│   ├── design-system-governance/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── maturity-model.md
+│   │       └── governance-process.md
+│   └── playwright-screenshot-capture/
 │       ├── SKILL.md
 │       └── references/
-│           ├── maturity-model.md
-│           └── governance-process.md
+│           ├── viewport-presets.md
+│           └── capture-patterns.md
 ├── README.md                        # This file
 ├── TESTING.md                       # Testing and verification guide
 └── .gitignore
@@ -394,10 +443,12 @@ GCS_BUCKET_NAME="your-bucket"              # For Vertex AI video storage
 - **1.0.0** (2026-04-06)
   - Initial release with 5 commands
   - 4 specialized subagents
-  - 3 skill domains with comprehensive reference materials
+  - 4 skill domains with comprehensive reference materials
   - Support for WCAG 2.1/3.0 accessibility analysis
   - Design token validation with severity categorization
+  - Visual regression detection (baseline vs current comparison)
   - Design system maturity assessment (levels 1-4)
+  - Intelligent visual-consistency command routing (single image or dual-image modes)
 
 ## License
 

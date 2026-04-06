@@ -1,5 +1,15 @@
 # Accessibility Check Prompts
 
+## Design Preservation Principle
+
+When providing remediation guidance or design suggestions:
+- Respect existing design style, components, and tokens
+- Suggest modifications to existing patterns, not replacements
+- Only recommend overwriting existing style if the user explicitly requests it
+- Reference existing component names and design tokens in remediation code
+
+---
+
 ## WCAG 2.1 Level AA
 
 Conduct accessibility audit against WCAG 2.1 Level AA standards. Check:
@@ -12,9 +22,13 @@ Conduct accessibility audit against WCAG 2.1 Level AA standards. Check:
 
 Provide specific criterion violations and detailed remediation code examples.
 
+**Important:** When suggesting remediation, preserve the existing design system. Provide code examples that work within existing components and tokens. Only suggest design changes if the user explicitly asks to overwrite the current style.
+
 ## WCAG 3.0 Level AA
 
 Conduct accessibility audit against WCAG 3.0 Level AA outcome-focused standards.
+
+**Important:** When suggesting remediation, preserve the existing design system. Provide guidance that works within existing components and tokens. Only suggest design changes if the user explicitly asks to overwrite the current style.
 
 For each issue, explain:
 1) Which user outcome is affected
@@ -31,6 +45,8 @@ Focus on outcomes, not compliance checkboxes. Cover:
 ## WCAG 3.0 Level AAA
 
 Conduct comprehensive accessibility audit against WCAG 3.0 Level AAA outcome-focused standards.
+
+**Important:** When suggesting remediation, preserve the existing design system. Provide guidance that works within existing components and tokens. Only suggest design changes if the user explicitly asks to overwrite the current style.
 
 Assess all accessibility dimensions with outcome focus:
 - Perceivable (visual, auditory, tactile)

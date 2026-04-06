@@ -1,5 +1,15 @@
 # Component Audit Prompt
 
+## Design Preservation Principle
+
+When providing remediation guidance or design suggestions:
+- Respect existing design style, components, and tokens
+- Suggest modifications to existing patterns, not replacements
+- Only recommend overwriting existing style if the user explicitly requests it
+- Reference existing component names and design tokens in remediation code
+
+---
+
 Analyze component reusability and patterns. Identify:
 1) Duplicate or near-identical components
 2) Component nesting and composition patterns

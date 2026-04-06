@@ -43,6 +43,9 @@ export function parseArgs(argv) {
 export function extractDesignEvalOptions(parsed) {
   return {
     imageSource: parsed.values.imageSource,
+    baseline: parsed.values.baseline,
+    current: parsed.values.current,
+    mode: parsed.values.mode,
     userPrompt: parsed.values.userPrompt,
     temperature: parsed.values.temperature ? parseFloat(parsed.values.temperature) : undefined,
     topP: parsed.values["top-p"] ? parseFloat(parsed.values["top-p"]) : undefined,

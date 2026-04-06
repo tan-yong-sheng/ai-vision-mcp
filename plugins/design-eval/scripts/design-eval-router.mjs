@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { binaryAvailable } from "./lib/process.mjs";
-import { invokeAiVisionCli, buildAuditDesignArgs, buildAnalyzeImageArgs } from "./lib/cli-invoker.mjs";
+import { invokeAiVisionCli, buildAuditDesignArgs, buildAnalyzeImageArgs, buildCompareImagesArgs } from "./lib/cli-invoker.mjs";
 import { parseArgs, extractDesignEvalOptions, wrapUserPrompt } from "./lib/args.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -59,11 +59,6 @@ async function main() {
     const parsed = parseArgs(commandArgs);
     const options = extractDesignEvalOptions(parsed);
 
-    if (!options.imageSource) {
-      console.error("Error: --imageSource is required");
-      process.exit(1);
-    }
-
     let prompt;
     let cliArgs;
 
@@ -97,7 +92,7 @@ async function main() {
       case "accessibility-check": {
         const wcagVersion = options.wcagVersion || "2.1";
         const level = options.level || "AA";
-        const a11yContent = loadPromptFile("accessibility-check.md");
+        const a11yContent = loadPromptFile("check-accessibility.md");
         const sectionName = wcagVersion === "3.0" ? `WCAG 3.0 Level ${level}` : `WCAG 2.1 Level ${level}`;
         const basePrompt = extractPromptSection(a11yContent, sectionName);
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
@@ -114,25 +109,74 @@ async function main() {
       }
 
       case "visual-consistency": {
-        const promptKey = options.designSystem ? "Validated" : "Inferred";
-        const visualContent = loadPromptFile("visual-consistency.md");
-        const sectionName = promptKey === "Validated" ? "Validated (Against Design System)" : "Inferred (Auto-Discovery)";
-        const basePrompt = extractPromptSection(visualContent, sectionName);
-        prompt = wrapUserPrompt(basePrompt, options.userPrompt);
-        cliArgs = buildAuditDesignArgs({
-          imageSource: options.imageSource,
-          prompt,
-          temperature: options.temperature,
-          topP: options.topP,
-          topK: options.topK,
-          maxTokens: options.maxTokens || 2000,
-          json: true
-        });
+        // Explicit mode parameter: token-compliance or regression
+        const mode = options.mode || "token-compliance"; // Default to token-compliance
+
+        if (!["token-compliance", "regression"].includes(mode)) {
+          console.error(`Error: Invalid mode "${mode}". Allowed modes: token-compliance, regression`);
+          process.exit(1);
+        }
+
+        // Validate arguments based on mode
+        if (mode === "token-compliance") {
+          if (!options.imageSource) {
+            console.error("Error: --imageSource is required for token-compliance mode");
+            process.exit(1);
+          }
+          if (options.baseline || options.current) {
+            console.error("Error: --baseline and --current are not allowed in token-compliance mode. Use --imageSource instead");
+            process.exit(1);
+          }
+        } else if (mode === "regression") {
+          if (!options.baseline || !options.current) {
+            console.error("Error: --baseline and --current are required for regression mode");
+            process.exit(1);
+          }
+          if (options.imageSource) {
+            console.error("Error: --imageSource is not allowed in regression mode. Use --baseline and --current instead");
+            process.exit(1);
+          }
+        }
+
+        const visualContent = loadPromptFile("validate-visual-consistency.md");
+        let prompt;
+        let cliArgs;
+
+        if (mode === "token-compliance") {
+          // Mode 1: Token compliance (single image)
+          const promptKey = options.designSystem ? "Validated" : "Inferred";
+          const sectionName = promptKey === "Validated" ? "Validated (Against Design System)" : "Inferred (Auto-Discovery)";
+          const basePrompt = extractPromptSection(visualContent, sectionName);
+          prompt = wrapUserPrompt(basePrompt, options.userPrompt);
+          cliArgs = buildAuditDesignArgs({
+            imageSource: options.imageSource,
+            prompt,
+            temperature: options.temperature,
+            topP: options.topP,
+            topK: options.topK,
+            maxTokens: options.maxTokens || 2000,
+            json: true
+          });
+        } else {
+          // Mode 2: Visual regression (two images)
+          const basePrompt = extractPromptSection(visualContent, "Regression (Baseline vs Current)");
+          prompt = wrapUserPrompt(basePrompt, options.userPrompt);
+          cliArgs = buildCompareImagesArgs({
+            baseline: options.baseline,
+            current: options.current,
+            prompt,
+            temperature: options.temperature,
+            topP: options.topP,
+            topK: options.topK,
+            maxTokens: options.maxTokens || 2000,
+            json: true
+          });
+        }
         break;
       }
 
       case "component-audit": {
-        const componentContent = loadPromptFile("component-audit.md");
+        const componentContent = loadPromptFile("audit-components.md");
         const basePrompt = componentContent.split("\n").slice(1).join("\n").trim();
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAnalyzeImageArgs({
@@ -148,7 +192,7 @@ async function main() {
       }
 
       case "design-debt-report": {
-        const debtContent = loadPromptFile("design-debt-report.md");
+        const debtContent = loadPromptFile("report-design-debt.md");
         const basePrompt = debtContent.split("\n").slice(1).join("\n").trim();
         prompt = wrapUserPrompt(basePrompt, options.userPrompt);
         cliArgs = buildAnalyzeImageArgs({
